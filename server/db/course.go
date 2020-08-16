@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
-	var courses []*api.Course
+	courses := make([]*api.Course, 0)
 	err := s.DB.SelectContext(ctx, &courses,
 		"SELECT id, short_name, full_name FROM courses",
 	)
