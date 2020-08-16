@@ -19,7 +19,7 @@ domain_here {
 
 kibana.domain_here {
 	basicauth /* {
-		username_here passowrd_hash_here
+		username_here password_hash_here
 	}
 
 	reverse_proxy elk:5601
