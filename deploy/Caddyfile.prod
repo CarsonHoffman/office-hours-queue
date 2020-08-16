@@ -1,0 +1,26 @@
+domain_here {
+	encode gzip
+	redir / /queue.html
+
+	route /api/* {
+		uri strip_prefix /api
+		reverse_proxy queue:8080
+	}
+
+	file_server {
+		root /public
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+kibana.domain_here {
+	basicauth /* {
+		username_here passowrd_hash_here
+	}
+
+	reverse_proxy elk:5601
+}

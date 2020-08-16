@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+    queue:
+        image: office-hours-queue
+        build: ../server
+        networks:
+            - http
+            - db
+            - logging
+        depends_on:
+            - caddy
+            - db
+            - elk
+        secrets:
+            - sessions_key
+            - postgres_password
+        environment:
+            TZ: America/Detroit
+            QUEUE_DB_URL: db
+            QUEUE_DB_DATABASE: queue
+            QUEUE_DB_USERNAME: queue
+            QUEUE_DB_PASSWORD_FILE: /run/secrets/postgres_password
+            QUEUE_SESSIONS_KEY_FILE: /run/secrets/sessions_key
+            QUEUE_OAUTH2_CLIENT_ID: 845191182055-up8bv3ff7bn418h0avfouaim0upho4h8.apps.googleusercontent.com
+            QUEUE_VALID_DOMAIN: umich.edu
+        logging:
+            driver: syslog
+            options:
+                syslog-address: tcp://127.0.0.1:5000
+    db:
+        image: postgres
+        restart: always
+        volumes:
+            - db:/var/lib/postgresql/data
+            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+        networks:
+            - db
+        ports:
+            - "8001:5432"
+        secrets:
+            - postgres_password
+        environment:
+            POSTGRES_USER: queue
+            POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+            POSTGRES_DB: queue
+    elk:
+        image: sebp/elk
+        restart: always
+        volumes:
+            - elk:/var/lib/elasticsearch
+            - './syslog-input.conf:/etc/logstash/conf.d/03-syslog-input.conf'
+        networks:
+            - logging
+        ports:
+            - "5000:5000"
+    caddy:
+        image: caddy:2.1.1
+        restart: always
+        volumes:
+            - ./Caddyfile.dev:/etc/caddy/Caddyfile
+            - ../public:/public
+        depends_on:
+            - elk
+        networks:
+            - http
+            - logging
+        ports:
+            - "80:80"
+            - "443:443"
+        logging:
+            driver: syslog
+            options:
+                syslog-address: tcp://127.0.0.1:5000
+
+volumes:
+    db:
+    elk:
+
+networks:
+    http:
+    db:
+    logging:
+
+secrets:
+    postgres_password:
+        file: ./secrets/postgres_password
+    sessions_key:
+        file: ./secrets/signing.key

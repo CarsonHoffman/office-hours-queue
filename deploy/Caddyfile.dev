@@ -1,0 +1,30 @@
+{
+	auto_https off
+}
+
+http://lvh.me {
+	encode gzip
+	redir / /queue.html
+
+	route /api/* {
+		uri strip_prefix /api
+		reverse_proxy queue:8080
+	}
+
+	file_server {
+		root /public
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+http://kibana.lvh.me {
+	basicauth /* {
+		dev JDJhJDE0JE1wOXZHWHdDald1LmhCSWFYaGZLdU9IdTN3bHprSmhWVllPbEZtbnMzNndTYlRyL1dTdXZT
+	}
+
+	reverse_proxy elk:5601
+}
