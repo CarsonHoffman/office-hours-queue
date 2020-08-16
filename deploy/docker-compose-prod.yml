@@ -58,7 +58,7 @@ services:
         image: caddy:2.1.1
         restart: always
         volumes:
-            - ./Caddyfile.dev:/etc/caddy/Caddyfile
+            - ./Caddyfile.prod:/etc/caddy/Caddyfile
             - ../public:/public
         depends_on:
             - elk
