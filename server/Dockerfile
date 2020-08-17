@@ -22,7 +22,4 @@ COPY --from=builder /app/main .
 
 EXPOSE 8080
 
-# This is a bit hacky; on initialize the DB container isn't instantly
-# ready, so even though we depend on it we might panic if we start too soon.
-CMD ["sleep", "10"]
 CMD ["./main"]
