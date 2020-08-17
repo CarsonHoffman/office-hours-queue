@@ -14,14 +14,23 @@ const (
 	stateLength       = 64
 )
 
+var emptySessionCookie = &http.Cookie{
+	Name:     "session",
+	Value:    "",
+	MaxAge:   -1,
+	HttpOnly: true,
+	Secure:   os.Getenv("USE_SECURE_COOKIES") == "true",
+}
+
 func (s *Server) ValidLoginMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessions.Get(r, "session")
 		if err != nil {
-			s.logger.Infow("failed to get session",
+			s.logger.Infow("got invalid session",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
+			http.SetCookie(w, emptySessionCookie)
 			s.errorMessage(
 				http.StatusUnauthorized,
 				"Try logging in again.",
@@ -70,11 +79,12 @@ func (s *Server) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessions.New(r, "session")
 		if err != nil {
-			s.logger.Errorw("failed to create new session",
+			s.logger.Errorw("got invalid session on login",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
+			http.SetCookie(w, emptySessionCookie)
+			http.Redirect(w, r, "/api/login", http.StatusTemporaryRedirect)
 			return
 		}
 
