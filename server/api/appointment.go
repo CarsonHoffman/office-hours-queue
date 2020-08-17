@@ -25,7 +25,6 @@ func (s *Server) AppointmentDayMiddleware(next http.Handler) http.Handler {
 			s.logger.Warnw("failed to parse day",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"day", chi.URLParam(r, "day"),
-				"params", chi.RouteContext(r.Context()).URLParams,
 				"err", err,
 			)
 			s.errorMessage(
