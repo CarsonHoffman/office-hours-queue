@@ -35,11 +35,6 @@ func (s *Server) sessionRetriever(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), emailContextKey, email)
 		ctx = context.WithValue(ctx, sessionContextKey, session.Values)
 
-		s.logger.Infow("retrieved session",
-			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-			"email", email,
-		)
-
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
