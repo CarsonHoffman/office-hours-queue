@@ -9,6 +9,7 @@ import (
 
 	"github.com/antonlindstrom/pgstore"
 	"github.com/go-chi/chi"
+	"github.com/gorilla/sessions"
 	"go.uber.org/zap"
 )
 
@@ -77,6 +78,10 @@ func New(q queueStore, sessionsStore *sql.DB) *Server {
 	s.sessions, err = pgstore.NewPGStoreFromPool(sessionsStore, key)
 	if err != nil {
 		log.Fatalln("couldn't set up session store:", err)
+	}
+	s.sessions.Options = &sessions.Options{
+		HttpOnly: true,
+		Secure:   os.Getenv("USE_SECURE_COOKIES") == "true",
 	}
 
 	s.Router = chi.NewRouter()
