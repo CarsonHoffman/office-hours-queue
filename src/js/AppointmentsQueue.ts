@@ -1140,7 +1140,11 @@ class AdminControls {
                             '',
                         );
                         apptCell = $(
-                            `<td class="appointment-cell"><span data-toggle="tooltip" data-html="true" title="${appt.name}<br />Click to show info below..."><button type="button" class="btn btn-warning">${appt.name}<br /><span class="glyphicon glyphicon-flag"></span> ${staffUniqname}</button></span></td>`,
+                            `<td class="appointment-cell"><span data-toggle="tooltip" data-html="true" title="${
+                                appt.name || '(no student)'
+                            }<br />Click to show info below..."><button type="button" class="btn btn-warning">${
+                                appt.name || '(no student)'
+                            }<br /><span class="glyphicon glyphicon-flag"></span> ${staffUniqname}</button></span></td>`,
                         ).appendTo(row);
                     } else {
                         apptCell = $(
