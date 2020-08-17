@@ -60,7 +60,7 @@ services:
         volumes:
             - ./Caddyfile.prod:/etc/caddy/Caddyfile
             - ../public:/public
-            - tls_certs:/root/.caddy
+            - caddy_data:/data
         depends_on:
             - elk
         networks:
@@ -77,7 +77,7 @@ services:
 volumes:
     db:
     elk:
-    tls_certs:
+    caddy_data:
 
 networks:
     http:
