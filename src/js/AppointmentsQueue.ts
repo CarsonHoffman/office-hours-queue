@@ -294,7 +294,7 @@ export class AppointmentsQueue {
         );
         this.page.disableRefresh();
 
-        if (app.scheduledTime.diff(moment())) {
+        if (app.scheduledTime.diff(moment()) <= 0) {
             showErrorMessage(
                 "You can't delete an appointment that has already happened!",
             );
