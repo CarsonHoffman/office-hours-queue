@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -29,7 +28,7 @@ func (s *Server) AppointmentDayMiddleware(next http.Handler) http.Handler {
 			)
 			s.errorMessage(
 				http.StatusNotFound,
-				fmt.Sprintf(`Invalid day "%s"`, chi.URLParam(r, "day")),
+				"Are you sure that's a day?",
 				w, r,
 			)
 			return
@@ -52,7 +51,7 @@ func (s *Server) AppointmentTimeslotMiddleware(next http.Handler) http.Handler {
 			)
 			s.errorMessage(
 				http.StatusNotFound,
-				fmt.Sprintf(`Invalid timeslot "%s"`, chi.URLParam(r, "timeslot")),
+				"I don't think that timeslot exists, as much as I'd like it to.",
 				w, r,
 			)
 			return
