@@ -151,6 +151,10 @@ type getCurrentDaySchedule interface {
 	GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (string, error)
 }
 
+type viewMessage interface {
+	ViewMessage(ctx context.Context, queue ksuid.KSUID, receiver string) (*Message, error)
+}
+
 type getQueueDetails interface {
 	getQueueEntry
 	getQueueEntries
@@ -158,6 +162,7 @@ type getQueueDetails interface {
 	getQueueStack
 	getQueueAnnouncements
 	getCurrentDaySchedule
+	viewMessage
 }
 
 func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
@@ -236,6 +241,18 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 			return
 		}
 		response["announcements"] = announcements
+
+		if email != "" {
+			message, err := gd.ViewMessage(r.Context(), q.ID, email)
+			if errors.Is(err, sql.ErrNoRows) {
+			} else if err != nil {
+				l.Errorw("failed to fetch message", "err", err)
+				s.internalServerError(w, r)
+				return
+			} else {
+				response["message"] = message
+			}
+		}
 
 		s.sendResponse(http.StatusOK, response, w, r)
 	}

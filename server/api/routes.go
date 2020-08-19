@@ -50,6 +50,7 @@ type queueStore interface {
 	getQueueConfiguration
 	updateQueueConfiguration
 	sendMessage
+	viewMessage
 	getQueueRoster
 	getQueueGroups
 	updateQueueGroups

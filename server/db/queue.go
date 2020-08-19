@@ -393,3 +393,12 @@ func (s *Server) SendMessage(ctx context.Context, queue ksuid.KSUID, content, se
 	)
 	return &message, err
 }
+
+func (s *Server) ViewMessage(ctx context.Context, queue ksuid.KSUID, receiver string) (*api.Message, error) {
+	var message api.Message
+	err := s.DB.GetContext(ctx, &message,
+		"DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE queue=$1 AND receiver=$2 ORDER BY id LIMIT 1) RETURNING id, queue, content, sender, receiver",
+		queue, receiver,
+	)
+	return &message, err
+}
