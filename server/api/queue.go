@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -816,5 +817,105 @@ func (s *Server) SendMessage(sm sendMessage) http.HandlerFunc {
 		}
 
 		s.sendResponse(http.StatusCreated, newMessage, w, r)
+	}
+}
+
+type getQueueRoster interface {
+	GetQueueRoster(ctx context.Context, queue ksuid.KSUID) ([]string, error)
+}
+
+func (s *Server) GetQueueRoster(gr getQueueRoster) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+
+		roster, err := gr.GetQueueRoster(r.Context(), q.ID)
+		if err != nil {
+			s.logger.Errorw("failed to fetch queue roster",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		s.sendResponse(http.StatusOK, roster, w, r)
+	}
+}
+
+type getQueueGroups interface {
+	GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]string, error)
+}
+
+func (s *Server) GetQueueGroups(gg getQueueGroups) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+
+		groups, err := gg.GetQueueGroups(r.Context(), q.ID)
+		if err != nil {
+			s.logger.Errorw("failed to fetch queue groups",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		s.sendResponse(http.StatusOK, groups, w, r)
+	}
+}
+
+type updateQueueGroups interface {
+	UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, students []string) error
+	UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, groups [][]string) error
+}
+
+func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+
+		var groups [][]string
+		err := json.NewDecoder(r.Body).Decode(&groups)
+		if err != nil {
+			s.logger.Warnw("failed to read groups from body",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			s.errorMessage(http.StatusBadRequest, fmt.Sprintf("I couldn't read the groups you uploaded. Make sure the file is structured as an array of arrays of students' emails, each inner array representing a group. This error might help: %v", err), w, r)
+			return
+		}
+
+		err = ug.UpdateQueueGroups(r.Context(), q.ID, groups)
+		if err != nil {
+			s.logger.Errorw("failed to update groups",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		var students []string
+		for _, group := range groups {
+			for _, student := range group {
+				students = append(students, student)
+			}
+		}
+
+		err = ug.UpdateQueueRoster(r.Context(), q.ID, students)
+		if err != nil {
+			s.logger.Errorw("failed to update roster",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

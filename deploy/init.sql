@@ -102,7 +102,7 @@ ALTER TABLE public.courses OWNER TO queue;
 CREATE TABLE public.groups (
     queue character(27) NOT NULL,
     email text NOT NULL,
-    teammate_email text NOT NULL
+    group_id character(27) NOT NULL
 );
 
 
@@ -253,7 +253,15 @@ ALTER TABLE ONLY public.messages
 
 
 --
--- Name: queue_entries queueentries_pkey; Type: CONSTRAINT; Schema: public; Owner: queue
+-- Name: groups one_group_per_student_per_queue; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.groups
+    ADD CONSTRAINT one_group_per_student_per_queue UNIQUE (queue, email);
+
+
+--
+-- Name: queue_entries queueentries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.queue_entries

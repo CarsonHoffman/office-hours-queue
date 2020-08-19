@@ -50,6 +50,9 @@ type queueStore interface {
 	getQueueConfiguration
 	updateQueueConfiguration
 	sendMessage
+	getQueueRoster
+	getQueueGroups
+	updateQueueGroups
 
 	getAppointment
 	getAppointments
@@ -131,6 +134,15 @@ func New(q queueStore, sessionsStore *sql.DB) *Server {
 		})
 
 		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Post("/messages", s.SendMessage(q))
+
+		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Get("/roster", s.GetQueueRoster(q))
+
+		r.Route("/groups", func(r chi.Router) {
+			r.Use(s.ValidLoginMiddleware, s.EnsureQueueAdmin)
+
+			r.Get("/", s.GetQueueGroups(q))
+			r.Put("/", s.UpdateQueueGroups(q))
+		})
 
 		r.Route("/appointments", func(r chi.Router) {
 			r.Route(`/{day:\d+}`, func(r chi.Router) {

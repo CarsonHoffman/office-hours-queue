@@ -1246,10 +1246,14 @@ export class ManageQueueDialog {
         let groupsForm = $('#groupsForm');
         groupsForm.submit(function (e) {
             e.preventDefault();
-            let formData = new FormData(<HTMLFormElement>groupsForm[0]);
-            let aq = QueueApplication.instance.activeQueue();
-            aq && aq.updateGroups(formData);
-            return false;
+            var file = $('#groups-upload').prop('files')[0];
+            var reader = new FileReader();
+            reader.onload = () => {
+                let aq = QueueApplication.instance.activeQueue();
+                aq && aq.updateGroups(reader.result);
+                return false;
+            };
+            reader.readAsText(file);
         });
 
         let policiesForm = $('#policiesForm');
@@ -1284,8 +1288,14 @@ export class ManageQueueDialog {
             return;
         }
 
-        $('#checkQueueRosterLink').attr('href', 'api/roster/' + aq.queueId);
-        $('#checkQueueGroupsLink').attr('href', 'api/groups/' + aq.queueId);
+        $('#checkQueueRosterLink').attr(
+            'href',
+            `api/queues/${aq.queueId}/roster`,
+        );
+        $('#checkQueueGroupsLink').attr(
+            'href',
+            `api/queues/${aq.queueId}/groups`,
+        );
 
         return $.ajax({
             type: 'GET',

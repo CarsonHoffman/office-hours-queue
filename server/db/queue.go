@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/CarsonHoffman/office-hours-queue/server/api"
+	"github.com/lib/pq"
 	"github.com/segmentio/ksuid"
 )
 
@@ -83,6 +84,78 @@ func (s *Server) UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID
 	return err
 }
 
+func (s *Server) GetQueueRoster(ctx context.Context, queue ksuid.KSUID) ([]string, error) {
+	roster := make([]string, 0)
+	err := s.DB.SelectContext(ctx, &roster, "SELECT email FROM roster WHERE queue=$1 ORDER BY email", queue)
+	return roster, err
+}
+
+func (s *Server) GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]string, error) {
+	var groupIDs []string
+	groups := make([][]string, 0)
+
+	err := s.DB.SelectContext(ctx, &groupIDs,
+		"SELECT DISTINCT group_id FROM groups WHERE queue=$1",
+		queue,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch group IDs: %w", err)
+	}
+
+	for _, id := range groupIDs {
+		var group []string
+		err = s.DB.SelectContext(ctx, &group,
+			"SELECT email FROM groups WHERE queue=$1 AND group_id=$2",
+			queue, id,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get members in group %s: %w", id, err)
+		}
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+}
+
+func (s *Server) UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, groups [][]string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	_, err = tx.Exec("DELETE FROM groups WHERE queue=$1", queue)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete existing groups: %w", err)
+	}
+
+	insert, err := tx.Prepare(pq.CopyIn("groups", "queue", "group_id", "email"))
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare insert statement: %w", err)
+	}
+
+	for _, group := range groups {
+		groupID := ksuid.New()
+		for _, student := range group {
+			_, err = insert.Exec(queue, groupID, student)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to insert student %s into group %s: %w", student, groupID, err)
+			}
+		}
+	}
+
+	_, err = insert.Exec()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to exec insert statement: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 func (s *Server) UserInQueueRoster(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
 	var n int
 	err := s.DB.GetContext(ctx, &n,
@@ -92,11 +165,47 @@ func (s *Server) UserInQueueRoster(ctx context.Context, queue ksuid.KSUID, email
 	return n > 0, err
 }
 
+func (s *Server) UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, students []string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	_, err = tx.Exec("DELETE FROM roster WHERE queue=$1", queue)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete existing roster: %w", err)
+	}
+
+	insert, err := tx.Prepare(pq.CopyIn("roster", "queue", "email"))
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare insert statement: %w", err)
+	}
+
+	for _, student := range students {
+		_, err = insert.Exec(queue, student)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert student %s into roster: %w", student, err)
+		}
+	}
+
+	_, err = insert.Exec()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to exec insert statement: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 func (s *Server) TeammateInQueue(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
 	var n int
 	err := s.DB.GetContext(ctx, &n,
-		"SELECT COUNT(*) FROM groups g JOIN queue_entries qe ON g.teammate_email = qe.email WHERE g.queue = $1 AND g.email = $2",
-		queue, email,
+		`SELECT COUNT(*) FROM queue_entries e JOIN (SELECT g2.email FROM groups g1 JOIN groups g2 ON g2.group_id=g1.group_id AND g2.email!=g1.email WHERE g1.queue=$1 AND g1.email=$2) AS teammates
+		 ON e.email=teammates.email WHERE e.queue=$3 AND e.active`,
+		queue, email, queue,
 	)
 	return n > 0, err
 }

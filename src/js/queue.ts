@@ -285,22 +285,16 @@ export class Page {
         return this.mapImageSrc !== '';
     }
 
-    public updateGroups(formData: FormData) {
-        formData.append('queueId', this.queueId);
+    public updateGroups(data: any) {
         $.ajax({
-            type: 'POST',
-            url: 'api/updateGroups',
-            cache: false,
-            contentType: false,
-            processData: false,
-            data: formData,
-            dataType: 'json',
+            type: 'PUT',
+            url: `api/queues/${this.queueId}/groups`,
+            contentType: 'application/json',
+            data: data,
             success: function (data) {
                 alert('groups uploaded successfully');
             },
-            error: function (data) {
-                alert('error uploading groups');
-            },
+            error: oops,
         });
     }
 
