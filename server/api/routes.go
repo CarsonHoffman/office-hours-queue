@@ -166,7 +166,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			})
 
 			r.Route(`/{appointment_id:[a-zA-Z0-9]{27}}`, func(r chi.Router) {
-				r.Use(s.AppointmentIDMiddleware(q))
+				r.Use(s.ValidLoginMiddleware, s.AppointmentIDMiddleware(q))
 				r.Put("/", s.UpdateAppointment(q))
 				r.Delete("/", s.RemoveAppointmentSignup(q))
 			})
