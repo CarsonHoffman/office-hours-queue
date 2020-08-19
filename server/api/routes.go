@@ -85,6 +85,8 @@ func New(q queueStore, sessionsStore *sql.DB) *Server {
 	s.sessions.Options = &sessions.Options{
 		HttpOnly: true,
 		Secure:   os.Getenv("USE_SECURE_COOKIES") == "true",
+		MaxAge:   60 * 60 * 24 * 30,
+		Path:     "/",
 	}
 
 	s.Router = chi.NewRouter()

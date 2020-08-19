@@ -24,7 +24,7 @@ services:
             QUEUE_SESSIONS_KEY_FILE: /run/secrets/sessions_key
             QUEUE_OAUTH2_CLIENT_ID: 845191182055-up8bv3ff7bn418h0avfouaim0upho4h8.apps.googleusercontent.com
             QUEUE_VALID_DOMAIN: umich.edu
-            USE_SECURE_COOKIES: false
+            USE_SECURE_COOKIES: "false"
         logging:
             driver: syslog
             options:
