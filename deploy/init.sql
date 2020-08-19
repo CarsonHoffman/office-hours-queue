@@ -75,7 +75,7 @@ ALTER TABLE public.appointment_slots OWNER TO queue;
 --
 
 CREATE TABLE public.course_admins (
-    course character(27) COLLATE pg_catalog."C",
+    course character(27) NOT NULL COLLATE pg_catalog."C",
     email text NOT NULL
 );
 
