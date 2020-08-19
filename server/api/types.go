@@ -88,6 +88,7 @@ type RemovedQueueEntry struct {
 
 func (q *RemovedQueueEntry) MarshalJSON() ([]byte, error) {
 	type QueueEntryWithTimestamp RemovedQueueEntry
+	q.RemovedAt = q.RemovedAt.In(time.Local)
 	return json.Marshal(struct {
 		IDTimestamp string `json:"id_timestamp"`
 		*QueueEntryWithTimestamp
@@ -130,6 +131,7 @@ type AppointmentSlot struct {
 
 func (a *AppointmentSlot) MarshalJSON() ([]byte, error) {
 	type AppointmentSlotWithTimestamp AppointmentSlot
+	a.ScheduledTime = a.ScheduledTime.In(time.Local)
 	return json.Marshal(struct {
 		IDTimestamp string `json:"id_timestamp"`
 		*AppointmentSlotWithTimestamp
