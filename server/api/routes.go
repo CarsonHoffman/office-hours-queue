@@ -69,10 +69,9 @@ type queueStore interface {
 	removeAppointmentSignup
 }
 
-func New(q queueStore, sessionsStore *sql.DB) *Server {
+func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server {
 	var s Server
-	z, _ := zap.NewProduction()
-	s.logger = z.Sugar().With("name", "queue")
+	s.logger = logger
 
 	key, err := ioutil.ReadFile(os.Getenv("QUEUE_SESSIONS_KEY_FILE"))
 	if err != nil {
