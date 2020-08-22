@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/lib/pq"
 	"github.com/segmentio/ksuid"
 )
 
@@ -279,5 +280,147 @@ func (s *Server) AddQueue(aq addQueue) http.HandlerFunc {
 		}
 
 		s.sendResponse(http.StatusCreated, newQueue, w, r)
+	}
+}
+
+type getCourseAdmins interface {
+	GetCourseAdmins(ctx context.Context, course ksuid.KSUID) ([]string, error)
+}
+
+func (s *Server) GetCourseAdmins(ga getCourseAdmins) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := r.Context().Value(courseContextKey).(*Course)
+
+		admins, err := ga.GetCourseAdmins(r.Context(), c.ID)
+		if err != nil {
+			s.logger.Errorw("failed to get course admins",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"course_id", c.ID,
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		s.sendResponse(http.StatusOK, admins, w, r)
+	}
+}
+
+type addCourseAdmins interface {
+	AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string, overwrite bool) error
+}
+
+func (s *Server) AddCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := r.Context().Value(courseContextKey).(*Course)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", c.ID,
+			"email", email,
+		)
+
+		var admins []string
+		err := json.NewDecoder(r.Body).Decode(&admins)
+		if err != nil {
+			l.Warnw("failed to decode admins from body", "err", err)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
+				w, r,
+			)
+			return
+		}
+
+		err = aa.AddCourseAdmins(r.Context(), c.ID, admins, false)
+		var pqerr *pq.Error
+		if errors.As(err, &pqerr) && pqerr.Code == "23505" {
+			l.Warnw("site admin attempted to add already existing course admin", "err", err)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"It looks like one of the admins you attempted to insert is already an admin. No admins were inserted. Unfortunately I don't know more.",
+				w, r,
+			)
+			return
+		} else if err != nil {
+			l.Errorw("failed to update course admins", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("added admins", "admins", admins)
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+func (s *Server) UpdateCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := r.Context().Value(courseContextKey).(*Course)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", c.ID,
+			"email", email,
+		)
+
+		var admins []string
+		err := json.NewDecoder(r.Body).Decode(&admins)
+		if err != nil {
+			l.Warnw("failed to decode admins from body", "err", err)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
+				w, r,
+			)
+			return
+		}
+
+		err = aa.AddCourseAdmins(r.Context(), c.ID, admins, true)
+		if err != nil {
+			l.Errorw("failed to update course admins", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("overwrote admins", "admins", admins)
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+type removeCourseAdmins interface {
+	RemoveCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string) error
+}
+
+func (s *Server) RemoveCourseAdmins(ra removeCourseAdmins) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		c := r.Context().Value(courseContextKey).(*Course)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", c.ID,
+			"email", email,
+		)
+
+		var admins []string
+		err := json.NewDecoder(r.Body).Decode(&admins)
+		if err != nil {
+			l.Warnw("failed to decode admins from body", "err", err)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
+				w, r,
+			)
+			return
+		}
+
+		err = ra.RemoveCourseAdmins(r.Context(), c.ID, admins)
+		if err != nil {
+			l.Errorw("failed to remove admins", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("removed admins", "admins", admins)
+		s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

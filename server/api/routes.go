@@ -30,6 +30,9 @@ type queueStore interface {
 	getCourse
 	getAdminCourses
 	addCourse
+	getCourseAdmins
+	addCourseAdmins
+	removeCourseAdmins
 
 	getQueues
 	getQueue
@@ -112,6 +115,23 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 			// Create queue on course (site admin)
 			r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Post("/queues", s.AddQueue(q))
+
+			// Course admin management (site admin)
+			r.Route("/admins", func(r chi.Router) {
+				r.Use(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q))
+
+				// Get course admins (site admin)
+				r.Get("/", s.GetCourseAdmins(q))
+
+				// Add course admins (site admin)
+				r.Post("/", s.AddCourseAdmins(q))
+
+				// Overwrite course admins (site admin)
+				r.Put("/", s.UpdateCourseAdmins(q))
+
+				// Remove course admins (site admin)
+				r.Delete("/", s.RemoveCourseAdmins(q))
+			})
 		})
 
 		// Get courses on which the current user is an admin

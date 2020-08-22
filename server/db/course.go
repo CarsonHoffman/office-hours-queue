@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/CarsonHoffman/office-hours-queue/server/api"
+	"github.com/lib/pq"
 	"github.com/segmentio/ksuid"
 )
 
@@ -87,4 +88,64 @@ func (s *Server) AddQueue(ctx context.Context, course ksuid.KSUID, queue *api.Qu
 		id, course, queue.Type, queue.Name, queue.Location, queue.Map, true,
 	)
 	return &newQueue, err
+}
+
+func (s *Server) GetCourseAdmins(ctx context.Context, course ksuid.KSUID) ([]string, error) {
+	admins := make([]string, 0)
+	err := s.DB.SelectContext(ctx, &admins, "SELECT email FROM course_admins WHERE course=$1", course)
+	return admins, err
+}
+
+func (s *Server) AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string, overwrite bool) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	if overwrite {
+		_, err = tx.Exec("DELETE FROM course_admins WHERE course=$1", course)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to delete existing admins: %w", err)
+		}
+	}
+
+	insert, err := tx.Prepare(pq.CopyIn("course_admins", "course", "email"))
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare insert statement: %w", err)
+	}
+
+	for _, email := range admins {
+		_, err = insert.Exec(course, email)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert %s into course %s admins: %w", email, course, err)
+		}
+	}
+
+	_, err = insert.Exec()
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to exec insert statement: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+func (s *Server) RemoveCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string) error {
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	for _, email := range admins {
+		_, err = tx.Exec("DELETE FROM course_admins WHERE course=$1 AND email=$2", course, email)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to delete %s from course %s admins: %w", email, course, err)
+		}
+	}
+
+	return tx.Commit()
 }
