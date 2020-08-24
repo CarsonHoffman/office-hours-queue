@@ -970,15 +970,6 @@ class QueueEntry {
         }
         this.name = data['name'];
 
-        if (data['location'] && data['location'].length > 0) {
-            this.locationElem = $(
-                '<p><span class="glyphicon glyphicon-map-marker"></span></p>',
-            )
-                .append(' ' + data['location'])
-                .appendTo(infoElem);
-            this.location = data['location'];
-        }
-
         if (data['description'] && data['description'].length > 0) {
             this.descriptionElem = $(
                 '<p><span class="glyphicon glyphicon-question-sign"></span></p>',
@@ -986,6 +977,15 @@ class QueueEntry {
                 .append(' ' + data['description'])
                 .appendTo(infoElem);
             this.description = data['description'];
+        }
+
+        if (data['location'] && data['location'].length > 0) {
+            this.locationElem = $(
+                '<p><span class="glyphicon glyphicon-map-marker"></span></p>',
+            )
+                .append(' ' + data['location'])
+                .appendTo(infoElem);
+            this.location = data['location'];
         }
 
         let timeWaiting = +new Date() - +this.timestamp;
