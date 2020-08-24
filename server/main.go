@@ -18,12 +18,12 @@ func main() {
 
 	password, err := ioutil.ReadFile(os.Getenv("QUEUE_DB_PASSWORD_FILE"))
 	if err != nil {
-		l.Fatalw("failed to load DB password file:", "err", err)
+		l.Fatalw("failed to load DB password file", "err", err)
 	}
 
 	db, err := db.New(os.Getenv("QUEUE_DB_URL"), os.Getenv("QUEUE_DB_DATABASE"), os.Getenv("QUEUE_DB_USERNAME"), string(password))
 	if err != nil {
-		l.Fatalw("failed to set up database:", "err", err)
+		l.Fatalw("failed to set up database", "err", err)
 	}
 
 	s := api.New(db, l, db.DB.DB)
