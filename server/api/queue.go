@@ -292,6 +292,7 @@ type addQueueEntry interface {
 	getQueueEntries
 	getActiveQueueEntriesForUser
 	canAddEntry
+	GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email string) (int, error)
 	AddQueueEntry(context.Context, *QueueEntry) (*QueueEntry, error)
 }
 
@@ -360,6 +361,14 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 			)
 			return
 		}
+
+		priority, err := ae.GetEntryPriority(r.Context(), q.ID, email)
+		if err != nil {
+			l.Errorw("failed to get entry priority", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+		entry.Priority = priority
 
 		newEntry, err := ae.AddQueueEntry(r.Context(), &entry)
 		if err != nil {

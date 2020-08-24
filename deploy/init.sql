@@ -202,6 +202,16 @@ CREATE TABLE public.site_admins (
 
 
 ALTER TABLE public.site_admins OWNER TO queue;
+--
+-- Name: teammates; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.teammates AS
+ SELECT g2.queue,
+    g1.email,
+    g2.email AS teammate
+   FROM (public.groups g1
+     JOIN public.groups g2 ON (((g1.queue = g2.queue) AND (g1.group_id = g2.group_id) AND (g1.email <> g2.email))));
 
 
 --

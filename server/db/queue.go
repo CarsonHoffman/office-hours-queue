@@ -48,9 +48,9 @@ func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID) (*api.Que
 }
 
 func (s *Server) GetQueueEntries(ctx context.Context, queue ksuid.KSUID, admin bool) ([]*api.QueueEntry, error) {
-	query := "SELECT id, queue, priority FROM queue_entries WHERE queue=$1 AND NOT removed"
+	query := "SELECT id, queue, priority FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY priority DESC, id"
 	if admin {
-		query = "SELECT * FROM queue_entries WHERE queue=$1 AND NOT removed"
+		query = "SELECT * FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY priority DESC, id"
 	}
 
 	entries := make([]*api.QueueEntry, 0)
@@ -203,8 +203,7 @@ func (s *Server) UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, stude
 func (s *Server) TeammateInQueue(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
 	var n int
 	err := s.DB.GetContext(ctx, &n,
-		`SELECT COUNT(*) FROM queue_entries e JOIN (SELECT g2.email FROM groups g1 JOIN groups g2 ON g2.group_id=g1.group_id AND g2.email!=g1.email WHERE g1.queue=$1 AND g1.email=$2) AS teammates
-		 ON e.email=teammates.email WHERE e.queue=$3 AND e.active`,
+		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.queue=$1 AND t.email=$2 AND e.queue=$3 AND NOT e.removed",
 		queue, email, queue,
 	)
 	return n > 0, err
@@ -263,6 +262,55 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 	}
 
 	return true, nil
+}
+
+func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email string) (int, error) {
+	config, err := s.GetQueueConfiguration(ctx, queue)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get queue configuration: %w", err)
+	}
+
+	if !config.PrioritizeNew {
+		return 0, nil
+	}
+
+	start, _ := api.WeekdayBounds(int(time.Now().Local().Weekday()))
+	var payload [16]byte
+	firstIDOfDay, err := ksuid.FromParts(start, payload[:])
+	if err != nil {
+		return 0, fmt.Errorf("failed to generate first KSUID of day: %w", err)
+	}
+
+	var personalEntries int
+	err = s.DB.GetContext(ctx, &personalEntries,
+		"SELECT COUNT(*) FROM queue_entries WHERE email=$1 AND queue=$2 AND id>=$3 AND removed_by!=email",
+		email, queue, firstIDOfDay,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get number of personal queue entries today: %w", err)
+	}
+
+	if personalEntries > 0 {
+		return 0, nil
+	}
+
+	if !config.PreventGroupsBoost {
+		return 1, nil
+	}
+
+	var groupEntries int
+	err = s.DB.GetContext(ctx, &groupEntries,
+		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.email=$1 AND t.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email",
+		email, queue, firstIDOfDay,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get number of teammate queue entries today: %w", err)
+	}
+
+	if groupEntries > 0 {
+		return 0, nil
+	}
+	return 1, nil
 }
 
 func (s *Server) AddQueueEntry(ctx context.Context, e *api.QueueEntry) (*api.QueueEntry, error) {
