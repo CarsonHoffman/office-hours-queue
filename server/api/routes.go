@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 
@@ -78,12 +77,12 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 	key, err := ioutil.ReadFile(os.Getenv("QUEUE_SESSIONS_KEY_FILE"))
 	if err != nil {
-		log.Fatalln("couldn't load sessions key:", err)
+		logger.Fatalw("couldn't load sessions key", "err", err)
 	}
 
 	s.sessions, err = pgstore.NewPGStoreFromPool(sessionsStore, key)
 	if err != nil {
-		log.Fatalln("couldn't set up session store:", err)
+		logger.Fatalw("couldn't set up session store", "err", err)
 	}
 	s.sessions.Options = &sessions.Options{
 		HttpOnly: true,
