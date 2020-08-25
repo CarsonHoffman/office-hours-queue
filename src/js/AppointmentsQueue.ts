@@ -1106,7 +1106,7 @@ class AdminControls {
                         moment().tz('America/New_York').startOf('day'),
                     );
                     apptCell = $(
-                        `<td class="appointment-cell"><span data-toggle="tooltip" data-html="true" title="Claim this slot!"><button type="button" class="btn btn-default">${r}-${slots.timeslot}<br />&nbsp</button></span></td>`,
+                        `<td class="appointment-cell"><span data-toggle="tooltip" data-html="true" title="Claim this slot!"><button type="button" class="btn btn-default">${slots.timeslot}<br />&nbsp</button></span></td>`,
                     ).appendTo(row);
                     apptCell.find('[data-toggle="tooltip"]').tooltip();
                     apptCell.find('button').click(() => {
