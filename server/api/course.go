@@ -159,7 +159,7 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 		}
 
 		if course.ShortName == "" || course.FullName == "" {
-			s.logger.Warnw("received incomlete course",
+			s.logger.Warnw("received incomplete course",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"course", course,
 			)
