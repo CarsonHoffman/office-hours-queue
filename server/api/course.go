@@ -91,28 +91,6 @@ func (s *Server) GetCourse(gc getCourse) http.HandlerFunc {
 	}
 }
 
-type getAdminCourses interface {
-	GetAdminCourses(ctx context.Context, email string) ([]string, error)
-}
-
-func (s *Server) GetAdminCourses(gc getAdminCourses) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		email := r.Context().Value(emailContextKey).(string)
-		courses, err := gc.GetAdminCourses(r.Context(), email)
-		if err != nil {
-			s.logger.Errorw("failed to get admin courses",
-				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-				"email", email,
-				"err", err,
-			)
-			s.internalServerError(w, r)
-			return
-		}
-
-		s.sendResponse(http.StatusOK, courses, w, r)
-	}
-}
-
 type getQueues interface {
 	getCourse
 	GetQueues(ctx context.Context, course ksuid.KSUID) ([]*Queue, error)
