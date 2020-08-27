@@ -495,7 +495,7 @@ export class SignUpForm<HasAppointments extends boolean = false> {
                         .append(
                             '<label class="control-label col-sm-3" for="signUpLocation' +
                                 this._inst_id +
-                                '">Location:</label>',
+                                `">Meeting Link:</label>`,
                         )
                         .append(
                             $('<div class="col-sm-9"></div>').append(
