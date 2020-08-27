@@ -51,6 +51,7 @@ services:
         volumes:
             - elk:/var/lib/elasticsearch
             - './syslog-input.conf:/etc/logstash/conf.d/03-syslog-input.conf'
+            - './kibana.yml:/opt/kibana/config/kibana.yml'
         networks:
             - logging
         ports:
