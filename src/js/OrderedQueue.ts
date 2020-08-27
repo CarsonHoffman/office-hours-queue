@@ -502,7 +502,7 @@ export class SignUpForm<HasAppointments extends boolean = false> {
                                 (this.signUpLocationInput = $(
                                     '<input type="text" class="form-control" id="signUpLocation' +
                                         this._inst_id +
-                                        '"required="required" maxlength="100" placeholder="e.g. Computer #36, laptop by glass/atrium door, etc.">',
+                                        '"required="required" maxlength="100" placeholder="">',
                                 )),
                             ),
                         ),
