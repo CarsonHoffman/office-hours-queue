@@ -6,7 +6,7 @@ import { Observable, MessageResponses, messageResponse } from './util/mixins';
 import escape from 'lodash/escape';
 import endsWith from 'lodash/endsWith';
 import { Mutable, oops, showErrorMessage } from './util/util';
-import { QueueKind, Page } from './Queue';
+import { QueueKind, Page } from './queue';
 import { OrderedQueue } from './OrderedQueue';
 import { AppointmentsQueue } from './AppointmentsQueue';
 import $ from 'jquery';

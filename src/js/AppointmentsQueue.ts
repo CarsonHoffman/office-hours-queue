@@ -1,4 +1,4 @@
-import { Page } from './Queue';
+import { Page } from './queue';
 import { Course, QueueApplication, User } from './QueueApplication';
 import { oops, showErrorMessage, Mutable, assert } from './util/util';
 import $ from 'jquery';
