@@ -24,7 +24,6 @@ type Server struct {
 type queueStore interface {
 	siteAdmin
 	queueAdmin
-	getUserInfo
 
 	getCourses
 	getCourse
@@ -133,6 +132,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 				r.Delete("/", s.RemoveCourseAdmins(q))
 			})
 		})
+
+		// Get courses on which the current user is an admin
+		r.With(s.ValidLoginMiddleware).Get("/admin/@me", s.GetAdminCourses(q))
 	})
 
 	// Queue by ID endpoints
@@ -272,8 +274,6 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 	// Login handler (takes Google idtoken, sets up session)
 	s.Post("/login", s.Login())
-
-	s.With(s.ValidLoginMiddleware).Get("/users/@me", s.GetCurrentUserInfo(q))
 
 	s.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
