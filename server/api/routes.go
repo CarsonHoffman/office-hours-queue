@@ -101,8 +101,8 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 		// Get all courses
 		r.Get("/", s.GetCourses(q))
 
-		// Create course (site admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Post("/", s.AddCourse(q))
+		// Create course (course admin)
+		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Post("/", s.AddCourse(q))
 
 		// Course by ID endpoints
 		r.Route("/{id:[a-zA-Z0-9]{27}}", func(r chi.Router) {
