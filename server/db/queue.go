@@ -28,6 +28,22 @@ func (s *Server) GetQueue(ctx context.Context, queue ksuid.KSUID) (*api.Queue, e
 	return &q, err
 }
 
+func (s *Server) UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *api.Queue) error {
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE queues SET name=$1, location=$2 WHERE id=$3",
+		values.Name, values.Location, queue,
+	)
+	return err
+}
+
+func (s *Server) RemoveQueue(ctx context.Context, queue ksuid.KSUID) error {
+	_, err := s.DB.ExecContext(ctx,
+		"DELETE FROM queues WHERE id=$1",
+		queue,
+	)
+	return err
+}
+
 func (s *Server) GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (string, error) {
 	var schedule string
 	day := time.Now().Weekday()

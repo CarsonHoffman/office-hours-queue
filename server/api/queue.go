@@ -258,6 +258,80 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 	}
 }
 
+type updateQueue interface {
+	UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *Queue) error
+}
+
+func (s *Server) UpdateQueue(uq updateQueue) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"email", email,
+		)
+
+		var queue Queue
+		err := json.NewDecoder(r.Body).Decode(&queue)
+		if err != nil {
+			l.Warnw("failed to decode queue from body", "err", err)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"We couldn't read the queue from the request body.",
+				w, r,
+			)
+			return
+		}
+
+		if queue.Name == "" {
+			l.Warnw("got incomplete queue", "queue", queue)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"It looks like you missed some fields in the queue!",
+				w, r,
+			)
+			return
+		}
+
+		err = uq.UpdateQueue(r.Context(), q.ID, &queue)
+		if err != nil {
+			l.Errorw("failed to update queue", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("updated queue")
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+type removeQueue interface {
+	RemoveQueue(ctx context.Context, queue ksuid.KSUID) error
+}
+
+func (s *Server) RemoveQueue(rq removeQueue) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"email", email,
+		)
+
+		err := rq.RemoveQueue(r.Context(), q.ID)
+		if err != nil {
+			l.Errorw("failed to remove queue", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("removed queue")
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
 func (s *Server) GetQueueStack(gs getQueueStack) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.Context().Value(queueContextKey).(*Queue)

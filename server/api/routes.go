@@ -36,6 +36,8 @@ type queueStore interface {
 	getQueues
 	getQueue
 	addQueue
+	updateQueue
+	removeQueue
 	getQueueEntry
 	getQueueEntries
 	addQueueEntry
@@ -143,6 +145,10 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 		// Get queue by ID (more information with queue admin)
 		r.Get("/", s.GetQueue(q))
+
+		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Put("/", s.UpdateQueue(q))
+
+		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Delete("/", s.RemoveQueue(q))
 
 		// Get queue's stack (queue admin)
 		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Get("/stack", s.GetQueueStack(q))
