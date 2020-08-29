@@ -352,7 +352,7 @@ ALTER TABLE ONLY public.appointment_schedules
 --
 
 ALTER TABLE ONLY public.appointment_slots
-    ADD CONSTRAINT appointment_slots_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id);
+    ADD CONSTRAINT appointment_slots_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id) ON DELETE CASCADE;
 
 
 --
@@ -368,7 +368,7 @@ ALTER TABLE ONLY public.course_admins
 --
 
 ALTER TABLE ONLY public.groups
-    ADD CONSTRAINT groups_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id);
+    ADD CONSTRAINT groups_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id) ON DELETE CASCADE;
 
 
 --
@@ -384,7 +384,7 @@ ALTER TABLE ONLY public.messages
 --
 
 ALTER TABLE ONLY public.queue_entries
-    ADD CONSTRAINT queueentries_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id);
+    ADD CONSTRAINT queueentries_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id) ON DELETE CASCADE;
 
 
 --
