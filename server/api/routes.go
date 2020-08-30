@@ -23,7 +23,7 @@ type Server struct {
 // store for the queue should have.
 type queueStore interface {
 	siteAdmin
-	queueAdmin
+	courseAdmin
 
 	getCourses
 	getCourse
@@ -115,7 +115,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			r.Get("/queues", s.GetQueues(q))
 
 			// Create queue on course (site admin)
-			r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Post("/queues", s.AddQueue(q))
+			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Post("/queues", s.AddQueue(q))
 
 			// Course admin management (site admin)
 			r.Route("/admins", func(r chi.Router) {
@@ -141,17 +141,17 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 	// Queue by ID endpoints
 	s.Route("/queues/{id:[a-zA-Z0-9]{27}}", func(r chi.Router) {
-		r.Use(s.QueueIDMiddleware(q), s.CheckQueueAdmin(q))
+		r.Use(s.QueueIDMiddleware(q), s.CheckCourseAdmin(q))
 
 		// Get queue by ID (more information with queue admin)
 		r.Get("/", s.GetQueue(q))
 
-		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Put("/", s.UpdateQueue(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueue(q))
 
 		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Delete("/", s.RemoveQueue(q))
 
 		// Get queue's stack (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Get("/stack", s.GetQueueStack(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/stack", s.GetQueueStack(q))
 
 		// Entry by ID endpoints
 		r.Route("/entries", func(r chi.Router) {
@@ -167,12 +167,12 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			r.Delete("/{entry_id:[a-zA-Z0-9]{27}}", s.RemoveQueueEntry(q))
 
 			// Clear queue (queue admin)
-			r.With(s.EnsureQueueAdmin).Delete("/", s.ClearQueueEntries(q))
+			r.With(s.EnsureCourseAdmin).Delete("/", s.ClearQueueEntries(q))
 		})
 
 		// Announcements endpoints
 		r.Route("/announcements", func(r chi.Router) {
-			r.Use(s.ValidLoginMiddleware, s.EnsureQueueAdmin)
+			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
 
 			// Create announcement (queue admin)
 			r.Post("/", s.AddQueueAnnouncement(q))
@@ -187,7 +187,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			r.Get("/", s.GetQueueSchedule(q))
 
 			// Update queue schedule (queue admin)
-			r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Put("/", s.UpdateQueueSchedule(q))
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueueSchedule(q))
 		})
 
 		// Queue configuration endpoints
@@ -196,18 +196,18 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			r.Get("/", s.GetQueueConfiguration(q))
 
 			// Update queue configuration (queue admin)
-			r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Put("/", s.UpdateQueueConfiguration(q))
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueueConfiguration(q))
 		})
 
 		// Send message (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Post("/messages", s.SendMessage(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Post("/messages", s.SendMessage(q))
 
 		// Get queue roster (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Get("/roster", s.GetQueueRoster(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/roster", s.GetQueueRoster(q))
 
 		// Queue groups endpoints
 		r.Route("/groups", func(r chi.Router) {
-			r.Use(s.ValidLoginMiddleware, s.EnsureQueueAdmin)
+			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
 
 			// Get queue groups (queue admin)
 			r.Get("/", s.GetQueueGroups(q))
@@ -233,7 +233,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 				// Appointment claiming (queue admin)
 				r.Route(`/claims/{timeslot:\d+}`, func(r chi.Router) {
-					r.Use(s.ValidLoginMiddleware, s.EnsureQueueAdmin, s.AppointmentTimeslotMiddleware)
+					r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin, s.AppointmentTimeslotMiddleware)
 
 					// Claim appointment on day at timeslot (queue admin)
 					r.Put("/", s.ClaimTimeslot(q))
@@ -242,7 +242,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 			// Existing appointment claims by ID (queue admin)
 			r.Route(`/claims/{appointment_id:[a-zA-Z0-9]{27}}`, func(r chi.Router) {
-				r.Use(s.ValidLoginMiddleware, s.EnsureQueueAdmin, s.AppointmentIDMiddleware(q))
+				r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin, s.AppointmentIDMiddleware(q))
 
 				// Un-claim appointment (queue admin)
 				r.Delete("/", s.UnclaimAppointment(q))
@@ -272,7 +272,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 					r.Get("/", s.GetAppointmentScheduleForDay(q))
 
 					// Update appointment schedule for day (queue admin)
-					r.With(s.ValidLoginMiddleware, s.EnsureQueueAdmin).Put("/", s.UpdateAppointmentSchedule(q))
+					r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateAppointmentSchedule(q))
 				})
 			})
 		})

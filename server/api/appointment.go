@@ -119,7 +119,7 @@ type getAppointments interface {
 func (s *Server) GetAppointments(ga getAppointments) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.Context().Value(queueContextKey).(*Queue)
-		admin := r.Context().Value(queueAdminContextKey).(bool)
+		admin := r.Context().Value(courseAdminContextKey).(bool)
 		day := r.Context().Value(appointmentDayContextKey).(int)
 
 		var appointments []*AppointmentSlot

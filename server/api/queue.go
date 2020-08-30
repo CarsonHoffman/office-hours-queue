@@ -64,69 +64,6 @@ func (s *Server) QueueIDMiddleware(gq getQueue) func(http.Handler) http.Handler 
 	}
 }
 
-const queueAdminContextKey = "queue_admin"
-
-type queueAdmin interface {
-	QueueAdmin(ctx context.Context, course ksuid.KSUID, email string) (bool, error)
-}
-
-func (s *Server) CheckQueueAdmin(qa queueAdmin) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			q := r.Context().Value(queueContextKey).(*Queue)
-			email, ok := r.Context().Value(emailContextKey).(string)
-			if !ok {
-				ctx := context.WithValue(r.Context(), queueAdminContextKey, false)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-
-			admin, err := qa.QueueAdmin(r.Context(), q.ID, email)
-			if err != nil {
-				s.logger.Errorw("failed to check admin status",
-					RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-					"queue_id", q.ID,
-					"email", email,
-					"err", err,
-				)
-				s.internalServerError(w, r)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), queueAdminContextKey, admin)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
-}
-
-func (s *Server) EnsureQueueAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		q := r.Context().Value(queueContextKey).(*Queue)
-		email := r.Context().Value(emailContextKey).(string)
-		admin := r.Context().Value(queueAdminContextKey).(bool)
-		if !admin {
-			s.logger.Warnw("non-admin attempting to access resource requiring queue admin",
-				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-				"queue_id", q.ID,
-				"email", email,
-			)
-			s.errorMessage(
-				http.StatusForbidden,
-				"You shouldn't be here. :)",
-				w, r,
-			)
-			return
-		}
-
-		s.logger.Infow("entering queue admin context",
-			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-			"queue_id", q.ID,
-			"email", email,
-		)
-		next.ServeHTTP(w, r)
-	})
-}
-
 type getQueueEntry interface {
 	GetQueueEntry(ctx context.Context, entry ksuid.KSUID) (*QueueEntry, error)
 }
@@ -173,7 +110,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 			"queue_id", q.ID,
 		)
 
-		admin := r.Context().Value(queueAdminContextKey).(bool)
+		admin := r.Context().Value(courseAdminContextKey).(bool)
 		// This is a bit of a hack, but we're okay with the zero value
 		// of string if the assertion fails, but we don't want it to panic,
 		// so we need to do the two-value assertion

@@ -65,6 +65,85 @@ func (s *Server) CourseIDMiddleware(gc getCourse) func(http.Handler) http.Handle
 	}
 }
 
+const courseAdminContextKey = "course_admin"
+
+type courseAdmin interface {
+	CourseAdmin(ctx context.Context, course ksuid.KSUID, email string) (bool, error)
+}
+
+func (s *Server) CheckCourseAdmin(ca courseAdmin) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var courseID ksuid.KSUID
+			course, ok := r.Context().Value(courseContextKey).(*Course)
+			if ok {
+				courseID = course.ID
+			} else {
+				q := r.Context().Value(queueContextKey).(*Queue)
+				courseID = q.ID
+			}
+
+			email, ok := r.Context().Value(emailContextKey).(string)
+			if !ok {
+				ctx := context.WithValue(r.Context(), courseAdminContextKey, false)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			admin, err := ca.CourseAdmin(r.Context(), courseID, email)
+			if err != nil {
+				s.logger.Errorw("failed to check course admin status",
+					RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+					"course_id", courseID,
+					"email", email,
+					"err", err,
+				)
+				s.internalServerError(w, r)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), courseAdminContextKey, admin)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func (s *Server) EnsureCourseAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var courseID ksuid.KSUID
+		course, ok := r.Context().Value(courseContextKey).(*Course)
+		if ok {
+			courseID = course.ID
+		} else {
+			q := r.Context().Value(queueContextKey).(*Queue)
+			courseID = q.ID
+		}
+
+		email := r.Context().Value(emailContextKey).(string)
+		admin := r.Context().Value(courseAdminContextKey).(bool)
+		if !admin {
+			s.logger.Warnw("non-admin attempting to access resource requiring course admin",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"course_id", courseID,
+				"email", email,
+			)
+			s.errorMessage(
+				http.StatusForbidden,
+				"You shouldn't be here. :)",
+				w, r,
+			)
+			return
+		}
+
+		s.logger.Infow("entering course admin context",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", courseID,
+			"email", email,
+		)
+		next.ServeHTTP(w, r)
+	})
+}
+
 type getCourses interface {
 	GetCourses(context.Context) ([]*Course, error)
 }
