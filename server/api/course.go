@@ -80,7 +80,7 @@ func (s *Server) CheckCourseAdmin(ca courseAdmin) func(http.Handler) http.Handle
 				courseID = course.ID
 			} else {
 				q := r.Context().Value(queueContextKey).(*Queue)
-				courseID = q.ID
+				courseID = q.Course
 			}
 
 			email, ok := r.Context().Value(emailContextKey).(string)
@@ -116,7 +116,7 @@ func (s *Server) EnsureCourseAdmin(next http.Handler) http.Handler {
 			courseID = course.ID
 		} else {
 			q := r.Context().Value(queueContextKey).(*Queue)
-			courseID = q.ID
+			courseID = q.Course
 		}
 
 		email := r.Context().Value(emailContextKey).(string)
