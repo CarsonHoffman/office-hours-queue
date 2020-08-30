@@ -29,6 +29,10 @@
     display: none !important;
 }
 
+.notSuper .superOnly {
+    display: none !important;
+}
+
 #schedulePicker .scheduleUnit {
     display: block;
     margin: 2px;
