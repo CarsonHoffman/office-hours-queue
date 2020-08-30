@@ -7,7 +7,7 @@ import {
     Message,
 } from './util/mixins';
 import { oops, showErrorMessage, Mutable, asMutable } from './util/util';
-import { Page } from './Queue';
+import { Page } from './queue';
 import $ from 'jquery';
 import moment, { max, Moment } from 'moment-timezone';
 
@@ -418,7 +418,7 @@ export class SignUpForm<HasAppointments extends boolean = false> {
     private mapY?: number;
     private appointmentsSlotsTable: JQuery;
     private appointmentHeaderElems?: readonly JQuery[];
-    private appointmentHeaderElemsMap: { [index: number]: JQuery } = {};
+    private appointmentHeaderElemsMap: { [index: number]: JQuery | undefined} = {};
     private selectedTimeslot?: number;
     private signUpButtons: JQuery;
     private updateRequestButtons: JQuery;
@@ -495,14 +495,14 @@ export class SignUpForm<HasAppointments extends boolean = false> {
                         .append(
                             '<label class="control-label col-sm-3" for="signUpLocation' +
                                 this._inst_id +
-                                '">Location:</label>',
+                                `">Meeting Link:</label>`,
                         )
                         .append(
                             $('<div class="col-sm-9"></div>').append(
                                 (this.signUpLocationInput = $(
                                     '<input type="text" class="form-control" id="signUpLocation' +
                                         this._inst_id +
-                                        '"required="required" maxlength="100" placeholder="e.g. Computer #36, laptop by glass/atrium door, etc.">',
+                                        '"required="required" maxlength="100" placeholder="">',
                                 )),
                             ),
                         ),
@@ -831,18 +831,19 @@ export class SignUpForm<HasAppointments extends boolean = false> {
     }
 
     private setSelectedTimeslot(this: SignUpForm<true>, timeslot: number) {
-        this.selectedTimeslot &&
-            this.appointmentHeaderElemsMap[this.selectedTimeslot].removeClass(
+        if (this.selectedTimeslot !== undefined) {
+            this.appointmentHeaderElemsMap[this.selectedTimeslot]?.removeClass(
                 'appointment-slots-header-selected',
             );
+        }
         this.selectedTimeslot = timeslot;
         this.myRequest &&
             this.myRequest.timeslot !== timeslot &&
-            this.appointmentHeaderElemsMap[this.myRequest.timeslot].addClass(
+            this.appointmentHeaderElemsMap[this.myRequest.timeslot]?.addClass(
                 'appointment-slots-header-cancel',
             );
         this.appointmentHeaderElemsMap[timeslot]
-            .removeClass('appointment-slots-header-cancel')
+            ?.removeClass('appointment-slots-header-cancel')
             .addClass('appointment-slots-header-selected');
     }
 
@@ -1363,7 +1364,7 @@ export function filterAppointmentsSchedule(appointments: AppointmentSchedule) {
             (i !== 0 && appointments[i - 1].numAvailable > 0),
     );
     // if last filtered appointment is empty, pop it
-    if (appointments[appointments.length - 1].numAvailable === 0) {
+    if (appointments.length > 0 && appointments[appointments.length - 1].numAvailable === 0) {
         appointments.pop();
     }
     return appointments;

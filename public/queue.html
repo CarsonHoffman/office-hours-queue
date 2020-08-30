@@ -53,7 +53,7 @@
 
     <!-- Hi Mom! All operations are validated on the serverside. Don't waste your time. :) -->
 
-    <body>
+    <body class="notSuper">
         <script>
             function onSignIn(googleUser) {
                 Bundle.onSignIn(googleUser);
@@ -67,6 +67,9 @@
                     data-onsuccess="onSignIn"
                     data-theme="dark"
                 ></div>
+            </div>
+            <div>
+                <button type="button" class="btn btn-info superOnly" data-toggle="modal" data-target="#createCourseDialog">Create Course</button>
             </div>
             <h5 id="accountMessage" class="text-danger"></h5>
         </div>
@@ -246,7 +249,7 @@
                                 <label
                                     class="control-label col-sm-2"
                                     for="signUpLocation"
-                                    >Location:</label
+                                    >Meeting Link:</label
                                 >
                                 <div class="col-sm-10">
                                     <input
@@ -255,7 +258,7 @@
                                         id="signUpLocation"
                                         required="required"
                                         maxlength="100"
-                                        placeholder="e.g. Computer #36, laptop by glass/atrium door, etc."
+                                        placeholder=""
                                     />
                                 </div>
                             </div>
@@ -424,7 +427,7 @@
             </div>
         </div>
 
-        <!-- modal dialog for modifying a queue schedule -->
+        <!-- modal dialog for modifying queue configuration -->
         <div id="manageQueueDialog" class="modal fade adminOnly" role="dialog">
             <div class="modal-dialog modal-lg">
                 <!-- Modal content-->
@@ -641,6 +644,185 @@
                             <div id="appt-schedule-picker-container">
                                 <!-- pickers inserted by js -->
                             </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- modal dialog for creating a new course -->
+        <div id="createCourseDialog" class="modal fade" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button
+                            type="button"
+                            class="close"
+                            data-dismiss="modal"
+                        >
+                            &times;
+                        </button>
+                        <h4 class="modal-title">Create Course</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createCourseForm" role="form">
+                            <div>
+                                <label>
+                                    Short Name
+                                </label>
+                                <input
+                                    id="shortNameInput"
+                                    type="text"
+                                    required="required"
+                                    maxlength="30"
+                                    placeholder="e.g. EECS 280"
+                                />
+                            </div>
+                            <div>
+                                <label>
+                                    Full Name
+                                </label>
+                                <input
+                                    id="fullNameInput"
+                                    type="text"
+                                    required="required"
+                                    maxlength="200"
+                                    placeholder="e.g. Programming and Introductory Data Structures"
+                                />
+                            </div>
+                            <button
+                                id="createCourseButton"
+                                type="submit"
+                                class="btn btn-default"
+                            >
+                                Create Course
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- modal dialog for creating a new queue -->
+        <div id="createQueueDialog" class="modal fade" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button
+                            type="button"
+                            class="close"
+                            data-dismiss="modal"
+                        >
+                            &times;
+                        </button>
+                        <h4 class="modal-title">Add a Queue to this Course</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createQueueForm" role="form">
+                            <div>
+                                Type:
+                                <br />
+                                <input type="radio" id="queueTypeOrderedInput" name="type" value="ordered" />
+                                <label for="queueTypeOrderedInput">Ordered</label>
+                                <br />
+                                <input type="radio" id="queueTypeAppointmentsInput" name="type" value="appointments" />
+                                <label for="queueTypeAppointmentsInput">Appointments</label>
+                            </div>
+                            <div>
+                                <label>
+                                    Name
+                                </label>
+                                <input
+                                    name="name"
+                                    type="text"
+                                    required="required"
+                                    maxlength="100"
+                                    placeholder="e.g. Office Hours"
+                                />
+                            </div>
+                            <div>
+                                <label>
+                                    Location
+                                </label>
+                                <input
+                                    name="location"
+                                    type="text"
+                                    required="required"
+                                    maxlength="100"
+                                    placeholder="e.g. Duderstadt Basement, Online, etc."
+                                />
+                            </div>
+                            <div>
+                                <label>
+                                    Map File Name (leave blank for no map)
+                                </label>
+                                <input
+                                    name="map"
+                                    type="text"
+                                    maxlength="100"
+                                    placeholder="e.g. duderstadt_basement.png"
+                                />
+                            </div>
+                            <div>
+                                <label>
+                                    Currently Active? (set this to true)
+                                </label>
+                                <input
+                                    name="active"
+                                    type="text"
+                                    required="required"
+                                    placeholder="true, false"
+                                    pattern="true|false"
+                                />
+                            </div>
+                            <button
+                                id="createQueueButton"
+                                type="submit"
+                                class="btn btn-default"
+                            >
+                                Add Queue
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        
+        <!-- modal dialog for editing course staff -->
+        <div id="editStaffDialog" class="modal fade" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button
+                            type="button"
+                            class="close"
+                            data-dismiss="modal"
+                        >
+                            &times;
+                        </button>
+                        <h4 class="modal-title">Edit Course Staff</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editStaffForm" role="form">
+                            <div>
+                                Course Staff (newline separated emails):
+                                <br />
+                                <textarea name="staff" rows="10" cols="20" style="resize:none"></textarea>
+                            </div>
+                            <button
+                                type="submit"
+                                class="btn btn-default"
+                            >
+                                <span><span class="glyphicon glyphicon-floppy-saved"></span> Saved</span>
+                            </button>
                         </form>
                     </div>
                 </div>

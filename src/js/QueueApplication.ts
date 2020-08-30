@@ -6,7 +6,7 @@ import { Observable, MessageResponses, messageResponse } from './util/mixins';
 import escape from 'lodash/escape';
 import endsWith from 'lodash/endsWith';
 import { Mutable, oops, showErrorMessage } from './util/util';
-import { QueueKind, Page } from './Queue';
+import { QueueKind, Page } from './queue';
 import { OrderedQueue } from './OrderedQueue';
 import { AppointmentsQueue } from './AppointmentsQueue';
 import $ from 'jquery';
@@ -27,6 +27,7 @@ export class QueueApplication {
     private coursePanes: JQuery;
 
     private courses: Course[] = [];
+    public readonly activeCourse?: Course;
     private _activePage?: Page;
 
     private messagesShown: { [index: string]: boolean } = {};
@@ -93,8 +94,9 @@ export class QueueApplication {
             let course = new Course(courseData, courseElem);
             this.courses.push(course);
 
-            pillElem.find('a').click(function () {
+            pillElem.find('a').click(() => {
                 course.makeActive();
+                (<Mutable<this>>this).activeCourse = course;
             });
         });
     }
@@ -122,6 +124,14 @@ export class QueueApplication {
     }
 
     public userSignedIn() {
+
+        if (User.isSuper()) {
+            $("body").removeClass("notSuper");
+        }
+        else {
+            $("body").addClass("notSuper");
+        }
+
         this.courses.forEach((course) => {
             course.userSignedIn();
         });
@@ -196,6 +206,13 @@ export class QueueApplication {
             }
         }
     }
+
+    public createCourse(courseSpec: NewCourseSpecification) {
+        return fetch("api/courses/", {
+            method: "POST",
+            body: JSON.stringify(courseSpec)
+        });
+    }
 }
 
 export class Course {
@@ -206,6 +223,8 @@ export class Course {
     private isAdmin: boolean = false;
     private queues: any[] = [];
     private activeQueue: any;
+
+    private readonly courseAdminControls: CourseAdminControls;
 
     private readonly elem: JQuery;
     private readonly queuePillsElem: JQuery;
@@ -220,6 +239,10 @@ export class Course {
         this.fullName = data['full_name'];
 
         this.elem = elem;
+
+        this.courseAdminControls = new CourseAdminControls(
+            this, $('<div></div>').appendTo(this.elem)
+        );
 
         this.queuePillsElem = $('<ul class="queuePills nav nav-pills"></ul>');
         this.elem.append(this.queuePillsElem);
@@ -347,6 +370,200 @@ export class Course {
             queue.userSignedIn();
         });
     }
+
+    public createQueue(queueSpec: NewQueueSpecification) {
+        return fetch(`api/courses/${this.courseId}/queues`, {
+            method: "POST",
+            body: JSON.stringify(queueSpec)
+        });
+    }
+    
+    public getStaff() {
+        return fetch(`api/courses/${this.courseId}/admins`, {
+            method: "GET"
+        });
+    }
+
+    public setStaff(staffSpec: CourseStaffSpecification) {
+        
+        // filter to unique staff
+        staffSpec = Array.from(new Set(staffSpec));
+
+        return fetch(`api/courses/${this.courseId}/admins`, {
+            method: "PUT",
+            body: JSON.stringify(staffSpec)
+        });
+    }
+}
+
+class CourseAdminControls {
+    private course: Course;
+    private elem: JQuery;
+
+    constructor(course: Course, elem: JQuery) {
+        this.course = course;
+        this.elem = elem.addClass("adminOnly");
+
+        this.elem.append('<p><b>Course Admin</b></p>');
+
+        this.elem.append('<button type=" button" class="btn btn-info adminOnly" data-toggle="modal" data-target="#createQueueDialog">Create Queue</button>');
+        this.elem.append(" ");
+        this.elem.append('<button type=" button" class="btn btn-info adminOnly" data-toggle="modal" data-target="#editStaffDialog">Edit Course Staff</button>');
+
+        this.elem.append('<hr />')
+    }
+}
+
+interface NewCourseSpecification {
+    readonly short_name: string;
+    readonly full_name: string;
+}
+
+export class CreateCourseDialog {
+
+    public constructor() {
+        let createCourseForm = $('#createCourseForm');
+        createCourseForm.submit(async (e) => {
+            e.preventDefault();
+            
+            try {
+                let response = await QueueApplication.instance.createCourse({
+                    short_name: ""+$("#shortNameInput").val(),
+                    full_name: ""+$("#fullNameInput").val()
+                });
+
+                if (!response.ok) {
+                    showErrorMessage(JSON.parse(await response.text()));
+                }
+            }
+            catch(e) {
+                showErrorMessage(e);
+            }
+            $('#createCourseDialog').modal('hide');
+        });
+    }
+
+}
+
+
+
+interface NewQueueSpecification {
+    readonly type: QueueKind;
+    readonly name: string;
+    readonly location: string;
+    readonly map: string;
+    readonly active: boolean;
+}
+
+export class CreateQueueDialog {
+
+    public constructor() {
+        let createQueueForm = $('#createQueueForm');
+        createQueueForm.submit(async (e) => {
+            e.preventDefault();
+            
+            try {
+                let response = await QueueApplication.instance.activeCourse!.createQueue({
+                    type: <QueueKind>(""+$('#createQueueForm input[name="type"]:checked').val()),
+                    name: ""+$('#createQueueForm input[name="name"]').val(),
+                    location: ""+$('#createQueueForm input[name="location"]').val(),
+                    map: ""+$('#createQueueForm input[name="map"]').val(),
+                    active: "true" === $('#createQueueForm input[name="active"]').val(),
+                });
+
+                if (!response.ok) {
+                    showErrorMessage(JSON.parse(await response.text()));
+                }
+            }
+            catch(e) {
+                showErrorMessage(e);
+            }
+            $('#createQueueDialog').modal('hide');
+        });
+    }
+
+}
+
+
+type CourseStaffSpecification = readonly string[];
+
+export class EditStaffDialog {
+
+    private static readonly STAFF_UP_TO_DATE =
+        '<span><span class="glyphicon glyphicon-floppy-saved"></span> Saved</span>';
+    private static readonly STAFF_UNSAVED =
+        '<span><span class="glyphicon glyphicon-floppy-open"></span> Update Staff</span>';
+
+    private updateStaffButton: JQuery;
+
+    public constructor() {
+        this.updateStaffButton = $("#editStaffForm button:submit");
+
+        $("#editStaffDialog").on('shown.bs.modal', () => {
+            this.refresh();
+        });
+
+        $('#editStaffForm textarea[name="staff"]')
+            .on("keyup", () => { this.unsavedChanges(); return true; });
+
+        $("#editStaffForm").submit(async (e) => {
+            e.preventDefault();
+            
+            try {
+                let response = await QueueApplication.instance.activeCourse!.setStaff(
+                    (""+$('#editStaffForm textarea[name="staff"]').val()).split("\n").map((s) => s.trim())
+                );
+
+                if (response.ok) {
+                    this.changesUpToDate();
+                }
+                else {
+                    showErrorMessage(JSON.parse(await response.text()));
+                }
+            }
+            catch(e) {
+                showErrorMessage(e);
+            }
+            $('#createQueueDialog').modal('hide');
+        });
+    }
+
+    private async refresh() {
+        try {
+            let response = await QueueApplication.instance.activeCourse!.getStaff();
+
+            if (response.ok) {
+                $('#editStaffForm textarea[name="staff"]').val(
+                    JSON.parse((await response.text())).join("\n")
+                );
+                this.changesUpToDate();
+            }
+            else {
+                $('#createQueueDialog').modal('hide');
+                showErrorMessage(JSON.parse(await response.text()));
+            }
+        }
+        catch(e) {
+            showErrorMessage(e);
+            $('#createQueueDialog').modal('hide');
+        }
+    }
+
+    private unsavedChanges() {
+        this.updateStaffButton
+            .html(EditStaffDialog.STAFF_UNSAVED)
+            .prop('disabled', false)
+            .removeClass('btn-success')
+            .addClass('btn-warning');
+    }
+
+    private changesUpToDate() {
+        this.updateStaffButton
+            .html(EditStaffDialog.STAFF_UP_TO_DATE)
+            .prop('disabled', true)
+            .removeClass('btn-warning')
+            .addClass('btn-success');
+    }
 }
 
 export namespace User {
@@ -402,6 +619,10 @@ export namespace User {
         return theUser.isMe(email);
     }
 
+    export function isSuper() {
+        return theUser.isSuper;
+    }
+
     export function email() {
         return theUser.email;
     }
@@ -414,6 +635,7 @@ export namespace User {
         public abstract isCourseAdmin(courseId: string): boolean;
         public abstract isMe(email: string): boolean;
         public abstract readonly email?: string;
+        public abstract readonly isSuper?: boolean;
 
         public onSignOut() {
             // nothing to do here for now
@@ -431,7 +653,8 @@ export namespace User {
     class AuthenticatedUser extends UserBase {
         public readonly email: string;
         private readonly _idToken: string;
-        private admins: { [index: string]: boolean } = {};
+        private admin_courses: { [index: string]: boolean } = {};
+        public readonly isSuper?: boolean;
 
         constructor(email: string, idtoken: string) {
             super();
@@ -473,17 +696,20 @@ export namespace User {
         private checkAdmin(): void {
             $.ajax({
                 type: 'GET',
-                url: 'api/courses/admin/@me',
+                url: 'api/users/@me',
                 dataType: 'json',
                 success: (data) => {
-                    for (var i = 0; i < data.length; ++i) {
-                        this.admins[data[i]] = true;
+                    (<Mutable<this>>this).isSuper = data["site_admin"];
+
+                    let admin_courses: readonly string[] = data["admin_courses"];
+                    for (var i = 0; i < admin_courses.length; ++i) {
+                        this.admin_courses[admin_courses[i]] = true;
                     }
 
                     // TODO HACK If admin for anything, give them fast refresh
                     // should only be on the queues they administer
                     // also if admin prompt for notifications
-                    if (data.length > 0) {
+                    if (admin_courses.length > 0) {
                         setInterval(function () {
                             QueueApplication.instance.refreshActivePage();
                         }, 5000);
@@ -511,11 +737,14 @@ export namespace User {
         }
 
         public isCourseAdmin(courseId: string): boolean {
-            return this.admins[courseId];
+            return this.admin_courses[courseId];
         }
     }
 
     class UnauthenticatedUser extends UserBase {
+
+        public readonly isSuper = false;
+
         constructor() {
             super();
 

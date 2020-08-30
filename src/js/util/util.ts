@@ -53,6 +53,10 @@ export function oops(xhr: any, textStatus?: any) {
 }
 
 export function showErrorMessage(message: any) {
+    if (message.message) {
+        showErrorMessage(message.message);
+        return;
+    }
     console.log(message);
     $('#errorMessage').html(message);
     $('#errorDialog').modal('show');
