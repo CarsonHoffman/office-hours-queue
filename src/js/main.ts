@@ -1,4 +1,4 @@
-import { QueueApplication, User } from './QueueApplication';
+import { QueueApplication, User, CreateCourseDialog, CreateQueueDialog, EditStaffDialog } from './QueueApplication';
 import { Schedule, ManageQueueDialog, OrderedQueue } from './OrderedQueue';
 import $ from 'jquery';
 import 'bootstrap3/dist/js/bootstrap.js';
@@ -99,6 +99,9 @@ function setupDialogs() {
     new Schedule($('#schedulePicker'));
 
     new ManageQueueDialog();
+    new CreateCourseDialog();
+    new CreateQueueDialog();
+    new EditStaffDialog();
 
     let removeMyAppointmentInput = $('#removeMyAppointmentInput');
     let removeMyAppointmentDialog = $('#removeMyAppointmentDialog');
