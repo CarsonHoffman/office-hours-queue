@@ -10,15 +10,6 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-func (s *Server) QueueAdmin(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
-	var n int
-	err := s.DB.GetContext(ctx, &n,
-		"SELECT COUNT(*) FROM (SELECT email FROM site_admins UNION SELECT email FROM queues q JOIN course_admins c ON q.course=c.course WHERE q.id=$1) AS admins WHERE email=$2",
-		queue, email,
-	)
-	return n > 0, err
-}
-
 func (s *Server) GetQueue(ctx context.Context, queue ksuid.KSUID) (*api.Queue, error) {
 	var q api.Queue
 	err := s.DB.GetContext(ctx, &q,
@@ -26,6 +17,22 @@ func (s *Server) GetQueue(ctx context.Context, queue ksuid.KSUID) (*api.Queue, e
 		queue,
 	)
 	return &q, err
+}
+
+func (s *Server) UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *api.Queue) error {
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE queues SET name=$1, location=$2 WHERE id=$3",
+		values.Name, values.Location, queue,
+	)
+	return err
+}
+
+func (s *Server) RemoveQueue(ctx context.Context, queue ksuid.KSUID) error {
+	_, err := s.DB.ExecContext(ctx,
+		"DELETE FROM queues WHERE id=$1",
+		queue,
+	)
+	return err
 }
 
 func (s *Server) GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (string, error) {
@@ -332,7 +339,12 @@ func (s *Server) UpdateQueueEntry(ctx context.Context, entry ksuid.KSUID, e *api
 }
 
 func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, entry ksuid.KSUID, email string) (bool, error) {
-	admin, err := s.QueueAdmin(ctx, queue, email)
+	q, err := s.GetQueue(ctx, queue)
+	if err != nil {
+		return false, fmt.Errorf("failed to get queue: %w", err)
+	}
+
+	admin, err := s.CourseAdmin(ctx, q.Course, email)
 	if err != nil {
 		return false, fmt.Errorf("failed to determine admin status: %w", err)
 	}

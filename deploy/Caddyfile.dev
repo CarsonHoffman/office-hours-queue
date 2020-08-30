@@ -11,7 +11,7 @@ basicauth /kibana* {
 }
 
 route /kibana* {
-	reverse_proxy elk:5601
+	reverse_proxy kibana:5601
 }
 
 redir / /queue.html
