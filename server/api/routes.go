@@ -118,20 +118,20 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			// Create queue on course (site admin)
 			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Post("/queues", s.AddQueue(q))
 
-			// Course admin management (site admin)
+			// Course admin management (course admin)
 			r.Route("/admins", func(r chi.Router) {
-				r.Use(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q))
+				r.Use(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin)
 
-				// Get course admins (site admin)
+				// Get course admins (course admin)
 				r.Get("/", s.GetCourseAdmins(q))
 
-				// Add course admins (site admin)
+				// Add course admins (course admin)
 				r.Post("/", s.AddCourseAdmins(q))
 
-				// Overwrite course admins (site admin)
+				// Overwrite course admins (course admin)
 				r.Put("/", s.UpdateCourseAdmins(q))
 
-				// Remove course admins (site admin)
+				// Remove course admins (course admin)
 				r.Delete("/", s.RemoveCourseAdmins(q))
 			})
 		})
