@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -283,6 +284,8 @@ func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 
 type updateAppointmentSchedule interface {
 	getAppointmentsInTimeFrame
+	getAppointmentScheduleForDay
+	getAppointmentsByTimeslot
 	UpdateAppointmentSchedule(ctx context.Context, queue ksuid.KSUID, day int, schedule *AppointmentSchedule) error
 }
 
@@ -298,21 +301,10 @@ func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.Ha
 			"email", email,
 		)
 
-		from, to := WeekdayBounds(day)
-		appointments, err := us.GetAppointments(r.Context(), q.ID, from, to)
+		currentSchedule, err := us.GetAppointmentScheduleForDay(r.Context(), q.ID, day)
 		if err != nil {
-			l.Errorw("failed to get appointments", "err", err)
+			l.Errorw("failed to get existing appointment schedule", "err", err)
 			s.internalServerError(w, r)
-			return
-		}
-
-		if len(appointments) > 0 {
-			l.Warnw("appointment schedule update attempted with existing appointments")
-			s.errorMessage(
-				http.StatusConflict,
-				"The schedule can't be changed with active appointments. Marty McFly…or something.",
-				w, r,
-			)
 			return
 		}
 
@@ -325,6 +317,48 @@ func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.Ha
 				"We couldn't read the schedule in the request body.",
 				w, r,
 			)
+		}
+
+		from, to := WeekdayBounds(day)
+		appointments, err := us.GetAppointments(r.Context(), q.ID, from, to)
+		if err != nil {
+			l.Errorw("failed to get appointments", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		if len(appointments) > 0 && currentSchedule.Duration != schedule.Duration {
+			l.Warnw("appointment schedule duration update attempted with existing appointments")
+			s.errorMessage(
+				http.StatusConflict,
+				"You can't change the appointment duration with active or past appointments on this day.",
+				w, r,
+			)
+			return
+		}
+
+		for i, n := range schedule.Schedule {
+			currentTimeslotUsage, err := us.GetAppointmentsByTimeslot(r.Context(), q.ID, from, to, i)
+			if err != nil {
+				l.Errorw("failed to check appointments for timeslot", "err", err, "timeslot", i)
+				s.internalServerError(w, r)
+				return
+			}
+
+			newTimeslotAvailability := int(n - '0')
+			if newTimeslotAvailability < len(currentTimeslotUsage) {
+				l.Warnw("tried to change appointment schedule to one without room",
+					"conflicting_timeslot", i,
+					"current_appointments", len(currentTimeslotUsage),
+					"new_slots", newTimeslotAvailability,
+				)
+				s.errorMessage(http.StatusConflict,
+					fmt.Sprintf("Setting that appointment schedule would remove an existing appointment. There are %d appointments at timeslot %d, but the new schedule only has %d slots at that time.",
+						len(currentTimeslotUsage), i, newTimeslotAvailability),
+					w, r,
+				)
+				return
+			}
 		}
 
 		err = us.UpdateAppointmentSchedule(r.Context(), q.ID, day, &schedule)
