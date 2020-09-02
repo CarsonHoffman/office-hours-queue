@@ -613,7 +613,7 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 		s.logger.Infow("created announcement",
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"email", email,
-			"announcement_id", newAnnouncement,
+			"announcement", newAnnouncement,
 		)
 		s.sendResponse(http.StatusOK, newAnnouncement, w, r)
 	}
