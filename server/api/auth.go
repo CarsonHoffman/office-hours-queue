@@ -68,10 +68,6 @@ func (s *Server) ValidLoginMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		s.logger.Infow("entering logged-in context",
-			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-			"email", email,
-		)
 		next.ServeHTTP(w, r)
 	})
 }
