@@ -115,7 +115,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 			// Get course's queues
 			r.Get("/queues", s.GetQueues(q))
 
-			// Create queue on course (site admin)
+			// Create queue on course (course admin)
 			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Post("/queues", s.AddQueue(q))
 
 			// Course admin management (course admin)
