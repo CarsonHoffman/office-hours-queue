@@ -19,6 +19,9 @@ route /api/* {
 	reverse_proxy queue:8080
 }
 
+# 8 hour cache limit for static files
+header Cache-Control max-age=28800
+
 file_server {
 	root /public
 	index queue.html
