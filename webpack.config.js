@@ -8,7 +8,7 @@ module.exports = {
   devtool: "inline-source-map",
   output: {
     path: path.join(__dirname, '/public/js/'),
-    filename: 'bundle.js',
+    filename: 'index_bundle.js',
     libraryTarget: 'var',
     library: 'Bundle'
   },
