@@ -10,8 +10,6 @@ route /kibana* {
 	reverse_proxy kibana:5601
 }
 
-redir / /queue.html
-
 route /api/* {
 	uri strip_prefix /api
 	reverse_proxy queue:8080
@@ -19,6 +17,7 @@ route /api/* {
 
 file_server {
 	root /public
+	index queue.html
 }
 
 log {
