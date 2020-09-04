@@ -528,10 +528,13 @@ export class SignUpForm<HasAppointments extends boolean = false> {
                     '<div class="' +
                         (this.hasMap ? 'hidden-xs' : '') +
                         ` form-group"><div class="col-sm-offset-3 col-sm-9">
-                    <button type="submit" class="btn btn-success queue-signUpButton">${this.signUpButtonContent.signUp}</button> 
+                    <button type="submit" class="btn btn-success queue-signUpButton">${this.signUpButtonContent.signUp}</button>
                     <button type="submit" class="btn btn-success queue-updateRequestButton" style="display:none;"></button>
-                    <!-- <button type="button" class="btn btn-danger queue-removeRequestButton" data-toggle="modal" data-target="#removeMyAppointmentDialog" style="display:none;"></button> -->
-                    </div></div>`,
+					` +
+                        (!appointments
+                            ? ''
+                            : '<button type="button" class="btn btn-danger queue-removeRequestButton" data-toggle="modal" data-target="#removeMyAppointmentDialog" style="display:none;"></button>') +
+                        `</div></div>`,
                 )),
         );
 
