@@ -35,7 +35,7 @@ class Announcement {
                 // TODO: Remove ugly confirm
                 if (
                     confirm(
-                        'Are you sure you want to remove this announcement?\n\n' +
+                        'Are you sure you want to remove this announcement? This will remove the announcement for all students (it\'s not just client-side).\n\n' +
                             this.content,
                     )
                 ) {
