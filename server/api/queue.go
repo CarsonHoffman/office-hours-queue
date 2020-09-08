@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/segmentio/ksuid"
@@ -481,7 +482,7 @@ type canRemoveQueueEntry interface {
 
 type removeQueueEntry interface {
 	canRemoveQueueEntry
-	RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) error
+	RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*QueueEntry, error)
 }
 
 func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
@@ -519,14 +520,17 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 			return
 		}
 
-		err = re.RemoveQueueEntry(r.Context(), entry, email)
+		e, err := re.RemoveQueueEntry(r.Context(), entry, email)
 		if err != nil {
 			l.Errorw("failed to remove queue entry", "err", err)
 			s.internalServerError(w, r)
 			return
 		}
 
-		l.Infow("removed queue entry")
+		l.Infow("removed queue entry",
+			"student_email", e.Email,
+			"time_spent", time.Now().Sub(e.ID.Time()),
+		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

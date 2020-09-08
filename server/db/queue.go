@@ -361,12 +361,13 @@ func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, ent
 	return n > 0, err
 }
 
-func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) error {
-	_, err := s.DB.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1 WHERE NOT removed AND id=$2",
+func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*api.QueueEntry, error) {
+	var e api.QueueEntry
+	err := s.DB.GetContext(ctx, &e,
+		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1 WHERE NOT removed AND id=$2 RETURNING *",
 		remover, entry,
 	)
-	return err
+	return &e, err
 }
 
 func (s *Server) PutBackQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
