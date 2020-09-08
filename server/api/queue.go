@@ -65,7 +65,7 @@ func (s *Server) QueueIDMiddleware(gq getQueue) func(http.Handler) http.Handler 
 }
 
 type getQueueEntry interface {
-	GetQueueEntry(ctx context.Context, entry ksuid.KSUID) (*QueueEntry, error)
+	GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemoved bool) (*QueueEntry, error)
 }
 
 type getQueueEntries interface {
@@ -420,7 +420,7 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 			return
 		}
 
-		e, err := ue.GetQueueEntry(r.Context(), entry)
+		e, err := ue.GetQueueEntry(r.Context(), entry, false)
 		if err != nil {
 			l.Warnw("failed to get entry with valid ksuid", "err", err)
 			s.errorMessage(
@@ -527,6 +527,74 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 		}
 
 		l.Infow("removed queue entry")
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+type putBackQueueEntry interface {
+	getQueueEntry
+	getActiveQueueEntriesForUser
+	PutBackQueueEntry(ctx context.Context, entry ksuid.KSUID) error
+}
+
+func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		id := chi.URLParam(r, "entry_id")
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"entry_id", id,
+			"queue_id", q.ID,
+			"course_id", q.Course,
+			"email", email,
+		)
+
+		entryID, err := ksuid.Parse(id)
+		if err != nil {
+			l.Warnw("failed to parse entry ID", "err", err)
+			s.errorMessage(
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+				w, r,
+			)
+			return
+		}
+
+		entry, err := pb.GetQueueEntry(r.Context(), entryID, true)
+		if err != nil {
+			l.Warnw("attempted to get non-existent queue entry with valid ksuid")
+			s.errorMessage(
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+				w, r,
+			)
+			return
+		}
+
+		entries, err := pb.GetActiveQueueEntriesForUser(r.Context(), q.ID, entry.Email)
+		if err != nil {
+			l.Errorw("failed to get queue entries for user")
+		}
+
+		if len(entries) > 0 {
+			l.Warnw("attempted to put back queue entry with student on queue")
+			s.errorMessage(
+				http.StatusConflict,
+				"That user is already on the queue. If you pop the new one you can put back the old one!",
+				w, r,
+			)
+			return
+		}
+
+		err = pb.PutBackQueueEntry(r.Context(), entryID)
+		if err != nil {
+			l.Errorw("failed to put back queue entry", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		l.Infow("put back queue entry")
 		s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

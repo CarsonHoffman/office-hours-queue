@@ -45,6 +45,7 @@ type queueStore interface {
 	updateQueueEntry
 	clearQueueEntries
 	removeQueueEntry
+	putBackQueueEntry
 	getQueueStack
 	getQueueAnnouncements
 	addQueueAnnouncement
@@ -163,6 +164,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 			// Remove queue entry (valid login, same user or queue admin)
 			r.Delete("/{entry_id:[a-zA-Z0-9]{27}}", s.RemoveQueueEntry(q))
+
+			// Put back queue entry (course admin)
+			r.With(s.EnsureCourseAdmin).Post("/{entry_id:[a-zA-Z0-9]{27}}/undo", s.PutBackQueueEntry(q))
 
 			// Clear queue (queue admin)
 			r.With(s.EnsureCourseAdmin).Delete("/", s.ClearQueueEntries(q))

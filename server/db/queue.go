@@ -45,11 +45,11 @@ func (s *Server) GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (
 	return schedule, err
 }
 
-func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID) (*api.QueueEntry, error) {
+func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemoved bool) (*api.QueueEntry, error) {
 	var e api.QueueEntry
 	err := s.DB.GetContext(ctx, &e,
-		"SELECT * FROM queue_entries WHERE id=$1 AND NOT removed",
-		entry,
+		"SELECT * FROM queue_entries WHERE id=$1 AND ($2 OR NOT removed)",
+		entry, allowRemoved,
 	)
 	return &e, err
 }
@@ -365,6 +365,14 @@ func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remove
 	_, err := s.DB.ExecContext(ctx,
 		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1 WHERE NOT removed AND id=$2",
 		remover, entry,
+	)
+	return err
+}
+
+func (s *Server) PutBackQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE queue_entries SET removed=FALSE, removed_at=NULL, removed_by=NULL WHERE removed AND id=$1",
+		entry,
 	)
 	return err
 }

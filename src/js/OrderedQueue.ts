@@ -141,10 +141,19 @@ export class OrderedQueue {
 
         // console.log(JSON.stringify(data["stack"], null, 4));
         this.stackElem.html(
-            '<h3>The Stack</h3><br /><p>Most recently removed at top</p><pre>' +
-                JSON.stringify(data['stack'], null, 4) +
-                '</pre>',
+            '<h3>The Stack</h3><br /><p>Most recently removed at top</p>',
         );
+
+        let stack = data['stack'];
+        for (let i = 0; i < stack.length; ++i) {
+            let item = stack[i];
+
+            let itemElem = $("<li class='list-group-item'></li>");
+            let entry = new QueueEntry(this, item, i, itemElem);
+            queueEntries.push(entry);
+
+            this.stackElem.append(itemElem);
+        }
 
         var oldNumEntries = this.numEntries;
         (<number>this.numEntries) = queue.length;
@@ -179,6 +188,34 @@ export class OrderedQueue {
                     'successfully removed ' +
                         request.email +
                         ' from queue ' +
+                        this.page.queueId,
+                );
+                request.onRemove();
+            },
+            error: oops,
+        }).always(() => {
+            setTimeout(() => {
+                this.page.enableRefresh();
+                this.page.refresh();
+            }, ANIMATION_DELAY);
+        });
+    }
+
+    public putBackRequest(request: QueueEntry) {
+        this.page.disableRefresh();
+        $.ajax({
+            type: 'POST',
+            url:
+                'api/queues/' +
+                this.page.queueId +
+                '/entries/' +
+                request.id +
+                '/undo',
+            success: () => {
+                console.log(
+                    'successfully put back ' +
+                        request.email +
+                        ' on queue ' +
                         this.page.queueId,
                 );
                 request.onRemove();
@@ -920,6 +957,8 @@ class QueueEntry {
 
     public readonly id: string;
     public readonly timestamp: Moment;
+    public readonly removedAt?: Moment;
+    public readonly removedBy?: string;
     public readonly email: string;
     public readonly index: number;
     public readonly name: string;
@@ -949,6 +988,11 @@ class QueueEntry {
 
         this.id = data['id'];
         this.timestamp = moment(data['id_timestamp']);
+        this.removedAt =
+            data['removed_at'] !== undefined
+                ? moment(data['removed_at'])
+                : undefined;
+        this.removedBy = data['removed_by'];
         this.email = data['email'];
 
         this.index = index;
@@ -992,24 +1036,45 @@ class QueueEntry {
             this.location = data['location'];
         }
 
-        let timeWaiting = +new Date() - +this.timestamp;
-        let minutesWaiting = Math.round(timeWaiting / 1000 / 60);
+        let time =
+            +new Date() -
+            (this.removedAt !== undefined ? +this.removedAt : +this.timestamp);
+        let minutes = Math.round(time / 1000 / 60);
         this.tsElem = $('<p><span class="glyphicon glyphicon-time"></span></p>')
-            .append(' ' + minutesWaiting + ' min')
+            .append(' ' + minutes + ' min')
             .appendTo(infoElem);
 
-        let removeButton = $(
-            '<button type="button" class="btn btn-danger">Remove</button>',
-        );
-        if (!this.isMe) {
-            removeButton.addClass('adminOnly');
+        if (this.removedBy !== undefined) {
+            $('<p><span class="glyphicon glyphicon-remove"></span></p>')
+                .append(' ' + this.removedBy)
+                .appendTo(infoElem);
         }
 
-        removeButton.on(
-            'click',
-            this.queue.removeRequest.bind(this.queue, this),
-        );
-        infoElem.append(removeButton);
+        if (this.removedAt === undefined) {
+            let removeButton = $(
+                '<button type="button" class="btn btn-danger">Remove</button>',
+            );
+            if (!this.isMe) {
+                removeButton.addClass('adminOnly');
+            }
+
+            removeButton.on(
+                'click',
+                this.queue.removeRequest.bind(this.queue, this),
+            );
+            infoElem.append(removeButton);
+        } else {
+            let undoButton = $(
+                '<button type="button" class="btn btn-primary">Put Back</button>',
+            );
+            undoButton.addClass('adminOnly');
+            undoButton.on(
+                'click',
+                this.queue.putBackRequest.bind(this.queue, this),
+            );
+
+            infoElem.append(undoButton);
+        }
 
         infoElem.append(' ');
 
