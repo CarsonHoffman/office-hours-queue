@@ -6,21 +6,23 @@ basicauth /kibana* {
 	username_here password_hash_here
 }
 
-route /kibana* {
-	reverse_proxy kibana:5601
-}
+route {
+	route /kibana* {
+		reverse_proxy kibana:5601
+	}
 
-route /api/* {
-	uri strip_prefix /api
-	reverse_proxy queue:8080
-}
+	route /api/* {
+		uri strip_prefix /api
+		reverse_proxy queue:8080
+	}
 
-# 8 hour cache limit for static files
-header Cache-Control max-age=28800
+	# 8 hour cache limit for static files
+	header Cache-Control max-age=28800
 
-file_server {
-	root /public
-	index queue.html
+	file_server {
+		root /public
+		index queue.html
+	}
 }
 
 log {
