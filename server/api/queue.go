@@ -314,6 +314,7 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"queue_id", q.ID,
+			"course_id", q.Course,
 			"email", email,
 		)
 
@@ -491,6 +492,8 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"entry_id", id,
+			"queue_id", q.ID,
+			"course_id", q.Course,
 			"email", email,
 		)
 
