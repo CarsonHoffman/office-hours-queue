@@ -95,9 +95,17 @@ export class QueueApplication {
             this.courses.push(course);
 
             pillElem.find('a').click(() => {
+                window.location.hash = course.courseId;
                 course.makeActive();
                 (<Mutable<this>>this).activeCourse = course;
             });
+
+            if (window.location.hash) {
+                var fragmentCourse = window.location.hash.substring(1);
+                if (fragmentCourse == course.courseId) {
+                    pillElem.find('a').click();
+                }
+            }
         });
     }
 
