@@ -95,9 +95,11 @@ export class QueueApplication {
             this.courses.push(course);
 
             pillElem.find('a').click(() => {
-                window.location.hash = course.courseId;
-                course.makeActive();
-                (<Mutable<this>>this).activeCourse = course;
+                course.loadQueues().then(() => {
+                    window.location.hash = course.courseId;
+                    course.makeActive();
+                    (<Mutable<this>>this).activeCourse = course;
+                });
             });
 
             if (window.location.hash) {
@@ -277,8 +279,6 @@ export class Course {
         this.mainElem.append(this.contentElem);
 
         this.elem.append(this.mainElem);
-
-        this.loadQueues();
     }
 
     public makeActive() {
@@ -288,7 +288,7 @@ export class Course {
         this.activeQueue && this.activeQueue.makeActive();
     }
 
-    private loadQueues() {
+    public loadQueues() {
         return $.ajax({
             type: 'GET',
             url: 'api/courses/' + this.courseId + '/queues',
