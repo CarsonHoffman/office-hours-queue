@@ -1036,12 +1036,9 @@ class QueueEntry {
             this.location = data['location'];
         }
 
-        let time =
-            +new Date() -
-            (this.removedAt !== undefined ? +this.removedAt : +this.timestamp);
-        let minutes = Math.round(time / 1000 / 60);
+        let time = (this.removedAt || this.timestamp).from(moment());
         this.tsElem = $('<p><span class="glyphicon glyphicon-time"></span></p>')
-            .append(' ' + minutes + ' min')
+            .append(' ' + time)
             .appendTo(infoElem);
 
         if (this.removedBy !== undefined) {
