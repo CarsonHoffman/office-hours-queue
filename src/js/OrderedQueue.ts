@@ -961,6 +961,7 @@ class QueueEntry {
     public readonly removedBy?: string;
     public readonly email: string;
     public readonly index: number;
+    public readonly priority: number;
     public readonly name: string;
     public readonly isMe: boolean;
     public readonly location?: string;
@@ -980,7 +981,7 @@ class QueueEntry {
 
     constructor(
         queue: OrderedQueue,
-        data: { [index: string]: string },
+        data: { [index: string]: any },
         index: number,
         elem: JQuery,
     ) {
@@ -996,6 +997,7 @@ class QueueEntry {
         this.email = data['email'];
 
         this.index = index;
+        this.priority = data['priority'];
         this.isMe = !!data['name']; // if it has a name it's them
 
         this.elem = elem;
@@ -1040,6 +1042,16 @@ class QueueEntry {
         this.tsElem = $('<p><span class="glyphicon glyphicon-time"></span></p>')
             .append(' ' + time)
             .appendTo(infoElem);
+
+        if (this.priority !== 0) {
+            $('<p><span class="glyphicon glyphicon-sort"></span></p>')
+                .append(
+                    ' Priority: ' +
+                        (this.priority < 0 ? '' : '+') +
+                        this.priority,
+                )
+                .appendTo(infoElem);
+        }
 
         if (this.removedBy !== undefined) {
             $('<p><span class="glyphicon glyphicon-remove"></span></p>')
