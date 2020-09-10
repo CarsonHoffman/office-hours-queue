@@ -1046,9 +1046,15 @@ class QueueEntry {
             this.location = data['location'];
         }
 
-        let time = (this.removedAt || this.timestamp).from(moment());
+        let time = this.removedAt || this.timestamp;
         this.tsElem = $('<p><span class="glyphicon glyphicon-time"></span></p>')
-            .append(' ' + time)
+            .append(
+                ' <span title="' +
+                    time.toISOString(true) +
+                    '">' +
+                    time.from(moment()) +
+                    '</span>',
+            )
             .appendTo(infoElem);
 
         if (this.priority !== 0) {
