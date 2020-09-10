@@ -507,7 +507,10 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 			return
 		}
 
-		l.Infow("new appointment sign up", "appointment_id", newAppointment.ID)
+		l.Infow("new appointment sign up",
+			"appointment_id", newAppointment.ID,
+			"scheduled_time", appointment.ScheduledTime,
+		)
 		s.sendResponse(http.StatusCreated, newAppointment, w, r)
 	}
 }
