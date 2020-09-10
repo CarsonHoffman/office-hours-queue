@@ -10,6 +10,7 @@ import { oops, showErrorMessage, Mutable, asMutable } from './util/util';
 import { Page } from './queue';
 import $ from 'jquery';
 import moment, { max, Moment } from 'moment-timezone';
+import linkifyStr from 'linkifyjs/string';
 
 var ANIMATION_DELAY = 500;
 
@@ -455,7 +456,9 @@ export class SignUpForm<HasAppointments extends boolean = false> {
     private mapY?: number;
     private appointmentsSlotsTable: JQuery;
     private appointmentHeaderElems?: readonly JQuery[];
-    private appointmentHeaderElemsMap: { [index: number]: JQuery | undefined} = {};
+    private appointmentHeaderElemsMap: {
+        [index: number]: JQuery | undefined;
+    } = {};
     private selectedTimeslot?: number;
     private signUpButtons: JQuery;
     private updateRequestButtons: JQuery;
@@ -1033,7 +1036,12 @@ class QueueEntry {
             this.locationElem = $(
                 '<p><span class="glyphicon glyphicon-map-marker"></span></p>',
             )
-                .append(' ' + data['location'])
+                .append(
+                    ' ' +
+                        linkifyStr(data['location'], {
+                            defaultProtocol: 'https',
+                        }),
+                )
                 .appendTo(infoElem);
             this.location = data['location'];
         }
@@ -1441,7 +1449,10 @@ export function filterAppointmentsSchedule(appointments: AppointmentSchedule) {
             (i !== 0 && appointments[i - 1].numAvailable > 0),
     );
     // if last filtered appointment is empty, pop it
-    if (appointments.length > 0 && appointments[appointments.length - 1].numAvailable === 0) {
+    if (
+        appointments.length > 0 &&
+        appointments[appointments.length - 1].numAvailable === 0
+    ) {
         appointments.pop();
     }
     return appointments;
