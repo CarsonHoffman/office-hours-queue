@@ -378,9 +378,12 @@ type getAppointmentsByTimeslot interface {
 }
 
 type signupForAppointment interface {
+	getQueueConfiguration
 	getAppointmentScheduleForDay
 	getAppointmentsForUser
 	getAppointmentsByTimeslot
+	UserInQueueRoster(ctx context.Context, queue ksuid.KSUID, email string) (bool, error)
+	TeammateHasAppointment(ctx context.Context, queue ksuid.KSUID, from, to time.Time, email string) (bool, error)
 	SignupForAppointment(ctx context.Context, queue ksuid.KSUID, appointment *AppointmentSlot) (*AppointmentSlot, error)
 }
 
@@ -398,8 +401,61 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 			"email", email,
 		)
 
+		config, err := sa.GetQueueConfiguration(r.Context(), q.ID)
+		if err != nil {
+			l.Errorw("failed to get queue configuration", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		if config.PreventUnregistered {
+			inRoster, err := sa.UserInQueueRoster(r.Context(), q.ID, email)
+			if err != nil {
+				l.Errorw("failed to get queue roster", "err", err)
+				s.internalServerError(w, r)
+				return
+			}
+
+			if !inRoster {
+				l.Warnw("student not in queue roster attempted to sign up for appointment")
+				s.errorMessage(
+					http.StatusForbidden,
+					"It doesn't look like you're in the roster for this queue. Contact your course staff if you think this is a mistake!",
+					w, r,
+				)
+				return
+			}
+		}
+
+		schedule, err := sa.GetAppointmentScheduleForDay(r.Context(), q.ID, day)
+		if err != nil {
+			l.Errorw("failed to get appointment schedule", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		if config.PreventGroups {
+			// Check if a group member has a future or ongoing appointment
+			teammateHasAppointment, err := sa.TeammateHasAppointment(r.Context(), q.ID, time.Now().Add(-time.Minute*time.Duration(schedule.Duration)), BigTime(), email)
+			if err != nil {
+				l.Errorw("failed to get teammate appointments", "err", err)
+				s.internalServerError(w, r)
+				return
+			}
+
+			if teammateHasAppointment {
+				l.Warnw("student attempted to sign up for appointment with teammate on queue")
+				s.errorMessage(
+					http.StatusConflict,
+					"It looks like one of your group members already has an appointment!",
+					w, r,
+				)
+				return
+			}
+		}
+
 		var appointment AppointmentSlot
-		err := json.NewDecoder(r.Body).Decode(&appointment)
+		err = json.NewDecoder(r.Body).Decode(&appointment)
 		if err != nil {
 			l.Warnw("failed to decode appointment", "err", err)
 			s.errorMessage(
@@ -418,13 +474,6 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 				"It looks like you left out some fields in the appointment.",
 				w, r,
 			)
-			return
-		}
-
-		schedule, err := sa.GetAppointmentScheduleForDay(r.Context(), q.ID, day)
-		if err != nil {
-			l.Errorw("failed to get appointment schedule", "err", err)
-			s.internalServerError(w, r)
 			return
 		}
 

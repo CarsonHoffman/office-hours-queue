@@ -856,10 +856,12 @@ class AdminControls {
         this.queue.page.makeActiveOnClick(openScheduleDialogButton); // TODO I don't think this is necessary anymore. If they can click it, it should be active.
         this.elem.append(openScheduleDialogButton);
 
-        // this.elem.append(" ");
-        // var openManageQueueDialogButton = $('<button type="button" class="btn btn-info adminOnly" data-toggle="modal" data-target="#manageQueueDialog">Manage Queue</button>');
-        // this.queue.page.makeActiveOnClick(openManageQueueDialogButton); // TODO I don't think this is necessary anymore. If they can click it, it should be active.
-        // this.elem.append(openManageQueueDialogButton);
+        this.elem.append(' ');
+        var openManageQueueDialogButton = $(
+            '<button type="button" class="btn btn-info adminOnly" data-toggle="modal" data-target="#manageQueueDialog">Manage Queue</button>',
+        );
+        this.queue.page.makeActiveOnClick(openManageQueueDialogButton); // TODO I don't think this is necessary anymore. If they can click it, it should be active.
+        this.elem.append(openManageQueueDialogButton);
 
         this.elem.append(' ');
         let openAddAnnouncementDialogButton = $(

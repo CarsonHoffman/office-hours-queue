@@ -45,6 +45,15 @@ func (s *Server) GetAppointmentsForUser(ctx context.Context, queue ksuid.KSUID, 
 	return appointments, err
 }
 
+func (s *Server) TeammateHasAppointment(ctx context.Context, queue ksuid.KSUID, from, to time.Time, email string) (bool, error) {
+	var n int
+	err := s.DB.GetContext(ctx, &n,
+		"SELECT COUNT(*) FROM appointment_slots a JOIN teammates t ON a.student_email=t.teammate WHERE t.queue=$1 AND t.email=$2 AND a.queue=$3 AND a.scheduled_time >= $4 and a.scheduled_time <= $5",
+		queue, email, queue, from, to,
+	)
+	return n > 0, err
+}
+
 func (s *Server) GetAppointmentSchedule(ctx context.Context, queue ksuid.KSUID) ([]*api.AppointmentSchedule, error) {
 	schedules := make([]*api.AppointmentSchedule, 0)
 	err := s.DB.SelectContext(ctx, &schedules, "SELECT queue, day, duration, padding, schedule FROM appointment_schedules WHERE queue=$1 ORDER BY day", queue)
