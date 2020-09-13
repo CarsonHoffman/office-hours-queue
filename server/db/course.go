@@ -42,14 +42,14 @@ func (s *Server) GetAdminCourses(ctx context.Context, email string) ([]string, e
 		err = s.DB.SelectContext(ctx, &courses,
 			"SELECT id FROM courses",
 		)
-		return courses, nil
+		return courses, err
 	}
 
 	err = s.DB.SelectContext(ctx, &courses,
 		"SELECT course FROM course_admins WHERE email=$1",
 		email,
 	)
-	return courses, nil
+	return courses, err
 }
 
 func (s *Server) GetQueues(ctx context.Context, course ksuid.KSUID) ([]*api.Queue, error) {
