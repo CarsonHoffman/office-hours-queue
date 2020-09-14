@@ -18,6 +18,7 @@ import {
     filterAppointmentsSchedule,
 } from './OrderedQueue';
 import 'jquery.scrollto';
+import linkifyStr from 'linkifyjs/string';
 
 export function extractScheduleFromResponse(scheduleData: any) {
     let duration: number = scheduleData['duration'];
@@ -430,7 +431,13 @@ class AppointmentViewer {
             );
             this.nameElem.html(appt.name || '(no student)');
             this.descriptionElem.html(appt.description || '(no student)');
-            this.locationElem.html(appt.location || '(no student)');
+            this.locationElem.html(
+                appt.location !== undefined
+                    ? linkifyStr(appt.location, {
+                          defaultProtocol: 'https',
+                      })
+                    : '(no student)',
+            );
 
             if (!appt.staffEmail) {
                 // unclaimed
