@@ -152,6 +152,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 		// Get queue's stack (queue admin)
 		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/stack", s.GetQueueStack(q))
 
+		// Get queue logs (course admin)
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/logs", s.GetQueueLogs())
+
 		// Entry by ID endpoints
 		r.Route("/entries", func(r chi.Router) {
 			r.Use(s.ValidLoginMiddleware)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/olivere/elastic/v7"
 	"github.com/segmentio/ksuid"
 )
 
@@ -1034,5 +1035,45 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 			"email", r.Context().Value(emailContextKey),
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+func (s *Server) GetQueueLogs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"email", email,
+		)
+
+		es, err := elastic.NewClient(elastic.SetURL("http://elasticsearch:9200"))
+		if err != nil {
+			l.Errorw("couldn't set up elastic connection", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		result, err := es.Search().
+			Index("logstash-api-*").
+			Query(elastic.NewTermQuery("queue_id.keyword", q.ID.String())).
+			Sort("@timestamp", false).
+			Size(10000).
+			Do(r.Context())
+
+		if err != nil {
+			l.Errorw("failed to fetch elastic results", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		var output []json.RawMessage
+		for _, hit := range result.Hits.Hits {
+			output = append(output, hit.Source)
+		}
+
+		l.Infow("fetched logs", "num_entries", len(result.Hits.Hits))
+		s.sendResponse(http.StatusOK, output, w, r)
 	}
 }

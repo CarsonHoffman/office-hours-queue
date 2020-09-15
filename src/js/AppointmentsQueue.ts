@@ -871,6 +871,14 @@ class AdminControls {
         this.elem.append(openManageQueueDialogButton);
 
         this.elem.append(' ');
+        var logsButton = $(
+            '<a target="_blank" class="btn btn-info adminOnly" href="api/queues/' +
+                this.queue.page.queueId +
+                '/logs">Queue Logs</a>',
+        );
+        this.elem.append(logsButton);
+
+        this.elem.append(' ');
         let openAddAnnouncementDialogButton = $(
             '<button type="button" class="btn btn-info adminOnly" data-toggle="modal" data-target="#addAnnouncementDialog">Add Announcement</button>',
         );
