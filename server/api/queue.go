@@ -522,7 +522,14 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 		}
 
 		e, err := re.RemoveQueueEntry(r.Context(), entry, email)
-		if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			l.Warnw("attempted to remove already-removed queue entry", "err", err)
+			s.errorMessage(
+				http.StatusNotFound,
+				"That queue entry was already removed by another staff member! Try the next one on the queue.",
+				w, r,
+			)
+		} else if err != nil {
 			l.Errorw("failed to remove queue entry", "err", err)
 			s.internalServerError(w, r)
 			return
