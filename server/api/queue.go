@@ -1036,9 +1036,9 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 			return
 		}
 
-		s.logger.Infow("groups updated",
+		s.logger.Infow("updated groups",
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-			"queue_id",
+			"queue_id", q.ID,
 			"email", r.Context().Value(emailContextKey),
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
