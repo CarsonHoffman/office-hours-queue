@@ -529,6 +529,7 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 				"That queue entry was already removed by another staff member! Try the next one on the queue.",
 				w, r,
 			)
+			return
 		} else if err != nil {
 			l.Errorw("failed to remove queue entry", "err", err)
 			s.internalServerError(w, r)
