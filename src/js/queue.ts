@@ -6,6 +6,7 @@ import { Course, QueueApplication } from './QueueApplication';
 import { OrderedQueue } from './OrderedQueue';
 import { AppointmentsQueue } from './AppointmentsQueue';
 import $ from 'jquery';
+import linkifyStr from 'linkifyjs/string';
 
 class Announcement {
     public readonly id: number;
@@ -27,7 +28,15 @@ class Announcement {
         this.elem.addClass('panel panel-info').append(
             (panelBody = $('<div class="panel-body bg-info"></div>')
                 .append('<span class="glyphicon glyphicon-bullhorn"></span> ')
-                .append($('<strong>' + this.content + '</strong>'))),
+                .append(
+                    $(
+                        '<strong>' +
+                            linkifyStr(this.content, {
+                                defaultProtocol: 'https',
+                            }) +
+                            '</strong>',
+                    ),
+                )),
         );
         $('<button type="button" class="close adminOnly">&times;</button>')
             .appendTo(panelBody)
