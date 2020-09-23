@@ -113,10 +113,7 @@ export class OrderedQueue {
                 let newDate = new Date(d.getTime() + nextOpen * 30 * 60000);
                 this.page.setStatusMessage(
                     'The queue is closed right now. It will open at ' +
-                        newDate.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                        }) +
+                        moment(newDate).format('LT') +
                         '.',
                 );
             }
