@@ -12,9 +12,27 @@ import (
 func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
 	courses := make([]*api.Course, 0)
 	err := s.DB.SelectContext(ctx, &courses,
-		"SELECT id, short_name, full_name FROM courses",
+		"SELECT id, short_name, full_name FROM courses ORDER BY id",
 	)
-	return courses, err
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get courses: %w", err)
+	}
+
+	qStmt, err := s.DB.Preparex("SELECT id, course, type, name, location, map, active FROM queues WHERE active AND course=$1 ORDER BY id")
+	if err != nil {
+		return nil, fmt.Errorf("failed to set up queues statement: %w", err)
+	}
+
+	for _, course := range courses {
+		course.Queues = make([]*api.Queue, 0)
+		err = qStmt.SelectContext(ctx, &course.Queues, course.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get queues for course %s: %w", course.ID, err)
+		}
+	}
+
+	return courses, nil
 }
 
 func (s *Server) GetCourse(ctx context.Context, id ksuid.KSUID) (*api.Course, error) {

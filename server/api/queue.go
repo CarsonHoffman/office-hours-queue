@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/gorilla/websocket"
 	"github.com/olivere/elastic/v7"
 	"github.com/segmentio/ksuid"
 )
@@ -194,6 +195,91 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 		}
 
 		s.sendResponse(http.StatusOK, response, w, r)
+	}
+}
+
+var upgrader = &websocket.Upgrader{
+	HandshakeTimeout: 30 * time.Second,
+}
+
+func (s *Server) QueueWebsocket() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var topics []string
+
+		q := r.Context().Value(queueContextKey).(*Queue)
+		topics = append(topics, QueueTopicGeneric(q.ID))
+
+		admin := r.Context().Value(courseAdminContextKey).(bool)
+		if admin {
+			topics = append(topics, QueueTopicAdmin(q.ID))
+		} else {
+			topics = append(topics, QueueTopicNonPrivileged(q.ID))
+		}
+
+		// Yes, this is okay---see above
+		email, _ := r.Context().Value(emailContextKey).(string)
+		if email != "" {
+			topics = append(topics, QueueTopicEmail(q.ID, email))
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			s.logger.Errorw("failed to upgrade to websocket connection",
+				"queue_id", q.ID,
+				"email", email,
+				"err", err,
+			)
+			return
+		}
+
+		events := s.ps.Sub(topics...)
+
+		// The interval at which the server will expect pings from the client.
+		const pingInterval = 30 * time.Second
+
+		// The "slack" built into the ping logic; the extra time allowed
+		// to clients to ping past the interval.
+		const pingSlack = 10 * time.Second
+
+		go func() {
+			for {
+				conn.SetReadDeadline(time.Now().Add(pingInterval + pingSlack))
+				_, _, err := conn.ReadMessage()
+				if err != nil {
+					s.ps.Unsub(events)
+					conn.WriteControl(
+						websocket.CloseMessage,
+						websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+						time.Now().Add(pingSlack),
+					)
+					conn.Close()
+					return
+				}
+			}
+		}()
+
+		pingTicker := time.NewTicker(pingInterval)
+		for {
+			select {
+			case <-pingTicker.C:
+				// Using a custom ping message rather than a ping control
+				// frame because browsers can't access control frames :(
+				err = conn.WriteJSON(WS("PING", nil))
+			case event, ok := <-events:
+				if !ok {
+					return
+				}
+				err = conn.WriteJSON(event)
+			}
+			// If the write fails, we presume that the read will also
+			// fail, so the read loop will take care of unsubbing and
+			// closing the connection. We also can't unsub on the same
+			// goroutine from which we're listening for events. We should
+			// just return.
+			if err != nil {
+				return
+			}
+		}
 	}
 }
 
@@ -393,6 +479,13 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 
 		l.Infow("created queue entry", "entry_id", newEntry.ID)
 		s.sendResponse(http.StatusCreated, newEntry, w, r)
+
+		s.ps.Pub(WS("ENTRY_CREATE", newEntry), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("ENTRY_CREATE", newEntry.Anonymized()), QueueTopicNonPrivileged(q.ID))
+
+		// Send an update with more information to the user who
+		// created the queue entry.
+		s.ps.Pub(WS("ENTRY_UPDATE", newEntry), QueueTopicEmail(q.ID, email))
 	}
 }
 
@@ -403,6 +496,7 @@ type updateQueueEntry interface {
 
 func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -474,6 +568,13 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 
 		l.Infow("queue entry updated", "old_entry", e)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		newEntry.ID = entry
+		newEntry.Queue = q.ID
+		newEntry.Email = e.Email
+
+		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicEmail(q.ID, email))
 	}
 }
 
@@ -483,7 +584,7 @@ type canRemoveQueueEntry interface {
 
 type removeQueueEntry interface {
 	canRemoveQueueEntry
-	RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*QueueEntry, error)
+	RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*RemovedQueueEntry, error)
 }
 
 func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
@@ -541,6 +642,9 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 			"time_spent", time.Now().Sub(e.ID.Time()),
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("ENTRY_REMOVE", e), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("ENTRY_REMOVE", e.Anonymized()), QueueTopicNonPrivileged(q.ID))
 	}
 }
 
@@ -609,6 +713,15 @@ func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
 
 		l.Infow("put back queue entry")
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("STACK_REMOVE", entry), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("ENTRY_CREATE", entry), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("ENTRY_CREATE", entry.Anonymized()), QueueTopicNonPrivileged(q.ID))
+
+		// Send an update with more information to the user who
+		// created the queue entry.
+		s.ps.Pub(WS("ENTRY_UPDATE", entry), QueueTopicEmail(q.ID, email))
+		s.ps.Pub(WS("ENTRY_PUT_BACK", entry), QueueTopicEmail(q.ID, email))
 	}
 }
 
@@ -639,6 +752,9 @@ func (s *Server) ClearQueueEntries(ce clearQueueEntries) http.HandlerFunc {
 		)
 
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("QUEUE_CLEAR", email), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("QUEUE_CLEAR", nil), QueueTopicNonPrivileged(q.ID))
 	}
 }
 
@@ -700,6 +816,8 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 			"announcement", newAnnouncement,
 		)
 		s.sendResponse(http.StatusOK, newAnnouncement, w, r)
+
+		s.ps.Pub(WS("ANNOUNCEMENT_CREATE", newAnnouncement), QueueTopicGeneric(q.ID))
 	}
 }
 
@@ -709,6 +827,8 @@ type removeQueueAnnouncement interface {
 
 func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+
 		id := chi.URLParam(r, "announcement_id")
 		announcement, err := ksuid.Parse(id)
 		if err != nil {
@@ -742,6 +862,8 @@ func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.Handle
 			"email", r.Context().Value(emailContextKey),
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("ANNOUNCEMENT_DELETE", announcement.String()), QueueTopicGeneric(q.ID))
 	}
 }
 
@@ -938,6 +1060,8 @@ func (s *Server) SendMessage(sm sendMessage) http.HandlerFunc {
 		}
 
 		s.sendResponse(http.StatusCreated, newMessage, w, r)
+
+		s.ps.Pub(WS("MESSAGE_CREATE", newMessage), QueueTopicEmail(q.ID, message.Receiver))
 	}
 }
 

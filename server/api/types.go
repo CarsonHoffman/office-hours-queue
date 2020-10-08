@@ -12,6 +12,7 @@ type Course struct {
 	ID        ksuid.KSUID `json:"id" db:"id"`
 	ShortName string      `json:"short_name" db:"short_name"`
 	FullName  string      `json:"full_name" db:"full_name"`
+	Queues    []*Queue    `json:"queues"`
 }
 
 type QueueType string
@@ -71,6 +72,16 @@ func (q *QueueEntry) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Anonymized returns a version of this queue entry suitable for
+// consumption by other users.
+func (q *QueueEntry) Anonymized() *QueueEntry {
+	return &QueueEntry{
+		ID:       q.ID,
+		Queue:    q.Queue,
+		Priority: q.Priority,
+	}
+}
+
 type RemovedQueueEntry struct {
 	ID          ksuid.KSUID `json:"id" db:"id"`
 	Queue       ksuid.KSUID `json:"queue" db:"queue"`
@@ -82,7 +93,7 @@ type RemovedQueueEntry struct {
 	MapY        float32     `json:"map_y,omitempty" db:"map_y"`
 	Priority    int         `json:"priority" db:"priority"`
 	Removed     bool        `json:"-" db:"removed"`
-	RemovedBy   string      `json:"removed_by" db:"removed_by"`
+	RemovedBy   string      `json:"removed_by,omitempty" db:"removed_by"`
 	RemovedAt   time.Time   `json:"removed_at" db:"removed_at"`
 }
 
@@ -96,6 +107,16 @@ func (q *RemovedQueueEntry) MarshalJSON() ([]byte, error) {
 		IDTimestamp:             q.ID.Time().Format(time.RFC3339),
 		QueueEntryWithTimestamp: (*QueueEntryWithTimestamp)(q),
 	})
+}
+
+// Anonymized returns a version of this queue entry suitable for
+// consumption by other users.
+func (q *RemovedQueueEntry) Anonymized() *RemovedQueueEntry {
+	return &RemovedQueueEntry{
+		ID:       q.ID,
+		Queue:    q.Queue,
+		Priority: q.Priority,
+	}
 }
 
 type Message struct {

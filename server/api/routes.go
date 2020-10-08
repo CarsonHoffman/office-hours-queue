@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/antonlindstrom/pgstore"
+	"github.com/cskr/pubsub"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"go.uber.org/zap"
@@ -17,6 +18,7 @@ type Server struct {
 
 	logger   *zap.SugaredLogger
 	sessions *pgstore.PGStore
+	ps       *pubsub.PubSub
 }
 
 // All of the abilities that a complete backing
@@ -95,6 +97,14 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 		Path:     "/",
 	}
 
+	// TODO: evaluate capacity choice for channel. This assumes that
+	// there isn't likely to be more than 5 events in "quick" succession
+	// to any particular connection, and reduces overall latency between
+	// sending on different connections in that case, but allocates room
+	// for 5 events on every connection. There isn't an empirical basis here.
+	// Just a guess.
+	s.ps = pubsub.New(5)
+
 	s.Router = chi.NewRouter()
 	s.Router.Use(ksuidInserter, s.recoverMiddleware, s.sessionRetriever)
 
@@ -144,6 +154,8 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 		// Get queue by ID (more information with queue admin)
 		r.Get("/", s.GetQueue(q))
+
+		r.Get("/ws", s.QueueWebsocket())
 
 		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueue(q))
 
