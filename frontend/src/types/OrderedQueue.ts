@@ -62,6 +62,16 @@ export default class OrderedQueue extends Queue {
 				break;
 			}
 			case 'ENTRY_PUT_BACK': {
+				Dialog.alert({
+					title: 'Put back!',
+					message: `You were put back on the queue! Another staff member should be able to help you shortly. ` +
+						`You'll get a notification when you've been popped again.`,
+					type: 'is-info',
+					hasIcon: true,
+				});
+				break;
+			}
+			case 'STACK_REMOVE': {
 				this.removeStackEntry(data.id);
 				break;
 			}
