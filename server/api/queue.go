@@ -721,7 +721,7 @@ func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
 		// Send an update with more information to the user who
 		// created the queue entry.
 		s.ps.Pub(WS("ENTRY_UPDATE", entry), QueueTopicEmail(q.ID, email))
-		s.ps.Pub(WS("ENTRY_PUT_BACK", entry), QueueTopicEmail(q.ID, email))
+		s.ps.Pub(WS("ENTRY_PUT_BACK", entry), QueueTopicEmail(q.ID, entry.Email))
 	}
 }
 
