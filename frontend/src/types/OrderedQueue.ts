@@ -30,7 +30,7 @@ export default class OrderedQueue extends Queue {
 			}
 			case 'ENTRY_REMOVE': {
 				const originalEntry = this.entries.find((e) => e.id === data.id)
-				if (data.removed_by === g.$data.userInfo.email) {
+				if (data.removed_by !== undefined && data.removed_by === g.$data.userInfo.email) {
 					Dialog.alert({
 						title: 'Popped!',
 						message: `You popped ${data.email}! Their link is: ${linkifyStr(data.location)}`,
