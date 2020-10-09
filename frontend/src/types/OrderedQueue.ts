@@ -38,7 +38,7 @@ export default class OrderedQueue extends Queue {
 						hasIcon: true,
 					});
 				}
-				else if (originalEntry !== undefined &&
+				else if (originalEntry !== undefined && originalEntry.email !== undefined &&
 					originalEntry.email === g.$data.userInfo.email &&
 					!this.personallyRemovedEntries.has(data.id)) {
 					Dialog.alert({
