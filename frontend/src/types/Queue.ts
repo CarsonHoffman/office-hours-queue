@@ -1,5 +1,6 @@
 import Announcement from './Announcement';
 import Course from './Course';
+import SendNotification from '../util/Notification';
 import {DialogProgrammatic as Dialog} from 'buefy';
 
 export default class Queue {
@@ -36,12 +37,14 @@ export default class Queue {
 				break;
 			}
 			case 'MESSAGE_CREATE': {
+				SendNotification(`Message from ${this.course.shortName} Staff`, data.content);
 				Dialog.alert({
 					title: 'Message from Staff',
 					message: data.content,
 					type: 'is-warning',
 					hasIcon: true,
 				});
+
 				break;
 			}
 			case 'ANNOUNCEMENT_CREATE': {

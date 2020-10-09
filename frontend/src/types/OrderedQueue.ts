@@ -1,5 +1,6 @@
 import Queue from './Queue';
 import {QueueEntry, RemovedQueueEntry} from './QueueEntry';
+import SendNotification from '../util/Notification';
 import {DialogProgrammatic as Dialog, ToastProgrammatic as Toast} from 'buefy';
 import moment, {Moment} from 'moment-timezone';
 import linkifyStr from 'linkifyjs/string';
@@ -30,6 +31,12 @@ export default class OrderedQueue extends Queue {
 
 		switch (type) {
 			case 'ENTRY_CREATE': {
+				if (this.entries.length === 0 &&
+					g.$data.userInfo.admin_courses !== undefined &&
+					g.$data.userInfo.admin_courses.includes(this.course.id)) {
+					SendNotification('A new student joined the queue!', `A wild ${data.email} has appeared!`);
+				}
+
 				this.addEntry(new QueueEntry(data));
 				break;
 			}
@@ -46,6 +53,8 @@ export default class OrderedQueue extends Queue {
 				else if (originalEntry !== undefined && originalEntry.email !== undefined &&
 					originalEntry.email === g.$data.userInfo.email &&
 					!this.personallyRemovedEntries.has(data.id)) {
+
+					SendNotification('You were popped!', `Please be ready for a staff member to join your meeting!`);
 					Dialog.alert({
 						title: 'Popped!',
 						message: `You've been popped off the queue. Get ready for a staff member to join shortly!`,
