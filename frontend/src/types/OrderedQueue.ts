@@ -17,7 +17,12 @@ export default class OrderedQueue extends Queue {
 			this.entries = data['queue'].map((e: any) => new QueueEntry(e));
 			this.stack = (data['stack'] || []).map((e: any) => new RemovedQueueEntry(e));
 			this.schedule = data['schedule'];
-		})
+			this.setDocumentTitle();
+		});
+	}
+
+	public setDocumentTitle() {
+		document.title = `${this.course.shortName} Office Hours (${this.entries.length})`;
 	}
 
 	public handleWSMessage(type: string, data: any, ws: WebSocket) {
@@ -93,6 +98,8 @@ export default class OrderedQueue extends Queue {
 				break;
 			}
 		}
+
+		this.setDocumentTitle();
 	}
 
 	public addEntry(entry: QueueEntry) {

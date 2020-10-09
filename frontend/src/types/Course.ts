@@ -16,10 +16,10 @@ export default class Course {
 		this.queues = data['queues'].map((q: any) => {
 			switch (q.type) {
 				case 'ordered': {
-					return new OrderedQueue(q);
+					return new OrderedQueue(q, this);
 				}
 				case 'appointments': {
-					return new AppointmentsQueue(q);
+					return new AppointmentsQueue(q, this);
 				}
 				default: {
 					return undefined;

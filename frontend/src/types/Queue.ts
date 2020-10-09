@@ -1,22 +1,25 @@
 import Announcement from './Announcement';
+import Course from './Course';
 import {DialogProgrammatic as Dialog} from 'buefy';
 
 export default class Queue {
 	public readonly id!: string;
-	public readonly course!: string;
 	public readonly type!: 'ordered' | 'appointments';
 	public readonly name!: string;
 	public readonly location!: string;
 	public readonly map!: string;
 	public announcements: Announcement[] = [];
 
-	constructor(data: {[index: string]: any}) {
+	public course!: Course;
+
+	constructor(data: {[index: string]: any}, course: Course) {
 		this.id = data['id'];
-		this.course = data['course'];
 		this.type = data['type'];
 		this.name = data['name'];
 		this.location = data['location'];
 		this.map = data['map'];
+
+		this.course = course;
 	}
 
 	public async pullQueueInfo() {
