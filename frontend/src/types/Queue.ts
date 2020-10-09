@@ -20,7 +20,7 @@ export default class Queue {
 	}
 
 	public async pullQueueInfo() {
-		return fetch(`/api/queues/${this.id}`).then(res => res.json()).then(data => {
+		return fetch(process.env.BASE_URL + `api/queues/${this.id}`).then(res => res.json()).then(data => {
 			this.announcements = data['announcements'].map((a: any) => new Announcement(a));
 			return data;
 		});

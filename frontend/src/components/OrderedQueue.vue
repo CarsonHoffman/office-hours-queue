@@ -149,7 +149,7 @@ export default class OrderedQueueDisplay extends Vue {
 			type: 'is-danger',
 			hasIcon: true,
 			onConfirm: () => {
-				fetch(`/api/queues/${this.queue.id}/entries`, {
+				fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 					method: 'DELETE',
 				}).then((res) => {
 					if (res.status !== 204) {

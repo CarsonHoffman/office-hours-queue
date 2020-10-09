@@ -124,9 +124,13 @@ export default class QueueEntryDisplay extends Vue {
 	removeEntry() {
 		this.queue.personallyRemovedEntries.add(this.entry.id);
 		this.removeRequestRunning = true;
-		fetch(`/api/queues/${this.queue.id}/entries/${this.entry.id}`, {
-			method: 'DELETE',
-		}).then((res) => {
+		fetch(
+			process.env.BASE_URL +
+				`api/queues/${this.queue.id}/entries/${this.entry.id}`,
+			{
+				method: 'DELETE',
+			}
+		).then((res) => {
 			this.removeRequestRunning = false;
 			if (res.status !== 204) {
 				return ErrorDialog(res);
@@ -137,9 +141,13 @@ export default class QueueEntryDisplay extends Vue {
 	putBackRequestRunning = false;
 	putBackEntry() {
 		this.putBackRequestRunning = true;
-		fetch(`/api/queues/${this.queue.id}/entries/${this.entry.id}/undo`, {
-			method: 'POST',
-		}).then((res) => {
+		fetch(
+			process.env.BASE_URL +
+				`api/queues/${this.queue.id}/entries/${this.entry.id}/undo`,
+			{
+				method: 'POST',
+			}
+		).then((res) => {
 			this.putBackRequestRunning = false;
 			if (res.status !== 204) {
 				return ErrorDialog(res);
@@ -161,7 +169,7 @@ export default class QueueEntryDisplay extends Vue {
 			},
 			trapFocus: true,
 			onConfirm: (message) => {
-				fetch(`/api/queues/${this.queue.id}/messages`, {
+				fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/messages`, {
 					method: 'POST',
 					body: JSON.stringify({
 						receiver: this.entry.email,

@@ -34,7 +34,8 @@ export default class AnnouncementDisplay extends Vue {
 			hasIcon: true,
 			onConfirm: () => {
 				fetch(
-					`/api/queues/${this.queue.id}/announcements/${this.announcement.id}`,
+					process.env.BASE_URL +
+						`api/queues/${this.queue.id}/announcements/${this.announcement.id}`,
 					{
 						method: 'DELETE',
 					}

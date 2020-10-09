@@ -53,7 +53,7 @@ export default class QueuePage extends Vue {
 		// Block on WS open so we are connected to receive events
 		// *before* getting latest data
 		const url = new URL(
-			`/api/queues/${this.queue.id}/ws`,
+			process.env.BASE_URL + `api/queues/${this.queue.id}/ws`,
 			window.location.href
 		);
 		url.protocol = url.protocol.replace('http', 'ws');

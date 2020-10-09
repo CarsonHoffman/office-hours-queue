@@ -112,7 +112,7 @@ export default class QueueSignup extends Vue {
 	}
 
 	signUp() {
-		fetch(`/api/queues/${this.queue.id}/entries`, {
+		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 			method: 'POST',
 			body: JSON.stringify({
 				name: this.name,
@@ -134,14 +134,18 @@ export default class QueueSignup extends Vue {
 
 	updateRequest() {
 		if (this.myEntry !== undefined) {
-			fetch(`/api/queues/${this.queue.id}/entries/${this.myEntry.id}`, {
-				method: 'PUT',
-				body: JSON.stringify({
-					name: this.name,
-					description: this.description,
-					location: this.location,
-				}),
-			}).then((res) => {
+			fetch(
+				process.env.BASE_URL +
+					`api/queues/${this.queue.id}/entries/${this.myEntry.id}`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({
+						name: this.name,
+						description: this.description,
+						location: this.location,
+					}),
+				}
+			).then((res) => {
 				if (res.status !== 204) {
 					return ErrorDialog(res);
 				}

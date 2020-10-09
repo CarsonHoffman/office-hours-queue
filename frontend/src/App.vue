@@ -51,7 +51,7 @@ export default class App extends Vue {
 	@Prop() fetchedCourses = false;
 
 	created() {
-		fetch('/api/courses')
+		fetch(process.env.BASE_URL + 'api/courses')
 			.then((resp) => resp.json())
 			.then((data) => {
 				data.map((c: any) => {
@@ -64,7 +64,7 @@ export default class App extends Vue {
 				});
 			});
 
-		fetch('/api/users/@me')
+		fetch(process.env.BASE_URL + 'api/users/@me')
 			.then((resp) => {
 				if (resp.status !== 200) {
 					return Promise.reject('not logged in');
