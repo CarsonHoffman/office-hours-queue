@@ -9,7 +9,7 @@ function checkNotificationPromise() {
 }
 
 export default function SendNotification(title: string, body: string) {
-	if (Notification !== undefined) {
+	if ('Notification' in window) {
 		if (checkNotificationPromise()) {
 			Notification.requestPermission().then((p) => {
 				if (p === 'granted') {

@@ -51,7 +51,7 @@ export default class App extends Vue {
 	@Prop() fetchedCourses = false;
 
 	created() {
-		if (Notification !== undefined) {
+		if ('Notification' in window) {
 			Notification.requestPermission();
 		}
 
