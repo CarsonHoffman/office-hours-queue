@@ -40,7 +40,7 @@ import OrderedQueueDisplay from '@/components/OrderedQueue.vue';
 export default class QueuePage extends Vue {
 	@Prop() loaded = false;
 	ws!: WebSocket;
-	@Prop({ default: moment() }) time!: Moment;
+	@Prop() time!: Moment;
 	@Prop() timeUpdater!: number;
 
 	constructor() {
@@ -90,6 +90,7 @@ export default class QueuePage extends Vue {
 	}
 
 	created() {
+		this.time = moment();
 		// We need to manually refresh the time every so often
 		// as Vue isn't reactive to moment changes. I don't
 		// like doing this either.
