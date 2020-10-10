@@ -138,6 +138,7 @@ CREATE TABLE public.queue_entries (
     map_y real NOT NULL,
     description text NOT NULL,
     priority smallint NOT NULL,
+    pinned boolean DEFAULT false NOT NULL,
     removed boolean DEFAULT false NOT NULL,
     removed_by text,
     removed_at timestamp without time zone
