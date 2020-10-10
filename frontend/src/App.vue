@@ -51,7 +51,9 @@ export default class App extends Vue {
 	@Prop() fetchedCourses = false;
 
 	created() {
-		Notification.requestPermission();
+		if (Notification !== undefined) {
+			Notification.requestPermission();
+		}
 
 		fetch(process.env.BASE_URL + 'api/courses')
 			.then((resp) => resp.json())
