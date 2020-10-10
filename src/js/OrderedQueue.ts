@@ -202,7 +202,7 @@ export class OrderedQueue {
         });
     }
 
-    public putBackRequest(request: QueueEntry) {
+    public pinRequest(request: QueueEntry) {
         this.page.disableRefresh();
         $.ajax({
             type: 'POST',
@@ -211,10 +211,10 @@ export class OrderedQueue {
                 this.page.queueId +
                 '/entries/' +
                 request.id +
-                '/undo',
+                '/pin',
             success: () => {
                 console.log(
-                    'successfully put back ' +
+                    'successfully pinned ' +
                         request.email +
                         ' on queue ' +
                         this.page.queueId,
@@ -1096,12 +1096,12 @@ class QueueEntry {
             infoElem.append(removeButton);
         } else {
             let undoButton = $(
-                '<button type="button" class="btn btn-primary">Put Back</button>',
+                '<button type="button" class="btn btn-primary">Pin</button>',
             );
             undoButton.addClass('adminOnly');
             undoButton.on(
                 'click',
-                this.queue.putBackRequest.bind(this.queue, this),
+                this.queue.pinRequest.bind(this.queue, this),
             );
 
             infoElem.append(undoButton);

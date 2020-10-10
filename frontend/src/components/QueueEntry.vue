@@ -1,10 +1,10 @@
 <template>
 	<div class="box entry">
 		<article class="media">
-			<figure v-if="!anonymous && entry.avatar !== undefined" class="media-left">
-				<p class="image is-64x64">
-					<img class="is-rounded" :src="entry.avatar" />
-				</p>
+			<figure v-if="entry.pinned" class="media-left">
+				<b-tooltip label="This student is pinned to the top of the queue." position="is-right">
+					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
+				</b-tooltip>
 			</figure>
 			<div class="media-content">
 				<div class="content">
@@ -55,17 +55,17 @@
 						<div class="field is-grouped">
 							<p class="control">
 								<button
-									class="button is-info"
-									:class="{'is-loading': putBackRequestRunning}"
-									v-if="stack"
-									v-on:click="putBackEntry"
-								>Put Back</button>
-								<button
 									class="button is-danger"
 									:class="{'is-loading': removeRequestRunning}"
-									v-else
 									v-on:click="removeEntry"
 								>Remove</button>
+							</p>
+							<p class="control" v-if="!entry.pinned && admin">
+								<button
+									class="button is-info"
+									:class="{'is-loading': pinEntryRequestRunning}"
+									v-on:click="pinEntry"
+								>Pin</button>
 							</p>
 							<p class="control" v-if="admin">
 								<button class="button is-warning" @click="messageUser">Message</button>
@@ -138,24 +138,24 @@ export default class QueueEntryDisplay extends Vue {
 		});
 	}
 
-	putBackRequestRunning = false;
-	putBackEntry() {
-		this.putBackRequestRunning = true;
+	pinEntryRequestRunning = false;
+	pinEntry() {
+		this.pinEntryRequestRunning = true;
 		fetch(
 			process.env.BASE_URL +
-				`api/queues/${this.queue.id}/entries/${this.entry.id}/undo`,
+				`api/queues/${this.queue.id}/entries/${this.entry.id}/pin`,
 			{
 				method: 'POST',
 			}
 		).then((res) => {
-			this.putBackRequestRunning = false;
+			this.pinEntryRequestRunning = false;
 			if (res.status !== 204) {
 				return ErrorDialog(res);
 			}
 
 			this.$buefy.toast.open({
 				duration: 5000,
-				message: `Put back ${this.entry.email}!`,
+				message: `Pinned ${this.entry.email}!`,
 				type: 'is-success',
 			});
 		});

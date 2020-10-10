@@ -648,13 +648,13 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 	}
 }
 
-type putBackQueueEntry interface {
+type pinQueueEntry interface {
 	getQueueEntry
 	getActiveQueueEntriesForUser
-	PutBackQueueEntry(ctx context.Context, entry ksuid.KSUID) error
+	PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error
 }
 
-func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
+func (s *Server) PinQueueEntry(pb pinQueueEntry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
@@ -694,24 +694,26 @@ func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
 			l.Errorw("failed to get queue entries for user")
 		}
 
-		if len(entries) > 0 {
-			l.Warnw("attempted to put back queue entry with student on queue")
+		if entry.Removed && len(entries) > 0 {
+			l.Warnw("attempted to pin queue entry with student on queue")
 			s.errorMessage(
 				http.StatusConflict,
-				"That user is already on the queue. If you pop the new one you can put back the old one!",
+				"That user is already on the queue. Pin their new entry!",
 				w, r,
 			)
 			return
 		}
 
-		err = pb.PutBackQueueEntry(r.Context(), entryID)
+		err = pb.PinQueueEntry(r.Context(), entryID)
 		if err != nil {
-			l.Errorw("failed to put back queue entry", "err", err)
+			l.Errorw("failed to pin queue entry", "err", err)
 			s.internalServerError(w, r)
 			return
 		}
 
-		l.Infow("put back queue entry")
+		entry.Pinned = true
+
+		l.Infow("pinned queue entry")
 		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("STACK_REMOVE", entry), QueueTopicAdmin(q.ID))
@@ -721,7 +723,7 @@ func (s *Server) PutBackQueueEntry(pb putBackQueueEntry) http.HandlerFunc {
 		// Send an update with more information to the user who
 		// created the queue entry.
 		s.ps.Pub(WS("ENTRY_UPDATE", entry), QueueTopicEmail(q.ID, email))
-		s.ps.Pub(WS("ENTRY_PUT_BACK", entry), QueueTopicEmail(q.ID, entry.Email))
+		s.ps.Pub(WS("ENTRY_PINNED", entry), QueueTopicEmail(q.ID, entry.Email))
 	}
 }
 

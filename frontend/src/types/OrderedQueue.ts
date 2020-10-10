@@ -31,6 +31,13 @@ export default class OrderedQueue extends Queue {
 
 		switch (type) {
 			case 'ENTRY_CREATE': {
+				const existing = this.entries.findIndex((e) => e.id === data.id);
+				if (existing !== -1) {
+					this.entries.splice(existing, 1, new QueueEntry(data));
+					this.sortEntries();
+					return;
+				}
+
 				if (this.entries.length === 0 &&
 					g.$data.userInfo.admin_courses !== undefined &&
 					g.$data.userInfo.admin_courses.includes(this.course.id)) {
@@ -73,12 +80,14 @@ export default class OrderedQueue extends Queue {
 				if (i !== -1) {
 					this.entries.splice(i, 1, new QueueEntry(data));
 				}
+				this.sortEntries();
 				break;
 			}
-			case 'ENTRY_PUT_BACK': {
+			case 'ENTRY_PINNED': {
+				SendNotification('You were pinned!', 'Another staff member will be joining shortly!');
 				Dialog.alert({
-					title: 'Put back!',
-					message: `You were put back on the queue! Another staff member should be able to help you shortly. ` +
+					title: 'Pinned!',
+					message: `You were pinned on the queue! More help is on the way. ` +
 						`You'll get a notification when you've been popped again.`,
 					type: 'is-info',
 					hasIcon: true,
@@ -113,7 +122,15 @@ export default class OrderedQueue extends Queue {
 
 	public addEntry(entry: QueueEntry) {
 		this.entries.push(entry);
+		this.sortEntries();
+	}
+
+	public sortEntries() {
 		this.entries.sort((a, b) => {
+			if (a.pinned != b.pinned) {
+				return a.pinned ? -1 : 1;
+			}
+
 			if (a.priority != b.priority) {
 				// If a's priority is higher, it should come first.
 				return b.priority - a.priority;

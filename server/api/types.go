@@ -56,6 +56,7 @@ type QueueEntry struct {
 	MapX        float32        `json:"map_x,omitempty" db:"map_x"`
 	MapY        float32        `json:"map_y,omitempty" db:"map_y"`
 	Priority    int            `json:"priority" db:"priority"`
+	Pinned      bool           `json:"pinned,omitempty" db:"pinned"`
 	Removed     bool           `json:"-" db:"removed"`
 	RemovedBy   sql.NullString `json:"-" db:"removed_by"`
 	RemovedAt   sql.NullTime   `json:"-" db:"removed_at"`
@@ -79,6 +80,7 @@ func (q *QueueEntry) Anonymized() *QueueEntry {
 		ID:       q.ID,
 		Queue:    q.Queue,
 		Priority: q.Priority,
+		Pinned:   q.Pinned,
 	}
 }
 
@@ -92,6 +94,7 @@ type RemovedQueueEntry struct {
 	MapX        float32     `json:"map_x,omitempty" db:"map_x"`
 	MapY        float32     `json:"map_y,omitempty" db:"map_y"`
 	Priority    int         `json:"priority" db:"priority"`
+	Pinned      bool        `json:"pinned,omitempty" db:"pinned"`
 	Removed     bool        `json:"-" db:"removed"`
 	RemovedBy   string      `json:"removed_by,omitempty" db:"removed_by"`
 	RemovedAt   time.Time   `json:"removed_at" db:"removed_at"`
