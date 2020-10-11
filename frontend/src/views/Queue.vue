@@ -1,5 +1,5 @@
 <template>
-	<div class="box">
+	<div class="box" v-if="found">
 		<section v-if="queue !== null && queue.announcements.length > 0" class="section">
 			<h1 class="title">Announcements</h1>
 			<div class="block" v-for="announcement in queue.announcements" :key="announcement.id">
@@ -38,13 +38,25 @@ import OrderedQueueDisplay from '@/components/OrderedQueue.vue';
 	},
 })
 export default class QueuePage extends Vue {
+	found = false;
 	@Prop() loaded = false;
 	ws!: WebSocket;
 	@Prop() time!: Moment;
 	@Prop() timeUpdater!: number;
 
-	constructor() {
-		super();
+	created() {
+		if (this.queue === undefined) {
+			this.$buefy.toast.open({
+				duration: 5000,
+				message: `I couldn't find that queue! Bringing you back home…`,
+				type: 'is-danger',
+			});
+
+			this.$router.push('/');
+			return;
+		}
+
+		this.found = true;
 
 		document.title =
 			this.$root.$data.courses[this.$route.params.cid].shortName +
@@ -68,15 +80,15 @@ export default class QueuePage extends Vue {
 
 		this.ws.onclose = (c) => {
 			if (c.code !== 1005) {
+				console.log('disconnected:');
+				console.log(c);
 				this.$buefy.toast.open({
 					duration: 5000,
 					message:
-						'It looks like you got disconnected from the server. Refreshing the page shortly…',
+						'It looks like you got disconnected from the server. Refreshing…',
 					type: 'is-danger',
 				});
-				setTimeout(() => {
-					location.reload();
-				}, 5000);
+				this.$emit('disconnected');
 			}
 		};
 
@@ -87,9 +99,7 @@ export default class QueuePage extends Vue {
 
 			this.queue.handleWSMessage(type, data, this.ws);
 		};
-	}
 
-	created() {
 		this.time = moment();
 		// We need to manually refresh the time every so often
 		// as Vue isn't reactive to moment changes. I don't
@@ -100,7 +110,10 @@ export default class QueuePage extends Vue {
 	}
 
 	destroyed() {
-		this.ws.close();
+		if (this.ws !== undefined) {
+			this.ws.close();
+		}
+
 		clearInterval(this.timeUpdater);
 	}
 

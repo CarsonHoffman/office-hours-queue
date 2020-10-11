@@ -30,7 +30,7 @@
 					</div>
 					<div class="column is-four-fifths">
 						<transition name="fade" mode="out-in">
-							<router-view :key="$route.fullPath"></router-view>
+							<router-view :key="$route.fullPath" @disconnected="restart"></router-view>
 						</transition>
 					</div>
 				</div>
@@ -54,6 +54,27 @@ export default class App extends Vue {
 		if ('Notification' in window) {
 			Notification.requestPermission();
 		}
+
+		this.restart();
+	}
+
+	get courses() {
+		return Object.values(this.$root.$data.courses).filter(
+			(c: Course) => c.queues.length > 0
+		);
+	}
+
+	// Drop all courses and authorization information and re-start
+	// the loading process. This is essentially a complete refresh
+	// without actually refreshing the page.
+	restart() {
+		this.fetchedCourses = false;
+		Vue.set(this.$root.$data, 'courses', {});
+		Vue.set(this.$root.$data, 'queues', {});
+
+		Vue.set(this.$root.$data, 'userInfoLoaded', false);
+		Vue.set(this.$root.$data, 'loggedIn', false);
+		Vue.set(this.$root.$data, 'userInfo', {});
 
 		fetch(process.env.BASE_URL + 'api/courses')
 			.then((resp) => resp.json())
@@ -81,12 +102,6 @@ export default class App extends Vue {
 				Vue.set(this.$root.$data, 'userInfo', data);
 			})
 			.catch((p) => (this.$root.$data.userInfoLoaded = true));
-	}
-
-	get courses() {
-		return Object.values(this.$root.$data.courses).filter(
-			(c: Course) => c.queues.length > 0
-		);
 	}
 }
 </script>
