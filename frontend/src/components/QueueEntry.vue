@@ -53,7 +53,7 @@
 					<div v-if="!anonymous">
 						<br />
 						<div class="field is-grouped">
-							<p class="control">
+							<p class="control" v-if="!stack">
 								<button
 									class="button is-danger"
 									:class="{'is-loading': removeRequestRunning}"
