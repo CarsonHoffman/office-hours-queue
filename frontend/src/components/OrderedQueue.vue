@@ -78,9 +78,22 @@
 					<queue-signup :queue="queue" :time="time" />
 				</div>
 				<div class="block" v-if="admin && queue.stack.length > 0">
-					<h1 class="title">Stack</h1>
-					<transition-group v-if="queue.stack.length > 0" name="entries-group" tag="div">
-						<div v-for="entry in queue.stack" :key="entry.id" class="block entries-group-item">
+					<h1 class="title block">Stack</h1>
+					<div class="control block" :class="{'is-loading': stackRequestRunning}">
+						<input
+							class="input"
+							type="text"
+							placeholder="Search by name, email, description"
+							@click="stackSearchBoxClicked"
+							v-model="stackFilter"
+						/>
+					</div>
+					<transition-group
+						v-if="queue.stack.length > 0 && stackFilter === ''"
+						name="entries-group"
+						tag="div"
+					>
+						<div v-for="entry in filteredStack" :key="entry.id" class="block entries-group-item">
 							<queue-entry-display
 								:entry="entry"
 								:stack="true"
@@ -90,6 +103,17 @@
 							/>
 						</div>
 					</transition-group>
+					<div class="entries-group" v-else>
+						<div v-for="entry in filteredStack" :key="entry.id" class="block entries-group-item">
+							<queue-entry-display
+								:entry="entry"
+								:stack="true"
+								:queue="queue"
+								:admin="admin"
+								:time="time"
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -158,6 +182,45 @@ export default class OrderedQueueDisplay extends Vue {
 				});
 			},
 		});
+	}
+
+	stackFullyLoaded = false;
+	stackRequestRunning = false;
+
+	stackSearchBoxClicked() {
+		if (!this.stackFullyLoaded) {
+			this.stackRequestRunning = true;
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/stack`)
+				.then((res) => {
+					if (res.status !== 200) {
+						this.stackRequestRunning = false;
+						return ErrorDialog(res);
+					}
+
+					return res.json();
+				})
+				.then((data) => {
+					this.queue.stack = data.map((d: any) => new RemovedQueueEntry(d));
+					this.stackFullyLoaded = true;
+					this.stackRequestRunning = false;
+				});
+		}
+	}
+
+	stackFilter = '';
+
+	get filteredStack() {
+		if (this.stackFilter === '') {
+			return this.queue.stack;
+		}
+
+		return this.queue.stack.filter(
+			(s) =>
+				s.name.includes(this.stackFilter) ||
+				s.email.includes(this.stackFilter) ||
+				s.removedBy.includes(this.stackFilter) ||
+				s.description.includes(this.stackFilter)
+		);
 	}
 }
 </script>
