@@ -1,11 +1,6 @@
 <template>
 	<div class="box entry">
 		<article class="media">
-			<figure v-if="entry.pinned" class="media-left">
-				<b-tooltip label="This student is pinned to the top of the queue." position="is-right">
-					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
-				</b-tooltip>
-			</figure>
 			<div class="media-content">
 				<div class="content">
 					<div class="level icon-row is-mobile">
@@ -74,6 +69,11 @@
 					</div>
 				</div>
 			</div>
+			<figure v-if="entry.pinned" class="media-right">
+				<b-tooltip label="This student is pinned to the top of the queue." position="is-left">
+					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
+				</b-tooltip>
+			</figure>
 		</article>
 	</div>
 </template>
