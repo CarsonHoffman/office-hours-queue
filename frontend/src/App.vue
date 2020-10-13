@@ -5,11 +5,20 @@
 				<div class="navbar-brand">
 					<div class="navbar-item">
 						<h1 class="title">
-							<router-link to="/">EECS Office Hours</router-link>
+							<router-link to="/" class="no-link-color">EECS Office Hours</router-link>
 						</h1>
 					</div>
 				</div>
 				<div class="navbar-end">
+					<div class="navbar-item">
+						<a
+							href="https://github.com/CarsonHoffman/office-hours-queue"
+							target="_blank"
+							class="no-link-color"
+						>
+							<font-awesome-icon :icon="['fab', 'github']" size="2x" />
+						</a>
+					</div>
 					<div class="navbar-item">
 						<button class="button is-info is-loading" v-if="!$root.$data.userInfoLoaded">Log in</button>
 						<button class="button is-info" v-else-if="!$root.$data.loggedIn">Log in</button>
@@ -42,9 +51,13 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 import CourseNavbarItem from '@/components/CourseNavbarItem.vue';
 import Course from './types/Course';
+
+library.add(faGithub);
 
 @Component({ components: { CourseNavbarItem } })
 export default class App extends Vue {
@@ -155,7 +168,7 @@ $colors: (
 @import '~bulma';
 @import '~buefy/src/scss/buefy';
 
-.router-link-active {
+.no-link-color {
 	text-decoration: none;
 	color: inherit;
 }
