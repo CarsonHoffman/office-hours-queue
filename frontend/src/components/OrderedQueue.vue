@@ -58,7 +58,7 @@
 				<div class="level block" v-if="loaded">
 					<div class="level-left">
 						<p class="level-item">
-							<font-awesome-icon icon="user-graduate" class="fa-fw" fixed-size />
+							<font-awesome-icon icon="user-graduate" fixed-size />
 							<strong>{{queue.entries.length}}</strong>
 						</p>
 						<p class="level-item" v-if="open">The queue is open until {{closesAt}}.</p>
@@ -104,6 +104,16 @@ import { QueueEntry, RemovedQueueEntry } from '../types/QueueEntry';
 import QueueEntryDisplay from '@/components/QueueEntry.vue';
 import QueueSignup from '@/components/QueueSignup.vue';
 import ErrorDialog from '../util/ErrorDialog';
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import {
+	faStoreAltSlash,
+	faGrinHearts,
+	faHeartBroken,
+	faUserGraduate,
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(faStoreAltSlash, faGrinHearts, faHeartBroken, faUserGraduate);
 
 @Component({
 	components: {

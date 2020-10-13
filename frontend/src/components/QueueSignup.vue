@@ -5,7 +5,7 @@
 			<div class="control has-icons-left">
 				<input class="input" v-model="name" type="text" placeholder="Nice to meet you!" />
 				<span class="icon is-small is-left">
-					<i class="fas fa-user"></i>
+					<font-awesome-icon icon="user" />
 				</span>
 			</div>
 		</div>
@@ -19,7 +19,7 @@
 					placeholder="Help us help you—please be descriptive!"
 				/>
 				<span class="icon is-small is-left">
-					<i class="fas fa-question"></i>
+					<font-awesome-icon icon="question" />
 				</span>
 			</div>
 		</div>
@@ -28,7 +28,7 @@
 			<div class="control has-icons-left">
 				<input class="input" v-model="location" type="text" />
 				<span class="icon is-small is-left">
-					<i class="fas fa-link"></i>
+					<font-awesome-icon icon="link" />
 				</span>
 			</div>
 		</div>
@@ -59,6 +59,11 @@ import { Component, Prop, Watch } from 'vue-property-decorator';
 import OrderedQueue from '../types/OrderedQueue';
 import { QueueEntry } from '../types/QueueEntry';
 import ErrorDialog from '../util/ErrorDialog';
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faUser, faQuestion, faLink } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faUser, faQuestion, faLink);
 
 @Component
 export default class QueueSignup extends Vue {

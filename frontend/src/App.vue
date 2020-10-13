@@ -51,11 +51,11 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { faGithub } from '@fortawesome/free-brands-svg-icons';
-
 import CourseNavbarItem from '@/components/CourseNavbarItem.vue';
 import Course from './types/Course';
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 library.add(faGithub);
 

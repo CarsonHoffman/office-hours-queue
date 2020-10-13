@@ -31,6 +31,11 @@ import Announcement from '../types/Announcement';
 import AnnouncementDisplay from '@/components/AnnouncementDisplay.vue';
 import OrderedQueueDisplay from '@/components/OrderedQueue.vue';
 
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faFrownOpen } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faFrownOpen);
+
 @Component({
 	components: {
 		AnnouncementDisplay,

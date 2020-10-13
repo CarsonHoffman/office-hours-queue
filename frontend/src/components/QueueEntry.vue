@@ -81,14 +81,23 @@
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
-import { library } from '@fortawesome/fontawesome-svg-core';
-import { faUser } from '@fortawesome/free-solid-svg-icons';
 import linkifyStr from 'linkifyjs/string';
 import OrderedQueue from '../types/OrderedQueue';
 import { QueueEntry } from '../types/QueueEntry';
 import ErrorDialog from '../util/ErrorDialog';
 
-library.add(faUser);
+import { library } from '@fortawesome/fontawesome-svg-core';
+import {
+	faUser,
+	faAt,
+	faQuestion,
+	faLink,
+	faClock,
+	faTimes,
+	faThumbtack,
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(faUser, faAt, faQuestion, faLink, faClock, faTimes, faThumbtack);
 
 @Component
 export default class QueueEntryDisplay extends Vue {
