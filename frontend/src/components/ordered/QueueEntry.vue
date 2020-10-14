@@ -82,9 +82,9 @@
 import { Component, Vue, Prop } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
 import linkifyStr from 'linkifyjs/string';
-import OrderedQueue from '../types/OrderedQueue';
-import { QueueEntry } from '../types/QueueEntry';
-import ErrorDialog from '../util/ErrorDialog';
+import OrderedQueue from '@/types/OrderedQueue';
+import { QueueEntry } from '@/types/QueueEntry';
+import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {

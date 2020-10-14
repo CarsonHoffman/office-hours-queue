@@ -99,11 +99,11 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
-import OrderedQueue from '../types/OrderedQueue';
-import { QueueEntry, RemovedQueueEntry } from '../types/QueueEntry';
-import QueueEntryDisplay from '@/components/QueueEntry.vue';
-import QueueSignup from '@/components/QueueSignup.vue';
-import ErrorDialog from '../util/ErrorDialog';
+import OrderedQueue from '@/types/OrderedQueue';
+import { QueueEntry, RemovedQueueEntry } from '@/types/QueueEntry';
+import QueueEntryDisplay from '@/components/ordered/QueueEntry.vue';
+import QueueSignup from '@/components/ordered/QueueSignup.vue';
+import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {

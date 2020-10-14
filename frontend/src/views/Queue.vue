@@ -25,11 +25,11 @@
 import Vue from 'vue';
 import { Component, Prop } from 'vue-property-decorator';
 import moment, { Moment } from 'moment';
-import Queue from '../types/Queue';
-import OrderedQueue from '../types/OrderedQueue';
-import Announcement from '../types/Announcement';
+import Queue from '@/types/Queue';
+import OrderedQueue from '@/types/OrderedQueue';
+import Announcement from '@/types/Announcement';
 import AnnouncementDisplay from '@/components/AnnouncementDisplay.vue';
-import OrderedQueueDisplay from '@/components/OrderedQueue.vue';
+import OrderedQueueDisplay from '@/components/ordered/OrderedQueue.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faFrownOpen } from '@fortawesome/free-solid-svg-icons';

@@ -56,9 +56,9 @@
 import Vue from 'vue';
 import { Moment } from 'moment';
 import { Component, Prop, Watch } from 'vue-property-decorator';
-import OrderedQueue from '../types/OrderedQueue';
-import { QueueEntry } from '../types/QueueEntry';
-import ErrorDialog from '../util/ErrorDialog';
+import OrderedQueue from '@/types/OrderedQueue';
+import { QueueEntry } from '@/types/QueueEntry';
+import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faUser, faQuestion, faLink } from '@fortawesome/free-solid-svg-icons';
