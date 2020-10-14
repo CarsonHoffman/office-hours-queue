@@ -98,8 +98,8 @@ export default class App extends Vue {
 					for (const q of course.queues) {
 						Vue.set(this.$root.$data.queues, q.id, q);
 					}
-					this.fetchedCourses = true;
 				});
+				this.fetchedCourses = true;
 			});
 
 		fetch(process.env.BASE_URL + 'api/users/@me')
