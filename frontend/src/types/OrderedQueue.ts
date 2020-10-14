@@ -1,8 +1,11 @@
 import Queue from './Queue';
-import {QueueEntry, RemovedQueueEntry} from './QueueEntry';
+import { QueueEntry, RemovedQueueEntry } from './QueueEntry';
 import SendNotification from '../util/Notification';
-import {DialogProgrammatic as Dialog, ToastProgrammatic as Toast} from 'buefy';
-import moment, {Moment} from 'moment-timezone';
+import {
+	DialogProgrammatic as Dialog,
+	ToastProgrammatic as Toast,
+} from 'buefy';
+import moment, { Moment } from 'moment-timezone';
 import linkifyStr from 'linkifyjs/string';
 import g from '../main';
 
@@ -16,7 +19,9 @@ export default class OrderedQueue extends Queue {
 	public async pullQueueInfo() {
 		return super.pullQueueInfo().then((data) => {
 			this.entries = data['queue'].map((e: any) => new QueueEntry(e));
-			this.stack = (data['stack'] || []).map((e: any) => new RemovedQueueEntry(e));
+			this.stack = (data['stack'] || []).map(
+				(e: any) => new RemovedQueueEntry(e)
+			);
 			this.schedule = data['schedule'];
 			this.setDocumentTitle();
 		});
@@ -38,30 +43,44 @@ export default class OrderedQueue extends Queue {
 					return;
 				}
 
-				if (this.entries.length === 0 &&
+				if (
+					this.entries.length === 0 &&
 					g.$data.userInfo.admin_courses !== undefined &&
-					g.$data.userInfo.admin_courses.includes(this.course.id)) {
-					SendNotification('A new student joined the queue!', `A wild ${data.email} has appeared!`);
+					g.$data.userInfo.admin_courses.includes(this.course.id)
+				) {
+					SendNotification(
+						'A new student joined the queue!',
+						`A wild ${data.email} has appeared!`
+					);
 				}
 
 				this.addEntry(new QueueEntry(data));
 				break;
 			}
 			case 'ENTRY_REMOVE': {
-				const originalEntry = this.entries.find((e) => e.id === data.id)
-				if (data.removed_by !== undefined && data.removed_by === g.$data.userInfo.email) {
+				const originalEntry = this.entries.find((e) => e.id === data.id);
+				if (
+					data.removed_by !== undefined &&
+					data.removed_by === g.$data.userInfo.email
+				) {
 					Dialog.alert({
 						title: 'Popped!',
-						message: `You popped ${data.email}! Their link is: ${linkifyStr(data.location)}`,
+						message: `You popped ${data.email}! Their link is: ${linkifyStr(
+							data.location
+						)}`,
 						type: 'is-success',
 						hasIcon: true,
 					});
-				}
-				else if (originalEntry !== undefined && originalEntry.email !== undefined &&
+				} else if (
+					originalEntry !== undefined &&
+					originalEntry.email !== undefined &&
 					originalEntry.email === g.$data.userInfo.email &&
-					!this.personallyRemovedEntries.has(data.id)) {
-
-					SendNotification('You were popped!', `Please be ready for a staff member to join your meeting!`);
+					!this.personallyRemovedEntries.has(data.id)
+				) {
+					SendNotification(
+						'You were popped!',
+						`Please be ready for a staff member to join your meeting!`
+					);
 					Dialog.alert({
 						title: 'Popped!',
 						message: `You've been popped off the queue. Get ready for a staff member to join shortly!`,
@@ -84,10 +103,14 @@ export default class OrderedQueue extends Queue {
 				break;
 			}
 			case 'ENTRY_PINNED': {
-				SendNotification('You were pinned!', 'Another staff member will be joining shortly!');
+				SendNotification(
+					'You were pinned!',
+					'Another staff member will be joining shortly!'
+				);
 				Dialog.alert({
 					title: 'Pinned!',
-					message: `You were pinned on the queue! More help is on the way. ` +
+					message:
+						`You were pinned on the queue! More help is on the way. ` +
 						`You'll get a notification when you've been popped again.`,
 					type: 'is-info',
 					hasIcon: true,
@@ -141,7 +164,7 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public removeEntry(entryId: string) {
-		this.entries = this.entries.filter(e => e.id !== entryId);
+		this.entries = this.entries.filter((e) => e.id !== entryId);
 	}
 
 	public addStackEntry(entry: RemovedQueueEntry) {
@@ -152,15 +175,26 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public removeStackEntry(entryId: string) {
-		this.stack = this.stack.filter(e => e.id !== entryId);
+		this.stack = this.stack.filter((e) => e.id !== entryId);
 	}
 
 	public getHalfHour(time: Moment): number {
-		return Math.floor(time.clone().diff(time.clone().tz('America/New_York').startOf('day'), 'minutes') / 30);
+		return Math.floor(
+			time.clone().diff(
+				time
+					.clone()
+					.tz('America/New_York')
+					.startOf('day'),
+				'minutes'
+			) / 30
+		);
 	}
 
 	public halfHourToTime(halfHour: number): Moment {
-		return moment().tz('America/New_York').startOf('day').add(halfHour * 30, 'minutes');
+		return moment()
+			.tz('America/New_York')
+			.startOf('day')
+			.add(halfHour * 30, 'minutes');
 	}
 
 	public getOpenHalfHours(): number[] {

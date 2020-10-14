@@ -116,7 +116,7 @@ export default class QueueEntryDisplay extends Vue {
 	}
 
 	get location() {
-		return linkifyStr(this.entry.location, {
+		return linkifyStr(this.entry.location || '', {
 			defaultProtocol: 'https',
 		});
 	}

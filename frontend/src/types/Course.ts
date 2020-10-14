@@ -9,7 +9,7 @@ export default class Course {
 
 	public readonly queues: Queue[] = [];
 
-	constructor(data: {[index: string]: any}) {
+	constructor(data: { [index: string]: any }) {
 		this.id = data['id'];
 		this.shortName = data['short_name'];
 		this.fullName = data['full_name'];

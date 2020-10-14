@@ -80,9 +80,9 @@ export default class QueueSignup extends Vue {
 		oldEntry: QueueEntry | undefined
 	) {
 		if (newEntry !== undefined) {
-			this.name = newEntry.name;
-			this.description = newEntry.description;
-			this.location = newEntry.location;
+			this.name = newEntry.name || '';
+			this.description = newEntry.description || '';
+			this.location = newEntry.location || '';
 		}
 	}
 
