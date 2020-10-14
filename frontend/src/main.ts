@@ -9,7 +9,21 @@ import Queue from './types/Queue';
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 
-Vue.use(Buefy, {defaultIconPack: 'fa'});
+import {library} from '@fortawesome/fontawesome-svg-core';
+import {
+	faCheck, faCheckCircle, faInfoCircle, faExclamationTriangle, faExclamationCircle,
+	faArrowUp, faAngleRight, faAngleLeft, faAngleDown,
+	faEye, faEyeSlash, faCaretDown, faCaretUp, faUpload
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(faCheck, faCheckCircle, faInfoCircle, faExclamationTriangle, faExclamationCircle,
+	faArrowUp, faAngleRight, faAngleLeft, faAngleDown,
+	faEye, faEyeSlash, faCaretDown, faCaretUp, faUpload);
+
+Vue.use(Buefy, {
+	defaultIconComponent: 'font-awesome-icon',
+	defaultIconPack: 'fas',
+});
 
 Vue.config.productionTip = false;
 
