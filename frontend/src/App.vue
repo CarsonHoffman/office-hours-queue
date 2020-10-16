@@ -21,8 +21,12 @@
 					</div>
 					<div class="navbar-item">
 						<button class="button is-info is-loading" v-if="!$root.$data.userInfoLoaded">Log in</button>
-						<button class="button is-info" v-else-if="!$root.$data.loggedIn">Log in</button>
-						<button class="button is-danger" v-else>Log out</button>
+						<a :href="loginUrl" v-else-if="!$root.$data.loggedIn">
+							<button class="button is-info">Log in</button>
+						</a>
+						<a :href="logoutUrl" v-else>
+							<button class="button is-danger">Log out</button>
+						</a>
 					</div>
 				</div>
 			</div>
@@ -69,6 +73,14 @@ export default class App extends Vue {
 		}
 
 		this.restart();
+	}
+
+	get loginUrl() {
+		return process.env.BASE_URL + 'api/oauth2login';
+	}
+
+	get logoutUrl() {
+		return process.env.BASE_URL + 'api/logout';
 	}
 
 	get courses() {

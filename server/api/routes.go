@@ -11,14 +11,17 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
 type Server struct {
 	chi.Router
 
-	logger   *zap.SugaredLogger
-	sessions *pgstore.PGStore
-	ps       *pubsub.PubSub
+	logger      *zap.SugaredLogger
+	sessions    *pgstore.PGStore
+	ps          *pubsub.PubSub
+	oauthConfig oauth2.Config
+	baseURL     string
 }
 
 // All of the abilities that a complete backing
@@ -77,7 +80,7 @@ type queueStore interface {
 	removeAppointmentSignup
 }
 
-func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server {
+func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthConfig oauth2.Config) *Server {
 	var s Server
 	s.logger = logger
 
@@ -104,6 +107,10 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 	// for 5 events on every connection. There isn't an empirical basis here.
 	// Just a guess.
 	s.ps = pubsub.New(5)
+
+	s.oauthConfig = oauthConfig
+
+	s.baseURL = os.Getenv("QUEUE_BASE_URL")
 
 	s.Router = chi.NewRouter()
 	s.Router.Use(ksuidInserter, s.recoverMiddleware, s.sessionRetriever)
@@ -297,6 +304,12 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB) *Server
 
 	// Login handler (takes Google idtoken, sets up session)
 	s.Post("/login", s.Login())
+
+	s.Get("/oauth2login", s.OAuth2LoginLink())
+
+	s.Get("/oauth2callback", s.OAuth2Callback())
+
+	s.Get("/logout", s.Logout())
 
 	s.With(s.ValidLoginMiddleware).Get("/users/@me", s.GetCurrentUserInfo(q))
 

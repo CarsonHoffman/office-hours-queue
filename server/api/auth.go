@@ -6,7 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dchest/uniuri"
 	"google.golang.org/api/idtoken"
+	goauth2 "google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -21,6 +24,7 @@ var emptySessionCookie = &http.Cookie{
 	MaxAge:   -1,
 	HttpOnly: true,
 	Secure:   os.Getenv("USE_SECURE_COOKIES") == "true",
+	Path:     "/",
 }
 
 func (s *Server) ValidLoginMiddleware(next http.Handler) http.Handler {
@@ -42,9 +46,6 @@ func (s *Server) ValidLoginMiddleware(next http.Handler) http.Handler {
 
 		email, ok := session.Values["email"].(string)
 		if !ok {
-			s.logger.Infow("request to protected resource without authorization",
-				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
-			)
 			s.errorMessage(
 				http.StatusUnauthorized,
 				"Come back with a login!",
@@ -81,7 +82,7 @@ func (s *Server) Login() http.HandlerFunc {
 				"err", err,
 			)
 			http.SetCookie(w, emptySessionCookie)
-			http.Redirect(w, r, "/api/login", http.StatusTemporaryRedirect)
+			http.Redirect(w, r, s.baseURL+"api/login", http.StatusTemporaryRedirect)
 			return
 		}
 
@@ -120,6 +121,97 @@ func (s *Server) Login() http.HandlerFunc {
 	}
 }
 
+func (s *Server) OAuth2LoginLink() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, err := s.sessions.New(r, "session")
+		if err != nil {
+			s.logger.Errorw("got invalid session on login",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"err", err,
+			)
+			http.SetCookie(w, emptySessionCookie)
+			http.Redirect(w, r, s.baseURL+"api/oauth2login", http.StatusTemporaryRedirect)
+			return
+		}
+
+		state := uniuri.NewLen(64)
+		session.Values["state"] = state
+		s.sessions.Save(r, w, session)
+
+		url := s.oauthConfig.AuthCodeURL(state)
+
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	}
+}
+
+func (s *Server) OAuth2Callback() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l := s.logger.With(RequestIDContextKey, r.Context().Value(RequestIDContextKey))
+		code := r.FormValue("code")
+		state := r.FormValue("state")
+
+		session, err := s.sessions.Get(r, "session")
+		if err != nil {
+			l.Errorw("got invalid session on login", "err", err)
+			http.SetCookie(w, emptySessionCookie)
+			http.Redirect(w, r, s.baseURL+"api/oauth2login", http.StatusTemporaryRedirect)
+			return
+		}
+
+		savedState, ok := session.Values["state"].(string)
+		if !ok {
+			l.Errorw("failed to get state from session", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		if state != savedState {
+			l.Warnw("state doesn't match stored state", "received", state, "expected", savedState)
+			s.errorMessage(http.StatusUnauthorized, "Something went really wrong.", w, r)
+			return
+		}
+
+		token, err := s.oauthConfig.Exchange(r.Context(), code)
+		if err != nil {
+			l.Errorw("failed to exchange token", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		service, err := goauth2.NewService(r.Context(), option.WithTokenSource(s.oauthConfig.TokenSource(r.Context(), token)))
+		if err != nil {
+			l.Errorw("failed to set up OAuth2 service", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		info, err := service.Userinfo.V2.Me.Get().Do()
+		if err != nil {
+			l.Errorw("failed to fetch user info", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		session.Values["email"] = info.Email
+		session.Values["profile_pic"] = info.Picture
+		s.sessions.Save(r, w, session)
+
+		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
+	}
+}
+
+func (s *Server) Logout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Infow("logged out",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			emailContextKey, r.Context().Value(emailContextKey),
+		)
+
+		http.SetCookie(w, emptySessionCookie)
+		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
+	}
+}
+
 type getAdminCourses interface {
 	GetAdminCourses(ctx context.Context, email string) ([]string, error)
 }
@@ -154,11 +246,18 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
 			return
 		}
 
+		// If the read or assertion fail, profilePicture will be empty and
+		// will get caught by omitempty in the JSON encoding. It looks bad,
+		// but is actually not horrible!
+		pp, _ := r.Context().Value(sessionContextKey).(map[interface{}]interface{})["profile_pic"]
+		profilePicture, _ := pp.(string)
+
 		resp := struct {
-			Email        string   `json:"email"`
-			SiteAdmin    bool     `json:"site_admin"`
-			AdminCourses []string `json:"admin_courses"`
-		}{email, admin, courses}
+			Email          string   `json:"email"`
+			SiteAdmin      bool     `json:"site_admin"`
+			AdminCourses   []string `json:"admin_courses"`
+			ProfilePicture string   `json:"profile_pic,omitempty"`
+		}{email, admin, courses, profilePicture}
 
 		s.sendResponse(http.StatusOK, resp, w, r)
 	}
