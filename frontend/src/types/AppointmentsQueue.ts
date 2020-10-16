@@ -66,6 +66,10 @@ export class AppointmentsSchedule {
 		});
 	}
 
+	get numSlots() {
+		return Object.keys(this.timeslots).length;
+	}
+
 	get consecutiveTimeslots(): AppointmentsTimeslot[][] {
 		const groups: AppointmentsTimeslot[][] = [];
 		const slots = Object.keys(this.timeslots).map((n) => parseInt(n));

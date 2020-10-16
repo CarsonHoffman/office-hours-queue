@@ -1,6 +1,6 @@
 <template>
 	<div v-if="loaded">
-		<div class="columns">
+		<div class="columns" v-if="queue.schedule.numSlots > 0">
 			<div class="column is-6">
 				<h1 class="title block">Appointments</h1>
 				<div class="box">
@@ -25,6 +25,13 @@
 				/>
 			</div>
 		</div>
+		<div class="hero is-primary" v-else>
+			<div class="hero-body">
+				<font-awesome-icon icon="frown-open" size="10x" class="block" />
+				<h1 class="title block">There are no appointments available today.</h1>
+				<h2 class="subtitle">Distance makes the heart grow fonder&hellip;or something like that.</h2>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -35,6 +42,11 @@ import ErrorDialog from '@/util/ErrorDialog';
 import { AppointmentsQueue } from '@/types/AppointmentsQueue';
 import AppointmentsStudentDisplay from '@/components/appointments/student-display/AppointmentsStudentDisplay.vue';
 import AppointmentsSignUp from '@/components/appointments/AppointmentsSignUp.vue';
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faFrownOpen } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faFrownOpen);
 
 @Component({
 	components: {
