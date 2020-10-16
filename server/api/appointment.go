@@ -221,7 +221,7 @@ func (s *Server) GetAppointmentScheduleForDay(gs getAppointmentScheduleForDay) h
 }
 
 type claimTimeslot interface {
-	ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, timeslot int, email string) error
+	ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, timeslot int, email string) (*AppointmentSlot, error)
 }
 
 func (s *Server) ClaimTimeslot(cs claimTimeslot) http.HandlerFunc {
@@ -238,7 +238,7 @@ func (s *Server) ClaimTimeslot(cs claimTimeslot) http.HandlerFunc {
 			"email", email,
 		)
 
-		err := cs.ClaimTimeslot(r.Context(), q.ID, day, timeslot, email)
+		appointment, err := cs.ClaimTimeslot(r.Context(), q.ID, day, timeslot, email)
 		if err != nil {
 			l.Errorw("failed to claim timeslot", "err", err)
 			s.errorMessage(
@@ -251,18 +251,21 @@ func (s *Server) ClaimTimeslot(cs claimTimeslot) http.HandlerFunc {
 
 		l.Infow("appointment claimed")
 		s.sendResponse(http.StatusCreated, nil, w, r)
+
+		s.ps.Pub(WS("APPOINTMENT_CREATE", appointment), QueueTopicAdmin(q.ID))
 	}
 }
 
 type unclaimAppointment interface {
-	UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID) error
+	UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID) (deleted bool, err error)
 }
 
 func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
 		appointment := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 
-		err := us.UnclaimAppointment(r.Context(), appointment.ID)
+		deleted, err := us.UnclaimAppointment(r.Context(), appointment.ID)
 		if err != nil {
 			s.logger.Errorw("failed to remove appointment claim",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
@@ -279,6 +282,13 @@ func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 			"email", r.Context().Value(emailContextKey),
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		if deleted {
+			s.ps.Pub(WS("APPOINTMENT_REMOVE", appointment), QueueTopicAdmin(q.ID))
+		} else {
+			appointment.StaffEmail = nil
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", appointment), QueueTopicAdmin(q.ID))
+		}
 	}
 }
 
@@ -370,6 +380,8 @@ func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.Ha
 
 		l.Infow("updated appointment schedule")
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
 	}
 }
 
@@ -561,11 +573,15 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 			"scheduled_time", appointment.ScheduledTime,
 		)
 		s.sendResponse(http.StatusCreated, newAppointment, w, r)
+
+		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment.Anonymized()), QueueTopicNonPrivileged(q.ID))
+		s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 	}
 }
 
 type removeAppointmentSignup interface {
-	RemoveAppointmentSignup(ctx context.Context, appointment ksuid.KSUID) error
+	RemoveAppointmentSignup(ctx context.Context, appointment ksuid.KSUID) (deleted bool, newAppointment *AppointmentSlot, err error)
 }
 
 type updateAppointment interface {
@@ -578,6 +594,7 @@ type updateAppointment interface {
 
 func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -631,6 +648,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 			return
 		}
 
+		newAppointment.ID = a.ID
 		newAppointment.Queue = a.Queue
 		newAppointment.Duration = a.Duration
 		newAppointment.StudentEmail = &email
@@ -654,6 +672,9 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 			l.Infow("updated appointment")
 
 			s.sendResponse(http.StatusNoContent, nil, w, r)
+
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", &newAppointment), QueueTopicAdmin(q.ID))
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 			return
 		}
 
@@ -728,7 +749,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		l.Infow("created appointment for update", "new_appointment_id", createdAppointment.ID)
 
 		// If adding the new appointment succeeded, ditch the old one.
-		err = ua.RemoveAppointmentSignup(r.Context(), a.ID)
+		deleted, newSlot, err := ua.RemoveAppointmentSignup(r.Context(), a.ID)
 		if err != nil {
 			l.Errorw("failed to remove appointment for update", "err", err)
 			s.internalServerError(w, r)
@@ -737,11 +758,23 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		l.Infow("removed appointment for update")
 
 		s.sendResponse(http.StatusCreated, createdAppointment, w, r)
+
+		if deleted {
+			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicGeneric(q.ID))
+		} else {
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", newSlot), QueueTopicAdmin(q.ID))
+			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicNonPrivileged(q.ID))
+		}
+
+		s.ps.Pub(WS("APPOINTMENT_CREATE", createdAppointment), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("APPOINTMENT_CREATE", createdAppointment.Anonymized()), QueueTopicNonPrivileged(q.ID))
+		s.ps.Pub(WS("APPOINTMENT_UPDATE", createdAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 	}
 }
 
 func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -781,7 +814,7 @@ func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.Handle
 			return
 		}
 
-		err := rs.RemoveAppointmentSignup(r.Context(), a.ID)
+		deleted, newSlot, err := rs.RemoveAppointmentSignup(r.Context(), a.ID)
 		if err != nil {
 			l.Errorw("failed to remove signup for appointment", "err", err)
 			s.internalServerError(w, r)
@@ -790,5 +823,12 @@ func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.Handle
 
 		l.Infow("removed signup for appointment")
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		if deleted {
+			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicGeneric(q.ID))
+		} else {
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", newSlot), QueueTopicAdmin(q.ID))
+			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicNonPrivileged(q.ID))
+		}
 	}
 }

@@ -2,6 +2,7 @@ import Announcement from './Announcement';
 import Course from './Course';
 import SendNotification from '../util/Notification';
 import { DialogProgrammatic as Dialog } from 'buefy';
+import moment, { Moment } from 'moment-timezone';
 
 export default class Queue {
 	public readonly id!: string;
@@ -9,6 +10,7 @@ export default class Queue {
 	public readonly name!: string;
 	public readonly location!: string;
 	public readonly map!: string;
+	public confirmSignupMessage: string | undefined;
 	public announcements: Announcement[] = [];
 
 	public course!: Course;
@@ -23,13 +25,15 @@ export default class Queue {
 		this.course = course;
 	}
 
-	public async pullQueueInfo() {
+	public async pullQueueInfo(time: Moment) {
 		return fetch(process.env.BASE_URL + `api/queues/${this.id}`)
 			.then((res) => res.json())
 			.then((data) => {
 				this.announcements = data['announcements'].map(
 					(a: any) => new Announcement(a)
 				);
+				this.confirmSignupMessage = data['confirm_signup_message'];
+
 				return data;
 			});
 	}

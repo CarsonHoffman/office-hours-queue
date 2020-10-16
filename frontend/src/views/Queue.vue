@@ -10,13 +10,13 @@
 			<ordered-queue-display :queue="queue" :loaded="loaded" :ws="ws" :admin="admin" :time="time" />
 		</section>
 		<section class="section" v-else-if="queue.type === 'appointments'">
-			<div class="hero is-primary">
-				<div class="hero-body">
-					<font-awesome-icon icon="frown-open" size="10x" class="block" />
-					<h1 class="title block">Oops! Appointment queues aren't supported yet.</h1>
-					<h2 class="subtitle">Distance makes the heart grow fonder&hellip;or something like that.</h2>
-				</div>
-			</div>
+			<appointments-queue-display
+				:queue="queue"
+				:loaded="loaded"
+				:ws="ws"
+				:admin="admin"
+				:time="time"
+			/>
 		</section>
 	</div>
 </template>
@@ -24,12 +24,13 @@
 <script lang="ts">
 import Vue from 'vue';
 import { Component, Prop } from 'vue-property-decorator';
-import moment, { Moment } from 'moment';
+import moment, { Moment } from 'moment-timezone';
 import Queue from '@/types/Queue';
 import OrderedQueue from '@/types/OrderedQueue';
 import Announcement from '@/types/Announcement';
 import AnnouncementDisplay from '@/components/AnnouncementDisplay.vue';
 import OrderedQueueDisplay from '@/components/ordered/OrderedQueue.vue';
+import AppointmentsQueueDisplay from '@/components/appointments/AppointmentsQueue.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faFrownOpen } from '@fortawesome/free-solid-svg-icons';
@@ -40,6 +41,7 @@ library.add(faFrownOpen);
 	components: {
 		AnnouncementDisplay,
 		OrderedQueueDisplay,
+		AppointmentsQueueDisplay,
 	},
 })
 export default class QueuePage extends Vue {
@@ -63,6 +65,14 @@ export default class QueuePage extends Vue {
 
 		this.found = true;
 
+		this.time = moment();
+		// We need to manually refresh the time every so often
+		// as Vue isn't reactive to moment changes. I don't
+		// like doing this either.
+		this.timeUpdater = setInterval(() => {
+			this.time = moment();
+		}, 5 * 1000);
+
 		document.title =
 			this.$root.$data.courses[this.$route.params.cid].shortName +
 			' Office Hours';
@@ -77,7 +87,10 @@ export default class QueuePage extends Vue {
 		this.ws = new WebSocket(url.href);
 
 		this.ws.onopen = () => {
-			this.queue.pullQueueInfo().then(() => (this.loaded = true));
+			this.queue
+				.pullQueueInfo(this.time)
+				.then(() => (this.loaded = true))
+				.then(() => console.log(this.queue));
 			/* this.queue */
 			/*   .pullQueueInfo() */
 			/*   .then(() => setTimeout(() => (this.loaded = true), 5000)); */
@@ -104,14 +117,6 @@ export default class QueuePage extends Vue {
 
 			this.queue.handleWSMessage(type, data, this.ws);
 		};
-
-		this.time = moment();
-		// We need to manually refresh the time every so often
-		// as Vue isn't reactive to moment changes. I don't
-		// like doing this either.
-		this.timeUpdater = setInterval(() => {
-			this.time = moment();
-		}, 5 * 1000);
 	}
 
 	destroyed() {

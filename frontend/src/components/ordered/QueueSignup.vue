@@ -121,6 +121,20 @@ export default class QueueSignup extends Vue {
 	}
 
 	signUp() {
+		if (this.queue.confirmSignupMessage !== undefined) {
+			return this.$buefy.dialog.confirm({
+				title: 'Sign Up',
+				message: this.queue.confirmSignupMessage,
+				type: 'is-warning',
+				hasIcon: true,
+				onConfirm: this.signUpRequest,
+			});
+		}
+
+		this.signUpRequest();
+	}
+
+	signUpRequest() {
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 			method: 'POST',
 			body: JSON.stringify({

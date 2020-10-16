@@ -164,3 +164,19 @@ func (a *AppointmentSlot) MarshalJSON() ([]byte, error) {
 		AppointmentSlotWithTimestamp: (*AppointmentSlotWithTimestamp)(a),
 	})
 }
+
+func (a *AppointmentSlot) Anonymized() *AppointmentSlot {
+	return &AppointmentSlot{
+		ID:            a.ID,
+		Queue:         a.Queue,
+		ScheduledTime: a.ScheduledTime,
+		Timeslot:      a.Timeslot,
+		Duration:      a.Duration,
+	}
+}
+
+func (a *AppointmentSlot) NoStaffEmail() *AppointmentSlot {
+	newAppointment := *a
+	newAppointment.StaffEmail = nil
+	return &newAppointment
+}

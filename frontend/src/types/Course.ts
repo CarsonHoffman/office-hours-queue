@@ -1,6 +1,6 @@
 import Queue from './Queue';
 import OrderedQueue from './OrderedQueue';
-import AppointmentsQueue from './AppointmentsQueue';
+import { AppointmentsQueue } from './AppointmentsQueue';
 
 export default class Course {
 	public readonly id: string;

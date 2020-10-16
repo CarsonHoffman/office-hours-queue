@@ -91,31 +91,32 @@ func (s *Server) GetAppointmentsByTimeslot(ctx context.Context, queue ksuid.KSUI
 	return appointments, err
 }
 
-func (s *Server) ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, timeslot int, email string) error {
+func (s *Server) ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, timeslot int, email string) (*api.AppointmentSlot, error) {
 	schedule, err := s.GetAppointmentScheduleForDay(ctx, queue, day)
 	if err != nil {
-		return fmt.Errorf("failed to get appointment schedule: %w", err)
+		return nil, fmt.Errorf("failed to get appointment schedule: %w", err)
 	}
 
 	if timeslot >= len(schedule.Schedule) {
-		return fmt.Errorf("attempted to claim slot %d out of %d slots", timeslot, len(schedule.Schedule))
+		return nil, fmt.Errorf("attempted to claim slot %d out of %d slots", timeslot, len(schedule.Schedule))
 	}
 
 	from, to := api.WeekdayBounds(day)
 	slots, err := s.GetAppointmentsByTimeslot(ctx, queue, from, to, timeslot)
 	if err != nil {
-		return fmt.Errorf("failed to get appointment slots: %w", err)
+		return nil, fmt.Errorf("failed to get appointment slots: %w", err)
 	}
 
 	// Check if there's an existing slot without a staff member; if so,
 	// prefer taking that one first
 	for _, slot := range slots {
 		if slot.StaffEmail == nil {
-			_, err := s.DB.ExecContext(ctx,
-				"UPDATE appointment_slots SET staff_email=$1 WHERE id=$2",
+			var a api.AppointmentSlot
+			err := s.DB.GetContext(ctx, &a,
+				"UPDATE appointment_slots SET staff_email=$1 WHERE id=$2 RETURNING *",
 				email, slot.ID,
 			)
-			return err
+			return &a, err
 		}
 	}
 
@@ -123,24 +124,25 @@ func (s *Server) ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, time
 	// staff member. Now check if there are any open spots
 	open := int(schedule.Schedule[timeslot]-'0') - len(slots)
 	if open < 1 {
-		return fmt.Errorf("no spots open to claim at timeslot %d", timeslot)
+		return nil, fmt.Errorf("no spots open to claim at timeslot %d", timeslot)
 	}
 
 	// There's room for another appointment at the current timeslot.
 	// Let's claim it.
 	id := ksuid.New()
 	appointmentTime := from.Add(time.Duration(timeslot*schedule.Duration) * time.Minute)
-	_, err = s.DB.ExecContext(ctx,
-		"INSERT INTO appointment_slots (id, queue, staff_email, scheduled_time, timeslot, duration) VALUES ($1, $2, $3, $4, $5, $6)",
+	var a api.AppointmentSlot
+	err = s.DB.GetContext(ctx, &a,
+		"INSERT INTO appointment_slots (id, queue, staff_email, scheduled_time, timeslot, duration) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
 		id, queue, email, appointmentTime, timeslot, schedule.Duration,
 	)
-	return err
+	return &a, err
 }
 
-func (s *Server) UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID) error {
+func (s *Server) UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID) (deleted bool, err error) {
 	a, err := s.GetAppointment(ctx, appointment)
 	if err != nil {
-		return fmt.Errorf("failed to get appointment: %w", err)
+		return false, fmt.Errorf("failed to get appointment: %w", err)
 	}
 
 	// If there's no student associated with this appointment, there's
@@ -150,7 +152,7 @@ func (s *Server) UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID
 			"DELETE FROM appointment_slots WHERE id=$1",
 			appointment,
 		)
-		return err
+		return true, err
 	}
 
 	// If there is a student associated with it, just remove the staff email
@@ -158,7 +160,7 @@ func (s *Server) UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID
 		"UPDATE appointment_slots SET staff_email=NULL WHERE id=$1",
 		appointment,
 	)
-	return err
+	return false, err
 }
 
 func (s *Server) SignupForAppointment(ctx context.Context, queue ksuid.KSUID, appointment *api.AppointmentSlot) (*api.AppointmentSlot, error) {
@@ -197,10 +199,10 @@ func (s *Server) UpdateAppointment(ctx context.Context, appointment ksuid.KSUID,
 	return err
 }
 
-func (s *Server) RemoveAppointmentSignup(ctx context.Context, appointment ksuid.KSUID) error {
+func (s *Server) RemoveAppointmentSignup(ctx context.Context, appointment ksuid.KSUID) (deleted bool, newAppointment *api.AppointmentSlot, err error) {
 	a, err := s.GetAppointment(ctx, appointment)
 	if err != nil {
-		return fmt.Errorf("failed to get appointment: %w", err)
+		return false, nil, fmt.Errorf("failed to get appointment: %w", err)
 	}
 
 	// If there's no staff member associated with this appointment, just drop it
@@ -209,14 +211,15 @@ func (s *Server) RemoveAppointmentSignup(ctx context.Context, appointment ksuid.
 			"DELETE FROM appointment_slots WHERE id=$1",
 			appointment,
 		)
-		return err
+		return true, nil, err
 	}
 
 	// If a staff member has a claim on this appointment, don't delete it,
 	// just set the student fields to null
-	_, err = s.DB.ExecContext(ctx,
-		"UPDATE appointment_slots SET student_email=NULL, name=NULL, location=NULL, description=NULL, map_x=NULL, map_y=NULL WHERE id=$1",
+	var newAppt api.AppointmentSlot
+	err = s.DB.GetContext(ctx, &newAppt,
+		"UPDATE appointment_slots SET student_email=NULL, name=NULL, location=NULL, description=NULL, map_x=NULL, map_y=NULL WHERE id=$1 RETURNING *",
 		appointment,
 	)
-	return err
+	return false, &newAppt, err
 }

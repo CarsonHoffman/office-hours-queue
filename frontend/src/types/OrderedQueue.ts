@@ -16,8 +16,8 @@ export default class OrderedQueue extends Queue {
 
 	public personallyRemovedEntries = new Set<string>();
 
-	public async pullQueueInfo() {
-		return super.pullQueueInfo().then((data) => {
+	public async pullQueueInfo(time: Moment) {
+		return super.pullQueueInfo(time).then((data) => {
 			this.entries = data['queue'].map((e: any) => new QueueEntry(e));
 			this.stack = (data['stack'] || []).map(
 				(e: any) => new RemovedQueueEntry(e)
