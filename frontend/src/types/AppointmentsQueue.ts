@@ -156,42 +156,39 @@ export class AppointmentsQueue extends Queue {
 	}
 
 	pullQueueInfo(time: Moment) {
-		return super
-			.pullQueueInfo(time)
-			.then(() => {
-				return fetch(
-					process.env.BASE_URL +
-						`api/queues/${this.id}/appointments/schedule/${this.day(time)}`
-				)
-					.then((res) => res.json())
-					.then((data) => {
-						Vue.set(
-							this,
-							'schedule',
-							new AppointmentsSchedule(
-								this.day(time),
-								time
-									.clone()
-									.tz('America/New_York')
-									.startOf('day'),
-								data['duration'],
-								data['padding'],
-								data['schedule']
-							)
-						);
-					});
-			})
-			.then(() => {
-				return fetch(
-					process.env.BASE_URL +
-						`api/queues/${this.id}/appointments/${this.day(time)}`
-				)
-					.then((res) => res.json())
-					.then((data: [{ [index: string]: any }]) => {
-						data.forEach((v) => {
-							this.schedule?.addAppointment(new Appointment(v));
-						});
-					});
+		return Promise.all([
+			super.pullQueueInfo(time),
+			fetch(
+				process.env.BASE_URL +
+					`api/queues/${this.id}/appointments/schedule/${this.day(time)}`
+			),
+			fetch(
+				process.env.BASE_URL +
+					`api/queues/${this.id}/appointments/${this.day(time)}`
+			),
+		])
+			.then(([_, schedule, appointments]) =>
+				Promise.all([schedule.json(), appointments.json()])
+			)
+			.then(([schedule, appointments]) => {
+				Vue.set(
+					this,
+					'schedule',
+					new AppointmentsSchedule(
+						this.day(time),
+						time
+							.clone()
+							.tz('America/New_York')
+							.startOf('day'),
+						schedule['duration'],
+						schedule['padding'],
+						schedule['schedule']
+					)
+				);
+
+				appointments.forEach((v: any) => {
+					this.schedule?.addAppointment(new Appointment(v));
+				});
 			});
 	}
 
