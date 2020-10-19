@@ -44,14 +44,21 @@ export default class OrderedQueue extends Queue {
 				}
 
 				if (
-					this.entries.length === 0 &&
 					g.$data.userInfo.admin_courses !== undefined &&
 					g.$data.userInfo.admin_courses.includes(this.course.id)
 				) {
-					SendNotification(
-						'A new student joined the queue!',
-						`A wild ${data.email} has appeared!`
-					);
+					Toast.open({
+						duration: 2000,
+						message: `${data.email} joined the queue!`,
+						type: 'is-primary',
+					});
+
+					if (this.entries.length === 0) {
+						SendNotification(
+							'A new student joined the queue!',
+							`A wild ${data.email} has appeared!`
+						);
+					}
 				}
 
 				this.addEntry(new QueueEntry(data));
