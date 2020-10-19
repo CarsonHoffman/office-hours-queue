@@ -651,6 +651,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		newAppointment.ID = a.ID
 		newAppointment.Queue = a.Queue
 		newAppointment.Duration = a.Duration
+		newAppointment.ScheduledTime = a.ScheduledTime
 		newAppointment.StudentEmail = &email
 
 		var zero float32
