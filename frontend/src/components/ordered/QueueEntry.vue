@@ -39,6 +39,20 @@
 							</b-tooltip>
 						</div>
 					</div>
+					<div class="level icon-row is-mobile" v-if="entry.priority !== 0">
+						<div class="level-left">
+							<font-awesome-icon
+								icon="sort-numeric-up"
+								class="mr-2 level-item"
+								fixed-width
+								v-if="entry.priority > 0"
+							/>
+							<font-awesome-icon icon="sort-numeric-down" class="mr-2 level-item" fixed-width v-else />
+							<span
+								class="level-item stay-in-container"
+							>Priority: {{(entry.priority > 0 ? '+' : '') + entry.priority}}</span>
+						</div>
+					</div>
 					<div class="level icon-row is-mobile" v-if="stack">
 						<div class="level-left">
 							<font-awesome-icon icon="times" class="mr-2 level-item" fixed-width />
@@ -93,11 +107,23 @@ import {
 	faQuestion,
 	faLink,
 	faClock,
+	faSortNumericUp,
+	faSortNumericDown,
 	faTimes,
 	faThumbtack,
 } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faUser, faAt, faQuestion, faLink, faClock, faTimes, faThumbtack);
+library.add(
+	faUser,
+	faAt,
+	faQuestion,
+	faLink,
+	faClock,
+	faSortNumericUp,
+	faSortNumericDown,
+	faTimes,
+	faThumbtack
+);
 
 @Component
 export default class QueueEntryDisplay extends Vue {
