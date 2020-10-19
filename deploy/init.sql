@@ -141,7 +141,8 @@ CREATE TABLE public.queue_entries (
     pinned boolean DEFAULT false NOT NULL,
     removed boolean DEFAULT false NOT NULL,
     removed_by text,
-    removed_at timestamp without time zone
+    removed_at timestamp without time zone,
+    cleared boolean DEFAULT false NOT NULL
 );
 
 
