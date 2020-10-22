@@ -35,7 +35,7 @@
 			<div class="container">
 				<div class="columns" v-if="fetchedCourses">
 					<div class="column is-one-fifth">
-						<b-menu>
+						<b-menu class="sticky">
 							<b-menu-list label="Courses">
 								<course-navbar-item v-for="course in courses" :course="course" :key="course.id" />
 							</b-menu-list>
@@ -195,5 +195,13 @@ $colors: (
 .fade-enter,
 .fade-leave-active {
 	opacity: 0;
+}
+
+.sticky {
+	/* Don't attempt to sticky on mobile */
+	@media only screen and (min-width: 769px) {
+		position: sticky;
+		top: 1.5em;
+	}
 }
 </style>
