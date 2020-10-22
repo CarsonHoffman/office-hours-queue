@@ -66,6 +66,19 @@ export default class Queue {
 				this.announcements = this.announcements.filter((a) => a.id !== data);
 				break;
 			}
+			case 'REFRESH': {
+				// Pick random delay to help mitigate thundering herd on server
+				const delay = Math.random() * 30000;
+				Dialog.alert({
+					title: 'Refreshing Shortly',
+					message: `The server told me that we need to refresh the page to get new information. Refreshing in ${moment
+						.duration(delay)
+						.humanize()}…`,
+					type: 'is-warning',
+					hasIcon: true,
+				});
+				setTimeout(() => location.reload(), delay);
+			}
 		}
 	}
 }
