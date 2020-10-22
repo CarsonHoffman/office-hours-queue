@@ -45,7 +45,7 @@
 					:disabled="!canSignUp"
 					v-else-if="myAppointment === undefined"
 					@click="signUp"
-				>Sign up for appointment at {{selectedTime.format('LT')}}</button>
+				>Schedule appointment at {{selectedTime.format('LT')}}</button>
 				<button
 					class="button is-warning level-item"
 					:class="{'is-loading': updateAppointmentRequestRunning}"
@@ -56,7 +56,7 @@
 					class="button is-success level-item"
 					disabled="true"
 					v-else
-				>Signed up for {{myAppointment.scheduledTime.format('LT')}}</button>
+				>Scheduled for {{myAppointment.scheduledTime.format('LT')}}</button>
 				<button
 					class="button is-danger level-item"
 					:class="{'is-loading': cancelAppointmentRequestRunning}"
@@ -170,8 +170,8 @@ export default class AppointmentsSignUp extends Vue {
 			}
 
 			this.$buefy.dialog.alert({
-				title: 'Appointment Created',
-				message: `Your appointment has been created! Make sure to be ready at ${this.selectedTime?.format(
+				title: 'Appointment Scheduled',
+				message: `Your appointment has been scheduled. Make sure to be ready at ${this.selectedTime?.format(
 					'LT'
 				)}!`,
 				type: 'is-success',
@@ -182,6 +182,19 @@ export default class AppointmentsSignUp extends Vue {
 
 	updateAppointmentRequestRunning = false;
 	updateAppointment() {
+		if (
+			this.myAppointment !== undefined &&
+			this.selectedTimeslot !== this.myAppointment.timeslot &&
+			this.myAppointment.scheduledTime.diff(this.time) < 0
+		) {
+			return this.$buefy.dialog.alert({
+				title: 'Slow Down!',
+				message: `An appointment's time can't be changed while it's happening!`,
+				type: 'is-danger',
+				hasIcon: true,
+			});
+		}
+
 		this.updateAppointmentRequestRunning = true;
 		fetch(
 			process.env.BASE_URL +
@@ -203,7 +216,7 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Updated',
-				message: `Your appointment has been updated! Make sure to be ready at ${this.selectedTime?.format(
+				message: `Your appointment has been updated. Make sure to be ready at ${this.selectedTime?.format(
 					'LT'
 				)}!`,
 				type: 'is-success',
@@ -215,7 +228,7 @@ export default class AppointmentsSignUp extends Vue {
 	cancelAppointmentRequestRunning = false;
 	cancelAppointment() {
 		this.$buefy.dialog.confirm({
-			title: 'Delete Appointment',
+			title: 'Cancel Appointment',
 			message: `Are you sure you want to cancel your ${this.myAppointment?.scheduledTime.format(
 				'LT'
 			)} appointment?`,

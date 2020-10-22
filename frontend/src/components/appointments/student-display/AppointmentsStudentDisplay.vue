@@ -46,6 +46,10 @@ export default class AppointmentsStudentDisplay extends Vue {
 		if (
 			this.selectedTimeslot !== null &&
 			this.queue.schedule !== undefined &&
+			!(
+				this.myAppointment !== undefined &&
+				this.myAppointment.timeslot === this.selectedTimeslot
+			) &&
 			this.queue.schedule.timeslots[this.selectedTimeslot].past(this.time)
 		) {
 			this.$emit('selected', null, null);

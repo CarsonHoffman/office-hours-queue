@@ -16,7 +16,7 @@
 			v-for="i in slot.total"
 			:key="i"
 			:class="getClasses(i-1)"
-			:disabled="past || taken(i-1)"
+			:disabled="(past || taken(i-1)) && !(myAppointment && i === 1)"
 			@mouseover="hovering = true"
 			@mouseleave="hovering = false"
 			@click="$emit('selected')"
