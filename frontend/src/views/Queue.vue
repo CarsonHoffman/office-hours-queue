@@ -60,6 +60,7 @@ export default class QueuePage extends Vue {
 
 		this.found = true;
 
+		this.time = moment();
 		// We need to manually refresh the time every so often
 		// as Vue isn't reactive to moment changes. I don't
 		// like doing this either.
