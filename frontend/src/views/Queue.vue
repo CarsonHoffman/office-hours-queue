@@ -43,7 +43,7 @@ export default class QueuePage extends Vue {
 	found = false;
 	loaded = false;
 	ws!: WebSocket;
-	time!: Moment;
+	@Prop({ default: moment() }) time!: Moment;
 	timeUpdater!: number;
 
 	created() {
@@ -60,7 +60,6 @@ export default class QueuePage extends Vue {
 
 		this.found = true;
 
-		this.time = moment();
 		// We need to manually refresh the time every so often
 		// as Vue isn't reactive to moment changes. I don't
 		// like doing this either.
