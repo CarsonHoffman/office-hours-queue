@@ -41,10 +41,10 @@ import AppointmentsQueueDisplay from '@/components/appointments/AppointmentsQueu
 })
 export default class QueuePage extends Vue {
 	found = false;
-	@Prop() loaded = false;
+	loaded = false;
 	ws!: WebSocket;
-	@Prop() time!: Moment;
-	@Prop() timeUpdater!: number;
+	time!: Moment;
+	timeUpdater!: number;
 
 	created() {
 		if (this.queue === undefined) {
