@@ -13,27 +13,13 @@
 				<appointments-sign-up
 					class="block"
 					:queue="queue"
+					:loaded="loaded"
 					:time="time"
 					:selectedTimeslot="signupSelectedTimeslot"
 					:selectedTime="signupSelectedTime"
 					:myAppointment="myAppointment"
 					@selected="timeslotSelected"
 				/>
-				<div class="box block">
-					<transition name="fade" mode="out-in">
-						<appointments-student-display
-							:queue="queue"
-							:time="time"
-							:selectedTimeslot="signupSelectedTimeslot"
-							:selectedTime="signupSelectedTime"
-							:myAppointment="myAppointment"
-							@selected="timeslotSelected"
-							v-if="loaded"
-							key="display"
-						/>
-						<b-skeleton height="10em" v-else key="loading"></b-skeleton>
-					</transition>
-				</div>
 			</div>
 		</div>
 	</transition>
@@ -44,7 +30,6 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
 import ErrorDialog from '@/util/ErrorDialog';
 import { AppointmentsQueue } from '@/types/AppointmentsQueue';
-import AppointmentsStudentDisplay from '@/components/appointments/student-display/AppointmentsStudentDisplay.vue';
 import AppointmentsSignUp from '@/components/appointments/AppointmentsSignUp.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -54,7 +39,6 @@ library.add(faFrownOpen);
 
 @Component({
 	components: {
-		AppointmentsStudentDisplay,
 		AppointmentsSignUp,
 	},
 })
@@ -64,38 +48,5 @@ export default class AppointmentsQueueDisplay extends Vue {
 	@Prop({ required: true }) ws!: WebSocket;
 	@Prop({ required: true }) admin!: boolean;
 	@Prop({ required: true }) time!: Moment;
-
-	signupSelectedTimeslot: number | null = null;
-	signupSelectedTime: Moment | null = null;
-
-	timeslotSelected(slot: number, time: Moment) {
-		this.signupSelectedTimeslot = slot;
-		this.signupSelectedTime = time;
-	}
-
-	get myAppointment() {
-		if (
-			this.$root.$data.userInfo.email === undefined ||
-			this.queue.schedule === undefined
-		) {
-			return undefined;
-		}
-
-		for (const slot of Object.values(this.queue.schedule.timeslots)) {
-			for (const appointment of slot.appointments) {
-				if (
-					appointment.studentEmail === this.$root.$data.userInfo.email &&
-					appointment.scheduledTime
-						.clone()
-						.add(this.queue.schedule.duration, 'minutes')
-						.diff(this.time) > 0
-				) {
-					return appointment;
-				}
-			}
-		}
-
-		return undefined;
-	}
 }
 </script>

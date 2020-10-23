@@ -1,5 +1,5 @@
 <template>
-	<div class="display-container">
+	<div>
 		<div
 			class="appointment-slots-group"
 			v-for="group in queue.schedule.consecutiveTimeslots"
@@ -59,11 +59,6 @@ export default class AppointmentsStudentDisplay extends Vue {
 </script>
 
 <style scoped>
-.display-container {
-	overflow-x: scroll;
-	white-space: nowrap;
-}
-
 .appointment-slots-group {
 	display: inline-block;
 	padding-right: 1em;
