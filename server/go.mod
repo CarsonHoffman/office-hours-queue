@@ -12,6 +12,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.0.0
 	github.com/olivere/elastic/v7 v7.0.20
+	github.com/prometheus/client_golang v1.8.0
 	github.com/segmentio/ksuid v1.0.3
 	go.uber.org/zap v1.15.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d

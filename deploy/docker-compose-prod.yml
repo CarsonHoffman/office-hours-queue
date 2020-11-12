@@ -16,6 +16,7 @@ services:
             - sessions_key
             - postgres_password
             - oauth2_client_secret
+            - metrics_password
         environment:
             TZ: America/Detroit
             QUEUE_BASE_URL: "/eecsoh/"
@@ -29,6 +30,7 @@ services:
             QUEUE_OAUTH2_REDIRECT_URI: "https://lobster.eecs.umich.edu/eecsoh/api/oauth2callback"
             QUEUE_VALID_DOMAIN: umich.edu
             USE_SECURE_COOKIES: "true"
+            METRICS_PASSWORD_FILE: /run/secrets/metrics_password
         logging:
             driver: syslog
             options:
@@ -118,3 +120,5 @@ secrets:
         file: ./secrets/signing.key
     oauth2_client_secret:
         file: ./secrets/oauth2_client_secret
+    metrics_password:
+        file: ./secrets/metrics_password

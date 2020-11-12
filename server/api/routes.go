@@ -17,11 +17,12 @@ import (
 type Server struct {
 	chi.Router
 
-	logger      *zap.SugaredLogger
-	sessions    *pgstore.PGStore
-	ps          *pubsub.PubSub
-	oauthConfig oauth2.Config
-	baseURL     string
+	logger          *zap.SugaredLogger
+	sessions        *pgstore.PGStore
+	ps              *pubsub.PubSub
+	oauthConfig     oauth2.Config
+	baseURL         string
+	metricsPassword string
 }
 
 // All of the abilities that a complete backing
@@ -100,6 +101,12 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 		Path:     "/",
 	}
 
+	metricsPassword, err := ioutil.ReadFile(os.Getenv("METRICS_PASSWORD_FILE"))
+	if err != nil {
+		logger.Fatalw("couldn't load metrics password", "err", err)
+	}
+	s.metricsPassword = string(metricsPassword)
+
 	// TODO: evaluate capacity choice for channel. This assumes that
 	// there isn't likely to be more than 5 events in "quick" succession
 	// to any particular connection, and reduces overall latency between
@@ -113,7 +120,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 	s.baseURL = os.Getenv("QUEUE_BASE_URL")
 
 	s.Router = chi.NewRouter()
-	s.Router.Use(ksuidInserter, s.recoverMiddleware, s.sessionRetriever)
+	s.Router.Use(instrumenter, ksuidInserter, s.recoverMiddleware, s.sessionRetriever)
 
 	// Course endpoints
 	s.Route("/courses", func(r chi.Router) {
@@ -312,6 +319,8 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 	s.Get("/logout", s.Logout())
 
 	s.With(s.ValidLoginMiddleware).Get("/users/@me", s.GetCurrentUserInfo(q))
+
+	s.Get("/metrics", s.MetricsHandler())
 
 	s.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
