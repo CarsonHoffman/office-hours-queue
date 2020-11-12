@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -68,7 +69,7 @@ func instrumenter(next http.Handler) http.Handler {
 
 		requestLabels := prometheus.Labels{
 			"method": r.Method,
-			"path":   r.URL.Path,
+			"path":   chi.RouteContext(r.Context()).RoutePattern(),
 			"code":   strconv.Itoa(recorder.Status),
 		}
 
