@@ -12,8 +12,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 	"github.com/olivere/elastic/v7"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/ksuid"
 )
+
+func init() {
+	prometheus.MustRegister(websocketCounter)
+}
 
 type getQueue interface {
 	GetQueue(context.Context, ksuid.KSUID) (*Queue, error)
@@ -198,6 +203,14 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 	}
 }
 
+var websocketCounter = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "websocket_count",
+		Help: "The number of connected WebSocket clients per queue.",
+	},
+	[]string{"queue"},
+)
+
 var upgrader = &websocket.Upgrader{
 	HandshakeTimeout: 30 * time.Second,
 }
@@ -232,6 +245,8 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 			return
 		}
 
+		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Inc()
+
 		events := s.ps.Sub(topics...)
 
 		// The interval at which the server will expect pings from the client.
@@ -253,6 +268,8 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 						time.Now().Add(pingSlack),
 					)
 					conn.Close()
+
+					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Dec()
 					return
 				}
 			}
