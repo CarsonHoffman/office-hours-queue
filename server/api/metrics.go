@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,6 +28,14 @@ type StatusRecorder struct {
 func (r *StatusRecorder) WriteHeader(status int) {
 	r.Status = status
 	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *StatusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("ResponseWriter not Hijacker")
+	}
+	return h.Hijack()
 }
 
 var requestsTimer = prometheus.NewHistogramVec(
