@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	prometheus.MustRegister(websocketCounter)
+	prometheus.MustRegister(websocketCounter, websocketEventCounter)
 }
 
 type getQueue interface {
@@ -211,6 +211,14 @@ var websocketCounter = prometheus.NewGaugeVec(
 	[]string{"queue"},
 )
 
+var websocketEventCounter = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "websocket_event_count",
+		Help: "The number and type of WebSocket events sent (in total, to all clients) per queue.",
+	},
+	[]string{"queue", "event"},
+)
+
 var upgrader = &websocket.Upgrader{
 	HandshakeTimeout: 30 * time.Second,
 }
@@ -277,17 +285,25 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 
 		pingTicker := time.NewTicker(pingInterval)
 		for {
+			var eventName string
 			select {
 			case <-pingTicker.C:
 				// Using a custom ping message rather than a ping control
 				// frame because browsers can't access control frames :(
 				err = conn.WriteJSON(WS("PING", nil))
+				eventName = "PING"
 			case event, ok := <-events:
 				if !ok {
 					return
 				}
 				err = conn.WriteJSON(event)
+				e, ok := event.(*WSMessage)
+				if ok {
+					eventName = e.Event
+				}
 			}
+			websocketEventCounter.With(prometheus.Labels{"queue": q.ID.String(), "event": eventName}).Inc()
+
 			// If the write fails, we presume that the read will also
 			// fail, so the read loop will take care of unsubbing and
 			// closing the connection. We also can't unsub on the same
