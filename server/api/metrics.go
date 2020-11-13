@@ -101,7 +101,7 @@ func (s *Server) MetricsHandler() http.HandlerFunc {
 }
 
 func (s *Server) RegisterQueueStats(q queueStats) {
-	prometheus.Register(&queueStatsCollector{s: s, q: q})
+	prometheus.MustRegister(&queueStatsCollector{s: s, q: q})
 }
 
 type QueueStats struct {
