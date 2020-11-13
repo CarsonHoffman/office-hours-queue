@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dlmiddlecote/sqlstats"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Server struct {
@@ -21,6 +23,9 @@ func New(url, database, username, password string) (*Server, error) {
 
 	var s Server
 	s.DB = db
+
+	prometheus.MustRegister(sqlstats.NewStatsCollector("queue", db))
+
 	return &s, nil
 }
 
