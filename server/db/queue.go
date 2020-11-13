@@ -471,3 +471,46 @@ func (s *Server) ViewMessage(ctx context.Context, queue ksuid.KSUID, receiver st
 	)
 	return &message, err
 }
+
+func (s *Server) QueueStats() ([]api.QueueStats, error) {
+	var queues []api.QueueStats
+
+	rows, err := s.DB.Query(`SELECT q.id, c.id, COUNT(e.id) FROM queues q LEFT JOIN queue_entries e ON e.queue=q.id AND NOT e.removed
+							 LEFT JOIN courses c ON c.id=q.course WHERE q.active AND q.type='ordered' GROUP BY q.id, c.id`)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch ordered queues: %w", err)
+	}
+
+	for rows.Next() {
+		var q api.QueueStats
+		q.Type = api.Ordered
+		err = rows.Scan(&q.Queue, &q.Course, &q.Students)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan into metrics queue: %w", err)
+		}
+
+		queues = append(queues, q)
+	}
+
+	rows, err = s.DB.Query(`SELECT q.id, c.id, COUNT(a.id) FROM queues q LEFT JOIN appointment_slots a ON a.queue=q.id
+							AND a.student_email IS NOT NULL AND a.scheduled_time >= NOW()
+							LEFT JOIN courses c ON c.id=q.course WHERE q.active AND q.type='appointments' GROUP BY q.id, c.id`)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch appointments queues: %w", err)
+	}
+
+	for rows.Next() {
+		var q api.QueueStats
+		q.Type = api.Appointments
+		err = rows.Scan(&q.Queue, &q.Course, &q.Students)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan into metrics queue: %w", err)
+		}
+
+		queues = append(queues, q)
+	}
+
+	return queues, nil
+}

@@ -99,3 +99,53 @@ func (s *Server) MetricsHandler() http.HandlerFunc {
 		handler.ServeHTTP(w, r)
 	}
 }
+
+func (s *Server) RegisterQueueStats(q queueStats) {
+	prometheus.Register(&queueStatsCollector{s: s, q: q})
+}
+
+type QueueStats struct {
+	Queue    string    `json:"queue_id"`
+	Course   string    `json:"course_id"`
+	Type     QueueType `json:"queue_type"`
+	Students int       `json:"num_students"`
+}
+
+type queueStats interface {
+	QueueStats() ([]QueueStats, error)
+}
+
+type queueStatsCollector struct {
+	s *Server
+	q queueStats
+}
+
+var queueStatsDesc = prometheus.NewDesc(
+	"queue_students",
+	"The number of students waiting by queue.",
+	[]string{"queue", "course", "type"},
+	nil,
+)
+
+func (m *queueStatsCollector) Describe(c chan<- *prometheus.Desc) {
+	c <- queueStatsDesc
+}
+
+func (m *queueStatsCollector) Collect(c chan<- prometheus.Metric) {
+	stats, err := m.q.QueueStats()
+	if err != nil {
+		m.s.logger.Errorw("failed to fetch queue stats",
+			"err", err,
+		)
+		return
+	}
+
+	for _, s := range stats {
+		c <- prometheus.MustNewConstMetric(
+			queueStatsDesc,
+			prometheus.GaugeValue,
+			float64(s.Students),
+			s.Queue, s.Course, string(s.Type),
+		)
+	}
+}

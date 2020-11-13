@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/CarsonHoffman/office-hours-queue/server/api"
 	"github.com/CarsonHoffman/office-hours-queue/server/db"
@@ -46,14 +45,5 @@ func main() {
 	r := chi.NewRouter()
 	r.Mount("/", s)
 
-	go func() {
-		l.Fatalw("http server failed", "err", http.ListenAndServe(":8080", r))
-	}()
-
-	for range time.Tick(30 * time.Second) {
-		err = db.MetricsReport(l)
-		if err != nil {
-			l.Errorw("failed to generate queue students report", "err", err)
-		}
-	}
+	l.Fatalw("http server failed", "err", http.ListenAndServe(":8080", r))
 }

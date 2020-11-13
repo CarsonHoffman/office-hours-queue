@@ -66,6 +66,7 @@ type queueStore interface {
 	getQueueRoster
 	getQueueGroups
 	updateQueueGroups
+	queueStats
 
 	getAppointment
 	getAppointments
@@ -325,6 +326,8 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 	s.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
+
+	s.RegisterQueueStats(q)
 
 	return &s
 }
