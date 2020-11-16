@@ -606,6 +606,7 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 		newEntry.Queue = q.ID
 		newEntry.Email = e.Email
 		newEntry.Pinned = e.Pinned
+		newEntry.Priority = e.Priority
 
 		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicEmail(q.ID, email))
