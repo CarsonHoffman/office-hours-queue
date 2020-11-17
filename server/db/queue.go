@@ -142,6 +142,7 @@ func (s *Server) UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, group
 		tx.Rollback()
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
+	defer insert.Close()
 
 	for _, group := range groups {
 		groupID := ksuid.New()
@@ -189,6 +190,7 @@ func (s *Server) UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, stude
 		tx.Rollback()
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
+	defer insert.Close()
 
 	for _, student := range students {
 		_, err = insert.Exec(queue, student)

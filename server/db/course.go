@@ -23,6 +23,7 @@ func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up queues statement: %w", err)
 	}
+	defer qStmt.Close()
 
 	for _, course := range courses {
 		course.Queues = make([]*api.Queue, 0)
@@ -133,6 +134,7 @@ func (s *Server) AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins
 		tx.Rollback()
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
+	defer insert.Close()
 
 	for _, email := range admins {
 		_, err = insert.Exec(course, email)
