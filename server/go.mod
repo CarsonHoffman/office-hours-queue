@@ -6,7 +6,7 @@ require (
 	github.com/antonlindstrom/pgstore v0.0.0-20200229204646-b08ebf1105e0
 	github.com/cskr/pubsub v1.0.2
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
-	github.com/dlmiddlecote/sqlstats v1.0.1 // indirect
+	github.com/dlmiddlecote/sqlstats v1.0.1
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gorilla/sessions v1.2.0
 	github.com/gorilla/websocket v1.4.2

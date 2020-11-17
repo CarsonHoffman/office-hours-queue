@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/CarsonHoffman/office-hours-queue/server/api"
@@ -44,6 +45,18 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Mount("/", s)
+
+	go func() {
+		d := chi.NewRouter()
+
+		d.Get("/debug/pprof/*", pprof.Index)
+		d.Get("/debug/pprof/cmdline", pprof.Cmdline)
+		d.Get("/debug/pprof/profile", pprof.Profile)
+		d.Get("/debug/pprof/symbol", pprof.Symbol)
+		d.Get("/debug/pprof/trace", pprof.Trace)
+
+		l.Fatalw("pprof server failed", "err", http.ListenAndServe(":6060", d))
+	}()
 
 	l.Fatalw("http server failed", "err", http.ListenAndServe(":8080", r))
 }

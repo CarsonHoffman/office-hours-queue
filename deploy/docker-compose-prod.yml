@@ -8,6 +8,8 @@ services:
             - http
             - db
             - logging
+        ports:
+            - "6060:6060"
         depends_on:
             - caddy
             - db
