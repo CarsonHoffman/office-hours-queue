@@ -10,7 +10,7 @@ services:
             - db
             - logging
         ports:
-            - "6060:6060"
+            - '127.0.0.1:6060:6060'
         depends_on:
             - caddy
             - db
