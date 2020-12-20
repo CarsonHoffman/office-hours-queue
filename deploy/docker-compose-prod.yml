@@ -4,6 +4,7 @@ services:
     queue:
         image: office-hours-queue
         build: ../server
+        restart: always
         networks:
             - http
             - db
