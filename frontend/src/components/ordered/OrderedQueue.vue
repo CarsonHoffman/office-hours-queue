@@ -5,8 +5,16 @@
 				<h1 class="title">Queue</h1>
 				<div v-if="loaded">
 					<transition name="fade" mode="out-in">
-						<transition-group v-if="queue.entries.length > 0" name="entries-group" tag="div">
-							<div v-for="entry in queue.entries" :key="entry.id" class="block entries-group-item">
+						<transition-group
+							v-if="queue.entries.length > 0"
+							name="entries-group"
+							tag="div"
+						>
+							<div
+								v-for="entry in queue.entries"
+								:key="entry.id"
+								class="block entries-group-item"
+							>
 								<queue-entry-display
 									:entry="entry"
 									:stack="false"
@@ -19,17 +27,29 @@
 						<div class="hero is-primary" v-else>
 							<div class="hero-body">
 								<span v-if="!open">
-									<font-awesome-icon icon="store-alt-slash" size="10x" class="block" />
+									<font-awesome-icon
+										icon="store-alt-slash"
+										size="10x"
+										class="block"
+									/>
 									<h1 class="title block">The queue is closed.</h1>
 									<h2 class="subtitle block">See you next time!</h2>
 								</span>
 								<span v-else-if="admin">
-									<font-awesome-icon icon="grin-hearts" size="10x" class="block" />
+									<font-awesome-icon
+										icon="grin-hearts"
+										size="10x"
+										class="block"
+									/>
 									<h1 class="title block">The queue is empty.</h1>
 									<h2 class="subtitle block">Good job! Yes, you!</h2>
 								</span>
 								<span v-else>
-									<font-awesome-icon icon="heart-broken" size="10x" class="block" />
+									<font-awesome-icon
+										icon="heart-broken"
+										size="10x"
+										class="block"
+									/>
 									<h1 class="title block">The queue is empty.</h1>
 									<h2 class="subtitle block">We're lonely over here!</h2>
 								</span>
@@ -59,10 +79,12 @@
 					<div class="level-left">
 						<p class="level-item">
 							<font-awesome-icon icon="user-graduate" fixed-size />
-							<strong>{{queue.entries.length}}</strong>
+							<strong>{{ queue.entries.length }}</strong>
 						</p>
-						<p class="level-item" v-if="open">The queue is open until {{closesAt}}.</p>
-						<p class="level-item" v-else>The queue {{opensAt}}.</p>
+						<p class="level-item" v-if="open">
+							The queue is open until {{ closesAt }}.
+						</p>
+						<p class="level-item" v-else>The queue {{ opensAt }}.</p>
 					</div>
 				</div>
 				<div class="block" v-else>
@@ -71,7 +93,9 @@
 					</div>
 				</div>
 				<div class="buttons block" v-if="admin">
-					<button class="button is-danger" @click="clearQueue">Clear Queue</button>
+					<button class="button is-danger" @click="clearQueue">
+						Clear Queue
+					</button>
 				</div>
 				<div class="block">
 					<h1 class="title">Sign Up</h1>
@@ -79,8 +103,16 @@
 				</div>
 				<div class="block" v-if="admin && queue.stack.length > 0">
 					<h1 class="title">Stack</h1>
-					<transition-group v-if="queue.stack.length > 0" name="entries-group" tag="div">
-						<div v-for="entry in queue.stack" :key="entry.id" class="block entries-group-item">
+					<transition-group
+						v-if="queue.stack.length > 0"
+						name="entries-group"
+						tag="div"
+					>
+						<div
+							v-for="entry in queue.stack"
+							:key="entry.id"
+							class="block entries-group-item"
+						>
 							<queue-entry-display
 								:entry="entry"
 								:stack="true"
