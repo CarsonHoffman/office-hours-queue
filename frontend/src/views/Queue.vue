@@ -81,7 +81,7 @@ export default class QueuePage extends Vue {
 		// We need to manually refresh the time every so often
 		// as Vue isn't reactive to moment changes. I don't
 		// like doing this either.
-		this.timeUpdater = setInterval(() => {
+		this.timeUpdater = window.setInterval(() => {
 			this.time = moment();
 		}, 5 * 1000);
 
