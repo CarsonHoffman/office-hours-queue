@@ -21,5 +21,6 @@ module.exports = {
 		https: true,
 		key: fs.readFileSync('../deploy/secrets/certs/localhost-key.pem'),
 		cert: fs.readFileSync('../deploy/secrets/certs/localhost.pem'),
+		transportMode: 'ws',
 	},
 };
