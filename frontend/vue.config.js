@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 module.exports = {
 	pages: {
 		index: {
@@ -16,5 +18,8 @@ module.exports = {
 				},
 			},
 		},
+		https: true,
+		key: fs.readFileSync('../deploy/secrets/certs/localhost-key.pem'),
+		cert: fs.readFileSync('../deploy/secrets/certs/localhost.pem'),
 	},
 };
