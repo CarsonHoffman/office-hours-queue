@@ -51,3 +51,7 @@ From there, you should be able to manage everything from the HTTP API, and shoul
 ---
 
 There you go! Make sure ports 80 and 443 are accessible to the host if you're running in production. The queue should be accessible at your domain, and the Kibana instance will be accessible at `your.domain/kibana`, and is password-protected according to the users set up in the `basicauth` directive in `deploy/Caddyfile.prod`.
+
+# Front-end development
+
+While working on the front-end, it can be annoying to manually re-build for each change. Luckily, Vue supports hot-reload! To take advantage of this, run `npm run serve` in the `frontend` directory, which will run a development server that reloads changes immediately (or: after a few seconds of builds). This development server will proxy requests to the real back-end and change the relevant `Host` and `Origin` headers, so everything should work transparently. The only thing I haven't been able to get working well is logging in on the development server; since it's a different URL the cookies aren't shared with the real instance, and because the redirect URI is set up to go to the real instance, things break down. The solution I've found is to simply copy the `session` cookie from the real back-end's URL and add it to the development server's URL in your browser. This needs to be done each time the session cookie expires (it lasts for 30 days), but this is far better from the old workflow of re-building each time, so it should do.
