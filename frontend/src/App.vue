@@ -5,7 +5,9 @@
 				<div class="navbar-brand">
 					<div class="navbar-item">
 						<h1 class="title">
-							<router-link to="/" class="no-link-color">EECS Office Hours</router-link>
+							<router-link to="/" class="no-link-color"
+								>EECS Office Hours</router-link
+							>
 						</h1>
 					</div>
 				</div>
@@ -20,7 +22,12 @@
 						</a>
 					</div>
 					<div class="navbar-item">
-						<button class="button is-info is-loading" v-if="!$root.$data.userInfoLoaded">Log in</button>
+						<button
+							class="button is-info is-loading"
+							v-if="!$root.$data.userInfoLoaded"
+						>
+							Log in
+						</button>
 						<a :href="loginUrl" v-else-if="!$root.$data.loggedIn">
 							<button class="button is-info">Log in</button>
 						</a>
@@ -37,13 +44,20 @@
 					<div class="column is-one-fifth">
 						<b-menu class="sticky">
 							<b-menu-list label="Courses">
-								<course-navbar-item v-for="course in courses" :course="course" :key="course.id" />
+								<course-navbar-item
+									v-for="course in courses"
+									:course="course"
+									:key="course.id"
+								/>
 							</b-menu-list>
 						</b-menu>
 					</div>
 					<div class="column is-four-fifths">
 						<transition name="fade" mode="out-in">
-							<router-view :key="$route.fullPath" @disconnected="restart"></router-view>
+							<router-view
+								:key="$route.fullPath"
+								@disconnected="restart"
+							></router-view>
 						</transition>
 					</div>
 				</div>

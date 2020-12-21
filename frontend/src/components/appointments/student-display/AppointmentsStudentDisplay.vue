@@ -3,7 +3,7 @@
 		<div
 			class="appointment-slots-group"
 			v-for="group in queue.schedule.consecutiveTimeslots"
-			:key="'group-'+group[0]"
+			:key="'group-' + group[0]"
 		>
 			<appointments-column
 				class="appointment-column"
@@ -12,7 +12,10 @@
 				:slot="slot"
 				:index="index"
 				:time="time"
-				:myAppointment="myAppointment !== undefined && myAppointment.timeslot === slot.timeslot"
+				:myAppointment="
+					myAppointment !== undefined &&
+						myAppointment.timeslot === slot.timeslot
+				"
 				:selected="selectedTimeslot === slot.timeslot"
 				@selected="$emit('selected', slot.timeslot, slot.time)"
 			/>

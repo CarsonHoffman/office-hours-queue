@@ -1,13 +1,30 @@
 <template>
 	<div class="box" v-if="found">
-		<section v-if="queue !== null && queue.announcements.length > 0" class="section">
+		<section
+			v-if="queue !== null && queue.announcements.length > 0"
+			class="section"
+		>
 			<h1 class="title">Announcements</h1>
-			<div class="block" v-for="announcement in queue.announcements" :key="announcement.id">
-				<announcement-display :announcement="announcement" :queue="queue" :admin="admin" />
+			<div
+				class="block"
+				v-for="announcement in queue.announcements"
+				:key="announcement.id"
+			>
+				<announcement-display
+					:announcement="announcement"
+					:queue="queue"
+					:admin="admin"
+				/>
 			</div>
 		</section>
 		<section class="section" v-if="queue.type === 'ordered'">
-			<ordered-queue-display :queue="queue" :loaded="loaded" :ws="ws" :admin="admin" :time="time" />
+			<ordered-queue-display
+				:queue="queue"
+				:loaded="loaded"
+				:ws="ws"
+				:admin="admin"
+				:time="time"
+			/>
 		</section>
 		<section class="section" v-else-if="queue.type === 'appointments'">
 			<appointments-queue-display

@@ -1,10 +1,16 @@
 <template>
 	<transition name="fade" mode="out-in">
-		<div class="hero is-primary" v-if="loaded && queue.schedule.numSlots === 0" key="unavailable">
+		<div
+			class="hero is-primary"
+			v-if="loaded && queue.schedule.numSlots === 0"
+			key="unavailable"
+		>
 			<div class="hero-body">
 				<font-awesome-icon icon="frown-open" size="10x" class="block" />
 				<h1 class="title block">There are no appointments available today.</h1>
-				<h2 class="subtitle">Distance makes the heart grow fonder&hellip;or something like that.</h2>
+				<h2 class="subtitle">
+					Distance makes the heart grow fonder&hellip;or something like that.
+				</h2>
 			</div>
 		</div>
 		<div class="columns" v-else key="other">

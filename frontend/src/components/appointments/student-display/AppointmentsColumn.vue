@@ -3,20 +3,27 @@
 		<div class="time-area">
 			<div
 				class="time-container"
-				v-if="index === 0 || slot.time.clone().minutes() === 0 || hovering || selected"
+				v-if="
+					index === 0 ||
+						slot.time.clone().minutes() === 0 ||
+						hovering ||
+						selected
+				"
 			>
 				<p
 					class="time-text"
-					:class="{'time-highlight': hovering, 'time-selected': selected}"
-				>{{slot.time.format('LT')}}</p>
+					:class="{ 'time-highlight': hovering, 'time-selected': selected }"
+				>
+					{{ slot.time.format('LT') }}
+				</p>
 			</div>
 		</div>
 		<button
 			class="button appointment-cell"
 			v-for="i in slot.total"
 			:key="i"
-			:class="getClasses(i-1)"
-			:disabled="(past || taken(i-1)) && !(myAppointment && i === 1)"
+			:class="getClasses(i - 1)"
+			:disabled="(past || taken(i - 1)) && !(myAppointment && i === 1)"
 			@mouseover="hovering = true"
 			@mouseleave="hovering = false"
 			@click="$emit('selected')"

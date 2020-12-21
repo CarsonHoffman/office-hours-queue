@@ -7,7 +7,12 @@
 			<div class="field-body">
 				<div class="field">
 					<div class="control has-icons-left">
-						<input class="input" v-model="name" type="text" placeholder="Nice to meet you!" />
+						<input
+							class="input"
+							v-model="name"
+							type="text"
+							placeholder="Nice to meet you!"
+						/>
 						<span class="icon is-small is-left">
 							<font-awesome-icon icon="user" />
 						</span>
@@ -84,32 +89,40 @@
 							class="button is-success level-item"
 							v-if="selectedTimeslot === null"
 							disabled
-						>Select a time slot!</button>
+						>
+							Select a time slot!
+						</button>
 						<button
 							class="button is-success level-item"
-							:class="{'is-loading': signUpRequstRunning}"
+							:class="{ 'is-loading': signUpRequstRunning }"
 							:disabled="!canSignUp"
 							v-else-if="myAppointment === undefined"
 							@click="signUp"
-						>Schedule appointment at {{selectedTime.format('LT')}}</button>
+						>
+							Schedule appointment at {{ selectedTime.format('LT') }}
+						</button>
 						<button
 							class="button is-warning level-item"
-							:class="{'is-loading': updateAppointmentRequestRunning}"
+							:class="{ 'is-loading': updateAppointmentRequestRunning }"
 							v-else-if="myAppointmentModified"
 							@click="updateAppointment"
-						>Update Appointment</button>
-						<button
-							class="button is-success level-item"
-							disabled="true"
-							v-else
-						>Scheduled for {{myAppointment.scheduledTime.format('LT')}}</button>
+						>
+							Update Appointment
+						</button>
+						<button class="button is-success level-item" disabled="true" v-else>
+							Scheduled for {{ myAppointment.scheduledTime.format('LT') }}
+						</button>
 						<button
 							class="button is-danger level-item"
-							:class="{'is-loading': cancelAppointmentRequestRunning}"
+							:class="{ 'is-loading': cancelAppointmentRequestRunning }"
 							v-if="myAppointment !== undefined"
 							@click="cancelAppointment"
-						>Cancel Appointment</button>
-						<p class="level-item" v-if="!$root.$data.loggedIn">Log in to sign up!</p>
+						>
+							Cancel Appointment
+						</button>
+						<p class="level-item" v-if="!$root.$data.loggedIn">
+							Log in to sign up!
+						</p>
 					</div>
 				</div>
 			</div>

@@ -3,7 +3,12 @@
 		<div class="field">
 			<label class="label">Name</label>
 			<div class="control has-icons-left">
-				<input class="input" v-model="name" type="text" placeholder="Nice to meet you!" />
+				<input
+					class="input"
+					v-model="name"
+					type="text"
+					placeholder="Nice to meet you!"
+				/>
 				<span class="icon is-small is-left">
 					<font-awesome-icon icon="user" />
 				</span>
@@ -39,14 +44,22 @@
 					:disabled="!canSignUp"
 					@click="signUp"
 					v-if="myEntry === undefined"
-				>Sign Up</button>
+				>
+					Sign Up
+				</button>
 				<button
 					class="button is-warning level-item"
 					@click="updateRequest"
 					v-else-if="myEntryModified"
-				>Update Request</button>
-				<button class="button is-success level-item" disabled="true" v-else>Signed up</button>
-				<p class="level-item" v-if="!$root.$data.loggedIn">Log in to sign up!</p>
+				>
+					Update Request
+				</button>
+				<button class="button is-success level-item" disabled="true" v-else>
+					Signed up
+				</button>
+				<p class="level-item" v-if="!$root.$data.loggedIn">
+					Log in to sign up!
+				</p>
 			</div>
 		</div>
 	</div>

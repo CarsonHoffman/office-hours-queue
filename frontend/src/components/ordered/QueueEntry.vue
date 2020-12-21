@@ -5,37 +5,63 @@
 				<div class="content">
 					<div class="level icon-row is-mobile">
 						<div class="level-left">
-							<font-awesome-icon icon="user" class="mr-2 level-item" fixed-width />
+							<font-awesome-icon
+								icon="user"
+								class="mr-2 level-item"
+								fixed-width
+							/>
 							<span class="level-item stay-in-container">
-								<strong>{{name}}</strong>
+								<strong>{{ name }}</strong>
 							</span>
 						</div>
 					</div>
 					<span v-if="!anonymous">
 						<div class="level icon-row is-mobile">
 							<div class="level-left">
-								<font-awesome-icon icon="at" class="mr-2 level-item" fixed-width />
-								<span class="level-item stay-in-container">{{entry.email}}</span>
+								<font-awesome-icon
+									icon="at"
+									class="mr-2 level-item"
+									fixed-width
+								/>
+								<span class="level-item stay-in-container">{{
+									entry.email
+								}}</span>
 							</div>
 						</div>
 						<div class="level icon-row is-mobile">
 							<div class="level-left">
-								<font-awesome-icon icon="question" class="mr-2 level-item" fixed-width />
-								<span class="level-item stay-in-container">{{entry.description}}</span>
+								<font-awesome-icon
+									icon="question"
+									class="mr-2 level-item"
+									fixed-width
+								/>
+								<span class="level-item stay-in-container">{{
+									entry.description
+								}}</span>
 							</div>
 						</div>
 						<div class="level icon-row is-mobile">
 							<div class="level-left">
-								<font-awesome-icon icon="link" class="mr-2 level-item" fixed-width />
+								<font-awesome-icon
+									icon="link"
+									class="mr-2 level-item"
+									fixed-width
+								/>
 								<p class="level-item link-in-container" v-html="location"></p>
 							</div>
 						</div>
 					</span>
 					<div class="level icon-row is-mobile">
 						<div class="level-left">
-							<font-awesome-icon icon="clock" class="mr-2 level-item" fixed-width />
+							<font-awesome-icon
+								icon="clock"
+								class="mr-2 level-item"
+								fixed-width
+							/>
 							<b-tooltip :label="entry.tooltipTimestamp">
-								<span class="level-item stay-in-container">{{humanizedTimestamp}}</span>
+								<span class="level-item stay-in-container">{{
+									humanizedTimestamp
+								}}</span>
 							</b-tooltip>
 						</div>
 					</div>
@@ -47,16 +73,28 @@
 								fixed-width
 								v-if="entry.priority > 0"
 							/>
-							<font-awesome-icon icon="sort-numeric-down" class="mr-2 level-item" fixed-width v-else />
-							<span
-								class="level-item stay-in-container"
-							>Priority: {{(entry.priority > 0 ? '+' : '') + entry.priority}}</span>
+							<font-awesome-icon
+								icon="sort-numeric-down"
+								class="mr-2 level-item"
+								fixed-width
+								v-else
+							/>
+							<span class="level-item stay-in-container"
+								>Priority:
+								{{ (entry.priority > 0 ? '+' : '') + entry.priority }}</span
+							>
 						</div>
 					</div>
 					<div class="level icon-row is-mobile" v-if="stack">
 						<div class="level-left">
-							<font-awesome-icon icon="times" class="mr-2 level-item" fixed-width />
-							<span class="level-item stay-in-container">{{entry.removedBy}}</span>
+							<font-awesome-icon
+								icon="times"
+								class="mr-2 level-item"
+								fixed-width
+							/>
+							<span class="level-item stay-in-container">{{
+								entry.removedBy
+							}}</span>
 						</div>
 					</div>
 					<div v-if="!anonymous">
@@ -65,26 +103,35 @@
 							<p class="control" v-if="!stack">
 								<button
 									class="button is-danger"
-									:class="{'is-loading': removeRequestRunning}"
+									:class="{ 'is-loading': removeRequestRunning }"
 									v-on:click="removeEntry"
-								>Remove</button>
+								>
+									Remove
+								</button>
 							</p>
 							<p class="control" v-if="!entry.pinned && admin">
 								<button
 									class="button is-info"
-									:class="{'is-loading': pinEntryRequestRunning}"
+									:class="{ 'is-loading': pinEntryRequestRunning }"
 									v-on:click="pinEntry"
-								>Pin</button>
+								>
+									Pin
+								</button>
 							</p>
 							<p class="control" v-if="admin">
-								<button class="button is-warning" @click="messageUser">Message</button>
+								<button class="button is-warning" @click="messageUser">
+									Message
+								</button>
 							</p>
 						</div>
 					</div>
 				</div>
 			</div>
 			<figure v-if="entry.pinned" class="media-right">
-				<b-tooltip label="This student is pinned to the top of the queue." position="is-left">
+				<b-tooltip
+					label="This student is pinned to the top of the queue."
+					position="is-left"
+				>
 					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
 				</b-tooltip>
 			</figure>
