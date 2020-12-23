@@ -96,6 +96,9 @@
 					<button class="button is-danger" @click="clearQueue">
 						Clear Queue
 					</button>
+					<button class="button is-primary" @click="editSchedule">
+						Edit Schedule
+					</button>
 				</div>
 				<div class="block">
 					<h1 class="title">Sign Up</h1>
@@ -144,6 +147,7 @@ import {
 	faHeartBroken,
 	faUserGraduate,
 } from '@fortawesome/free-solid-svg-icons';
+import OrderedSchedule from './OrderedSchedule.vue';
 
 library.add(faStoreAltSlash, faGrinHearts, faHeartBroken, faUserGraduate);
 
@@ -151,6 +155,7 @@ library.add(faStoreAltSlash, faGrinHearts, faHeartBroken, faUserGraduate);
 	components: {
 		QueueSignup,
 		QueueEntryDisplay,
+		OrderedSchedule,
 	},
 })
 export default class OrderedQueueDisplay extends Vue {
@@ -200,6 +205,36 @@ export default class OrderedQueueDisplay extends Vue {
 				});
 			},
 		});
+	}
+
+	editSchedule() {
+		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/schedule`)
+			.then((res) => res.json())
+			.then((schedule) => {
+				console.log(schedule);
+				this.$buefy.modal.open({
+					parent: this,
+					component: OrderedSchedule,
+					props: { defaultSchedule: schedule },
+					events: {
+						confirmed: (schedule: string[]) => {
+							fetch(
+								process.env.BASE_URL + `api/queues/${this.queue.id}/schedule`,
+								{
+									method: 'PUT',
+									body: JSON.stringify(schedule),
+								}
+							).then((res) => {
+								if (res.status !== 204) {
+									return ErrorDialog(res);
+								}
+							});
+						},
+					},
+					hasModalCard: true,
+					trapFocus: true,
+				});
+			});
 	}
 }
 </script>
