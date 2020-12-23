@@ -984,6 +984,8 @@ func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) http.HandlerFunc {
 			"queue_id", q.ID,
 		)
 		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
 	}
 }
 
