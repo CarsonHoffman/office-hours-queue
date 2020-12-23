@@ -2,22 +2,23 @@
 	<div>
 		<div
 			class="appointment-slots-group"
-			v-for="group in queue.schedule.consecutiveTimeslots"
+			v-for="(group, i) in queue.schedule.consecutiveTimeslots"
 			:key="'group-' + group[0]"
 		>
 			<appointments-column
 				class="appointment-column"
-				v-for="(slot, index) in group"
-				:key="slot"
-				:slot="slot"
-				:index="index"
+				v-for="(timeslot, j) in group"
+				:key="'group-' + i + '-slot-' + j"
+				:id="'student-appointment-slot-' + timeslot"
+				:timeslot="timeslot"
+				:index="j"
 				:time="time"
 				:myAppointment="
 					myAppointment !== undefined &&
-						myAppointment.timeslot === slot.timeslot
+						myAppointment.timeslot === timeslot.timeslot
 				"
-				:selected="selectedTimeslot === slot.timeslot"
-				@selected="$emit('selected', slot.timeslot, slot.time)"
+				:selected="selectedTimeslot === timeslot.timeslot"
+				@selected="$emit('selected', timeslot.timeslot, timeslot.time)"
 			/>
 		</div>
 	</div>

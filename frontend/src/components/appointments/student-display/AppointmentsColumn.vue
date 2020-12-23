@@ -5,7 +5,7 @@
 				class="time-container"
 				v-if="
 					index === 0 ||
-						slot.time.clone().minutes() === 0 ||
+						timeslot.time.clone().minutes() === 0 ||
 						hovering ||
 						selected
 				"
@@ -14,13 +14,13 @@
 					class="time-text"
 					:class="{ 'time-highlight': hovering, 'time-selected': selected }"
 				>
-					{{ slot.time.format('LT') }}
+					{{ timeslot.time.format('LT') }}
 				</p>
 			</div>
 		</div>
 		<button
 			class="button appointment-cell"
-			v-for="i in slot.total"
+			v-for="i in timeslot.total"
 			:key="i"
 			:class="getClasses(i - 1)"
 			:disabled="(past || taken(i - 1)) && !(myAppointment && i === 1)"
@@ -38,7 +38,7 @@ import { AppointmentsTimeslot } from '@/types/AppointmentsQueue';
 
 @Component
 export default class AppointmentsColumn extends Vue {
-	@Prop({ required: true }) slot!: AppointmentsTimeslot;
+	@Prop({ required: true }) timeslot!: AppointmentsTimeslot;
 	@Prop({ required: true }) index!: number;
 	@Prop({ required: true }) time!: Moment;
 	@Prop({ required: true }) selected!: boolean;
@@ -48,11 +48,11 @@ export default class AppointmentsColumn extends Vue {
 	hovering = false;
 
 	get past() {
-		return this.slot.past(this.time);
+		return this.timeslot.past(this.time);
 	}
 
 	taken(index: number) {
-		return index < this.slot.studentSlots.length;
+		return index < this.timeslot.studentSlots.length;
 	}
 
 	getClasses(index: number) {

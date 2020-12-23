@@ -21,10 +21,6 @@
 					:queue="queue"
 					:loaded="loaded"
 					:time="time"
-					:selectedTimeslot="signupSelectedTimeslot"
-					:selectedTime="signupSelectedTime"
-					:myAppointment="myAppointment"
-					@selected="timeslotSelected"
 				/>
 			</div>
 		</div>
