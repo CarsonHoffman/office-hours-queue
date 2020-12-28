@@ -63,14 +63,14 @@
 				<div class="field" style="width: 100%;">
 					<div class="box">
 						<transition name="fade" mode="out-in">
-							<appointments-student-display
+							<appointments-display
 								class="appointments-display"
 								:queue="queue"
 								:time="time"
-								:myAppointment="myAppointment"
-								:selectedTimeslot="selectedTimeslot"
-								:selectedTime="selectedTime"
-								@selected="timeslotSelected"
+								:appointments="studentAppointments"
+								:selectedAppointment="selectedAppointment"
+								:admin="false"
+								@selected="appointmentSelected"
 								v-if="loaded"
 								key="display"
 							/>
@@ -87,7 +87,7 @@
 					<div class="control level-left">
 						<button
 							class="button is-success level-item"
-							v-if="selectedTimeslot === null"
+							v-if="selectedAppointment === null"
 							disabled
 						>
 							Select a time slot!
@@ -99,7 +99,8 @@
 							v-else-if="myAppointment === undefined"
 							@click="signUp"
 						>
-							Schedule appointment at {{ selectedTime.format('LT') }}
+							Schedule appointment at
+							{{ selectedAppointment.scheduledTime.format('LT') }}
 						</button>
 						<button
 							class="button is-warning level-item"
@@ -135,8 +136,8 @@ import Vue from 'vue';
 import { Moment } from 'moment';
 import { Component, Prop, Watch } from 'vue-property-decorator';
 import { AppointmentsQueue } from '@/types/AppointmentsQueue';
-import AppointmentsStudentDisplay from '@/components/appointments/student-display/AppointmentsStudentDisplay.vue';
-import Appointment from '@/types/Appointment';
+import AppointmentsDisplay from '@/components/appointments/AppointmentsDisplay.vue';
+import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -145,7 +146,7 @@ import { faUser, faQuestion, faLink } from '@fortawesome/free-solid-svg-icons';
 library.add(faUser, faQuestion, faLink);
 
 @Component({
-	components: { AppointmentsStudentDisplay },
+	components: { AppointmentsDisplay },
 })
 export default class AppointmentsSignUp extends Vue {
 	name = '';
@@ -156,12 +157,51 @@ export default class AppointmentsSignUp extends Vue {
 	@Prop({ required: true }) time!: Moment;
 	@Prop({ required: true }) loaded!: boolean;
 
-	selectedTimeslot: number | null = null;
-	selectedTime: Moment | null = null;
+	get studentAppointments() {
+		if (this.queue.schedule === undefined) {
+			return undefined;
+		}
 
-	timeslotSelected(timeslot: number | null, time: Moment | null) {
+		return this.queue.schedule.appointmentSlots;
+	}
+
+	appointmentSelected(timeslot: number | null, index: number | null) {
 		this.selectedTimeslot = timeslot;
-		this.selectedTime = time;
+		this.selectedIndex = index;
+	}
+
+	selectedTimeslot: number | null = null;
+	selectedIndex: number | null = null;
+
+	get selectedAppointment(): AppointmentSlot | null {
+		if (
+			this.selectedTimeslot === null ||
+			this.selectedIndex === null ||
+			this.queue.schedule === undefined
+		) {
+			return null;
+		}
+
+		return this.queue.schedule.timeslots[this.selectedTimeslot]!.slots[
+			this.selectedIndex
+		]!;
+	}
+
+	@Watch('time')
+	onTimeUpdated() {
+		if (
+			this.selectedAppointment !== null &&
+			this.queue.schedule !== undefined &&
+			!(
+				this.myAppointment !== undefined &&
+				this.myAppointment.timeslot === this.selectedAppointment.timeslot
+			) &&
+			this.queue.schedule.timeslots[this.selectedAppointment.timeslot].past(
+				this.time
+			)
+		) {
+			this.appointmentSelected(null, null);
+		}
 	}
 
 	@Watch('myAppointment', { immediate: true })
@@ -169,18 +209,20 @@ export default class AppointmentsSignUp extends Vue {
 		newAppointment: Appointment | undefined,
 		oldAppointment: Appointment | undefined
 	) {
-		if (newAppointment !== undefined) {
+		if (newAppointment !== oldAppointment && newAppointment !== undefined) {
 			this.name = newAppointment.name || '';
 			this.description = newAppointment.description || '';
 			this.location = newAppointment.location || '';
-			this.timeslotSelected(
+			this.appointmentSelected(
 				newAppointment.timeslot,
-				newAppointment.scheduledTime
+				this.queue.schedule?.timeslots[newAppointment.timeslot]?.slots.indexOf(
+					newAppointment
+				)!
 			);
 		}
 	}
 
-	get myAppointment() {
+	get myAppointment(): Appointment | undefined {
 		if (
 			this.$root.$data.userInfo.email === undefined ||
 			this.queue.schedule === undefined
@@ -188,16 +230,18 @@ export default class AppointmentsSignUp extends Vue {
 			return undefined;
 		}
 
-		for (const slot of Object.values(this.queue.schedule.timeslots)) {
-			for (const appointment of slot.appointments) {
+		for (const timeslot of Object.values(this.queue.schedule.timeslots)) {
+			for (const slot of timeslot.slots) {
 				if (
-					appointment.studentEmail === this.$root.$data.userInfo.email &&
-					appointment.scheduledTime
+					slot.filled &&
+					(slot as Appointment).studentEmail ===
+						this.$root.$data.userInfo.email &&
+					slot.scheduledTime
 						.clone()
 						.add(this.queue.schedule.duration, 'minutes')
 						.diff(this.time) > 0
 				) {
-					return appointment;
+					return slot as Appointment;
 				}
 			}
 		}
@@ -212,7 +256,8 @@ export default class AppointmentsSignUp extends Vue {
 			(a.name !== this.name ||
 				a.description !== this.description ||
 				a.location !== this.location ||
-				a.timeslot !== this.selectedTimeslot)
+				(this.selectedAppointment !== null &&
+					a.timeslot !== this.selectedAppointment.timeslot))
 		);
 	}
 
@@ -247,7 +292,7 @@ export default class AppointmentsSignUp extends Vue {
 		this.signUpRequstRunning = true;
 		fetch(
 			process.env.BASE_URL +
-				`api/queues/${this.queue.id}/appointments/${this.queue.schedule?.day}/${this.selectedTimeslot}`,
+				`api/queues/${this.queue.id}/appointments/${this.queue.schedule?.day}/${this.selectedAppointment?.timeslot}`,
 			{
 				method: 'POST',
 				body: JSON.stringify({
@@ -264,7 +309,7 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Scheduled',
-				message: `Your appointment has been scheduled. Make sure to be ready at ${this.selectedTime?.format(
+				message: `Your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
 					'LT'
 				)}!`,
 				type: 'is-success',
@@ -277,7 +322,7 @@ export default class AppointmentsSignUp extends Vue {
 	updateAppointment() {
 		if (
 			this.myAppointment !== undefined &&
-			this.selectedTimeslot !== this.myAppointment.timeslot &&
+			this.selectedAppointment?.timeslot !== this.myAppointment.timeslot &&
 			this.myAppointment.scheduledTime.diff(this.time) < 0
 		) {
 			return this.$buefy.dialog.alert({
@@ -298,7 +343,7 @@ export default class AppointmentsSignUp extends Vue {
 					name: this.name,
 					description: this.description,
 					location: this.location,
-					timeslot: this.selectedTimeslot,
+					timeslot: this.selectedAppointment?.timeslot,
 				}),
 			}
 		).then((res) => {
@@ -309,7 +354,7 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Updated',
-				message: `Your appointment has been updated. Make sure to be ready at ${this.selectedTime?.format(
+				message: `Your appointment has been updated. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
 					'LT'
 				)}!`,
 				type: 'is-success',

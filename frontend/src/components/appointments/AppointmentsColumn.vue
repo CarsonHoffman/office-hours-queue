@@ -1,10 +1,11 @@
 <template>
-	<div>
+	<div :style="'width: ' + admin ? '6' : '1.5' + 'em'">
 		<div class="time-area">
 			<div
 				class="time-container"
 				v-if="
-					index === 0 ||
+					admin ||
+						index === 0 ||
 						timeslot.time.clone().minutes() === 0 ||
 						hovering ||
 						selected
@@ -18,16 +19,15 @@
 				</p>
 			</div>
 		</div>
-		<button
-			class="button appointment-cell"
-			v-for="i in timeslot.total"
+		<appointment-cell
+			v-for="(s, i) in appointments"
 			:key="i"
-			:class="getClasses(i - 1)"
-			:disabled="(past || taken(i - 1)) && !(myAppointment && i === 1)"
-			@mouseover="hovering = true"
-			@mouseleave="hovering = false"
-			@click="$emit('selected')"
-		></button>
+			:admin="admin"
+			:time="time"
+			:appointmentSlot="s"
+			@selected="$emit('selected', i)"
+			@hover="(h) => (hovering = h)"
+		/>
 	</div>
 </template>
 
@@ -35,34 +35,23 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
 import { AppointmentsTimeslot } from '@/types/AppointmentsQueue';
+import { AppointmentSlot } from '@/types/Appointment';
+import AppointmentCell from '@/components/appointments/AppointmentCell.vue';
 
-@Component
+@Component({
+	components: {
+		AppointmentCell,
+	},
+})
 export default class AppointmentsColumn extends Vue {
-	@Prop({ required: true }) timeslot!: AppointmentsTimeslot;
+	@Prop({ required: true }) appointments!: AppointmentSlot[];
 	@Prop({ required: true }) index!: number;
 	@Prop({ required: true }) time!: Moment;
+	@Prop({ required: true }) timeslot!: AppointmentsTimeslot;
 	@Prop({ required: true }) selected!: boolean;
-
-	@Prop({ required: true }) myAppointment!: boolean;
+	@Prop({ required: true }) admin!: boolean;
 
 	hovering = false;
-
-	get past() {
-		return this.timeslot.past(this.time);
-	}
-
-	taken(index: number) {
-		return index < this.timeslot.studentSlots.length;
-	}
-
-	getClasses(index: number) {
-		return {
-			'is-success': !this.taken(index),
-			'is-danger': this.taken(index) && !(this.myAppointment && index === 0),
-			'is-primary': this.myAppointment && index === 0,
-			'is-light': this.past,
-		};
-	}
 }
 </script>
 
@@ -100,13 +89,5 @@ export default class AppointmentsColumn extends Vue {
 .appointment-slots-group {
 	display: inline-block;
 	padding-right: 1em;
-}
-
-.appointment-cell {
-	display: block;
-	margin-bottom: 2px;
-	padding: 0;
-	width: 1.5em;
-	height: 1.5em;
 }
 </style>

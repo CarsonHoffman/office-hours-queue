@@ -1,6 +1,26 @@
 import moment, { Moment } from 'moment-timezone';
 
-export default class Appointment {
+export class AppointmentSlot {
+	public readonly scheduledTime!: Moment;
+	public readonly timeslot!: number;
+	public readonly duration!: number;
+
+	constructor(time: Moment, timeslot: number, duration: number) {
+		this.scheduledTime = time;
+		this.timeslot = timeslot;
+		this.duration = duration;
+	}
+
+	get filled() {
+		return false;
+	}
+
+	past(time: Moment) {
+		return this.scheduledTime < time;
+	}
+}
+
+export class Appointment extends AppointmentSlot {
 	public readonly id!: string;
 	public readonly timestamp!: Moment;
 	public readonly name: string | undefined;
@@ -9,11 +29,9 @@ export default class Appointment {
 	public readonly description: string | undefined;
 	public readonly location: string | undefined;
 
-	public readonly scheduledTime!: Moment;
-	public readonly timeslot!: number;
-	public readonly duration!: number;
-
 	constructor(data: { [index: string]: any }) {
+		super(moment(data['scheduled_time']), data['timeslot'], data['duration']);
+
 		this.id = data['id'];
 		this.timestamp = moment(data['id_timestamp']);
 		this.name = data['name'];
@@ -21,9 +39,9 @@ export default class Appointment {
 		this.staffEmail = data['staff_email'];
 		this.description = data['description'];
 		this.location = data['location'];
+	}
 
-		this.scheduledTime = moment(data['scheduled_time']);
-		this.timeslot = data['timeslot'];
-		this.duration = data['duration'];
+	get filled() {
+		return true;
 	}
 }

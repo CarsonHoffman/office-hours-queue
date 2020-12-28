@@ -1,5 +1,5 @@
 import Queue from './Queue';
-import Appointment from './Appointment';
+import { Appointment, AppointmentSlot } from './Appointment';
 import Vue from 'vue';
 import moment, { Moment } from 'moment-timezone';
 
@@ -9,8 +9,7 @@ export class AppointmentsTimeslot {
 	public readonly timeslot!: number;
 	public readonly time!: Moment;
 	public readonly duration!: number;
-	public readonly total!: number;
-	public appointments: Appointment[] = [];
+	public slots: AppointmentSlot[] = [];
 
 	constructor(
 		day: number,
@@ -21,20 +20,48 @@ export class AppointmentsTimeslot {
 	) {
 		this.timeslot = timeslot;
 		this.duration = duration;
-		this.total = total;
 		this.time = startOfDay.clone().add(timeslot * duration, 'minutes');
+		this.slots = new Array(total);
+		this.slots.fill(new AppointmentSlot(this.time, timeslot, duration));
 	}
 
 	past(time: Moment) {
 		return this.time.clone().diff(time) < 0;
 	}
 
-	get studentSlots() {
-		return this.appointments.filter(
-			(a) =>
-				a.studentEmail !== undefined ||
-				(a.staffEmail === undefined && a.studentEmail === undefined)
+	addAppointment(appointment: Appointment) {
+		const toAddIndex = this.slots.findIndex((s) => !s.filled);
+		if (toAddIndex !== -1) {
+			this.slots.splice(toAddIndex, 1, appointment);
+		} else {
+			this.slots.push(appointment);
+		}
+	}
+
+	removeAppointment(id: string) {
+		const toRemoveIndex = this.slots.findIndex(
+			(s) => s.filled && (s as Appointment).id === id
 		);
+		if (toRemoveIndex !== -1) {
+			this.slots.splice(
+				toRemoveIndex,
+				1,
+				new AppointmentSlot(this.time, this.timeslot, this.duration)
+			);
+			return id;
+		}
+		return undefined;
+	}
+
+	updateAppointment(appointment: Appointment) {
+		const i = this.slots.findIndex(
+			(s) => s.filled && (s as Appointment).id === appointment.id
+		);
+		if (i !== -1) {
+			this.slots.splice(i, 1, appointment);
+			return appointment;
+		}
+		return undefined;
 	}
 }
 
@@ -70,61 +97,42 @@ export class AppointmentsSchedule {
 		return Object.keys(this.timeslots).length;
 	}
 
-	get consecutiveTimeslots(): AppointmentsTimeslot[][] {
-		const groups: AppointmentsTimeslot[][] = [];
-		const slots = Object.keys(this.timeslots).map((n) => parseInt(n));
-
-		if (slots.length === 0) {
-			return [];
+	// Returns a map of timeslots to appointments.
+	// Would really like to do this more functionally but the object
+	// seems to make things hard :(
+	get appointmentSlots(): { [index: number]: AppointmentSlot[] } {
+		const appointments: { [index: number]: AppointmentSlot[] } = {};
+		for (const [index, slot] of Object.entries(this.timeslots)) {
+			const slotIndex = parseInt(index);
+			appointments[slotIndex] = slot.slots;
 		}
 
-		let lastSeen: number = slots[0];
-		let running: AppointmentsTimeslot[] = [this.timeslots[lastSeen]];
-		for (let i = 1; i < slots.length; i++) {
-			if (slots[i] !== lastSeen + 1) {
-				groups.push(running);
-				running = [];
-			}
-
-			running.push(this.timeslots[slots[i]]);
-			lastSeen = slots[i];
-		}
-
-		groups.push(running);
-		return groups;
+		return appointments;
 	}
 
 	addAppointment(appointment: Appointment) {
 		// First look for appointment to update, if we already know about it
-		const updated = this.updateAppointment(appointment);
+		const updated = this.timeslots[appointment.timeslot].updateAppointment(
+			appointment
+		);
 
 		if (updated === undefined) {
-			this.timeslots[appointment.timeslot].appointments.push(appointment);
+			this.timeslots[appointment.timeslot].addAppointment(appointment);
 		}
 	}
 
+	// Yes, this is slow. At least it's rare. :)
 	removeAppointment(id: string) {
-		for (const slot of Object.values(this.timeslots)) {
-			slot.appointments = slot.appointments.filter((a) => a.id !== id);
-		}
-	}
-
-	updateAppointment(appointment: Appointment) {
-		let updated = undefined;
-
-		this.timeslots[appointment.timeslot].appointments.forEach((a, i) => {
-			if (a.id === appointment.id) {
-				this.timeslots[appointment.timeslot].appointments.splice(
-					i,
-					1,
-					appointment
-				);
-				updated = appointment;
+		Object.values(this.timeslots).forEach((slot) => {
+			const removed = slot.removeAppointment(id);
+			if (removed !== undefined) {
 				return;
 			}
 		});
+	}
 
-		return updated;
+	updateAppointment(appointment: Appointment) {
+		this.timeslots[appointment.timeslot].updateAppointment(appointment);
 	}
 }
 
