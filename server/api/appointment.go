@@ -405,6 +405,7 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		day := r.Context().Value(appointmentDayContextKey).(int)
 		timeslot := r.Context().Value(appointmentTimeslotContextKey).(int)
 		email := r.Context().Value(emailContextKey).(string)
+		admin := r.Context().Value(courseAdminContextKey).(bool)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"queue_id", q.ID,
@@ -576,7 +577,9 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 
 		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment.Anonymized()), QueueTopicNonPrivileged(q.ID))
-		s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+		if !admin {
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+		}
 	}
 }
 
@@ -597,6 +600,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
+		admin := r.Context().Value(courseAdminContextKey).(bool)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"appointment_id", a.ID,
@@ -675,7 +679,9 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 			s.sendResponse(http.StatusNoContent, nil, w, r)
 
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", &newAppointment), QueueTopicAdmin(q.ID))
-			s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+			if !admin {
+				s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+			}
 			return
 		}
 
@@ -769,7 +775,9 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 
 		s.ps.Pub(WS("APPOINTMENT_CREATE", createdAppointment), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("APPOINTMENT_CREATE", createdAppointment.Anonymized()), QueueTopicNonPrivileged(q.ID))
-		s.ps.Pub(WS("APPOINTMENT_UPDATE", createdAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+		if !admin {
+			s.ps.Pub(WS("APPOINTMENT_UPDATE", createdAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
+		}
 	}
 }
 

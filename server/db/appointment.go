@@ -175,7 +175,7 @@ func (s *Server) SignupForAppointment(ctx context.Context, queue ksuid.KSUID, ap
 	for _, a := range appointments {
 		if a.StudentEmail == nil {
 			err = s.DB.GetContext(ctx, &newAppointment,
-				"UPDATE appointment_slots SET student_email=$1, name=$2, location=$3, description=$4, map_x=$5, map_y=$6 WHERE id=$7 RETURNING id, queue, student_email, scheduled_time, timeslot, duration, name, location, description, map_x, map_y",
+				"UPDATE appointment_slots SET student_email=$1, name=$2, location=$3, description=$4, map_x=$5, map_y=$6 WHERE id=$7 RETURNING id, queue, student_email, staff_email, scheduled_time, timeslot, duration, name, location, description, map_x, map_y",
 				*appointment.StudentEmail, *appointment.Name, *appointment.Location, *appointment.Description, *appointment.MapX, *appointment.MapY, a.ID,
 			)
 			return &newAppointment, err
