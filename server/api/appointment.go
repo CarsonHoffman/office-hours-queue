@@ -657,6 +657,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		newAppointment.Duration = a.Duration
 		newAppointment.ScheduledTime = a.ScheduledTime
 		newAppointment.StudentEmail = &email
+		newAppointment.StaffEmail = a.StaffEmail
 
 		var zero float32
 		if newAppointment.MapX == nil {
