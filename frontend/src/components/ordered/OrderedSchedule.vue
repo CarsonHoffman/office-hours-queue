@@ -39,7 +39,14 @@
 									<button
 										class="button timeslot-cell"
 										:class="classes[i][j - 1]"
-										@click="changeSlot(i, j - 1)"
+										@mousedown="
+											() => {
+												changeSlot(i, j - 1);
+												painting = true;
+											}
+										"
+										@mouseup="() => (painting = false)"
+										@mouseover="() => painting && changeSlot(i, j - 1)"
 									></button
 								></b-tooltip>
 							</div>
@@ -70,6 +77,8 @@ export default class OrderedSchedule extends Vue {
 
 	@Prop()
 	schedule!: string[];
+
+	painting = false;
 
 	// This choice of date is completely arbitrary; I just needed
 	// a base time of midnight off which we can add 30-minute intervals.
