@@ -142,7 +142,7 @@ CREATE TABLE public.queue_entries (
     removed boolean DEFAULT false NOT NULL,
     removed_by text,
     removed_at timestamp without time zone,
-    cleared boolean DEFAULT false NOT NULL
+    helped boolean DEFAULT true NOT NULL
 );
 
 

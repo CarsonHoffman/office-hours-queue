@@ -292,7 +292,7 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 
 	var personalEntries int
 	err = s.DB.GetContext(ctx, &personalEntries,
-		"SELECT COUNT(*) FROM queue_entries WHERE email=$1 AND queue=$2 AND id>=$3 AND removed_by!=email AND NOT cleared",
+		"SELECT COUNT(*) FROM queue_entries WHERE email=$1 AND queue=$2 AND id>=$3 AND removed_by!=email AND helped",
 		email, queue, firstIDOfDay,
 	)
 	if err != nil {
@@ -309,7 +309,7 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 
 	var groupEntries int
 	err = s.DB.GetContext(ctx, &groupEntries,
-		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.email=$1 AND t.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email AND NOT cleared",
+		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.email=$1 AND t.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email AND helped",
 		email, queue, firstIDOfDay,
 	)
 	if err != nil {
@@ -366,7 +366,7 @@ func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, ent
 func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*api.RemovedQueueEntry, error) {
 	var e api.RemovedQueueEntry
 	err := s.DB.GetContext(ctx, &e,
-		"UPDATE queue_entries SET pinned=FALSE, removed=TRUE, removed_at=NOW(), removed_by=$1, cleared=FALSE WHERE NOT removed AND id=$2 RETURNING *",
+		"UPDATE queue_entries SET pinned=FALSE, removed=TRUE, removed_at=NOW(), removed_by=$1, helped=TRUE WHERE NOT removed AND id=$2 RETURNING *",
 		remover, entry,
 	)
 	return &e, err
@@ -374,7 +374,7 @@ func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remove
 
 func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 	_, err := s.DB.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=FALSE, removed_at=NULL, removed_by=NULL, cleared=FALSE, pinned=TRUE WHERE id=$1",
+		"UPDATE queue_entries SET removed=FALSE, removed_at=NULL, removed_by=NULL, helped=FALSE, pinned=TRUE WHERE id=$1",
 		entry,
 	)
 	return err
@@ -382,7 +382,7 @@ func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
 	_, err := s.DB.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, cleared=TRUE WHERE NOT removed AND queue=$2",
+		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, helped=FALSE WHERE NOT removed AND queue=$2",
 		remover, queue,
 	)
 	return err
