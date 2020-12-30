@@ -102,25 +102,32 @@
 						<div class="field is-grouped">
 							<p class="control" v-if="!stack">
 								<button
-									class="button is-danger"
+									class="button is-success"
 									:class="{ 'is-loading': removeRequestRunning }"
 									v-on:click="removeEntry"
 								>
-									Remove
+									<span class="icon"
+										><font-awesome-icon icon="hands-helping"
+									/></span>
+									<span>Help</span>
 								</button>
 							</p>
 							<p class="control" v-if="!entry.pinned && admin">
 								<button
-									class="button is-info"
+									class="button is-primary"
 									:class="{ 'is-loading': pinEntryRequestRunning }"
 									v-on:click="pinEntry"
 								>
-									Pin
+									<span class="icon"
+										><font-awesome-icon icon="thumbtack"
+									/></span>
+									<span>Pin</span>
 								</button>
 							</p>
 							<p class="control" v-if="admin">
 								<button class="button is-warning" @click="messageUser">
-									Message
+									<span class="icon"><font-awesome-icon icon="envelope"/></span>
+									<span>Message</span>
 								</button>
 							</p>
 						</div>
@@ -158,6 +165,8 @@ import {
 	faSortNumericDown,
 	faTimes,
 	faThumbtack,
+	faEnvelope,
+	faHandsHelping,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -169,7 +178,9 @@ library.add(
 	faSortNumericUp,
 	faSortNumericDown,
 	faTimes,
-	faThumbtack
+	faThumbtack,
+	faEnvelope,
+	faHandsHelping
 );
 
 @Component

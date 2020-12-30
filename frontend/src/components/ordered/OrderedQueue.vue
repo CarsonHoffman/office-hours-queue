@@ -94,10 +94,12 @@
 				</div>
 				<div class="buttons block" v-if="admin">
 					<button class="button is-danger" @click="clearQueue">
-						Clear Queue
+						<span class="icon"><font-awesome-icon icon="eraser"/></span>
+						<span>Clear Queue</span>
 					</button>
 					<button class="button is-primary" @click="editSchedule">
-						Edit Schedule
+						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span>Edit Schedule</span>
 					</button>
 				</div>
 				<div class="block">
@@ -146,10 +148,19 @@ import {
 	faGrinHearts,
 	faHeartBroken,
 	faUserGraduate,
+	faEraser,
+	faCalendarAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import OrderedSchedule from './OrderedSchedule.vue';
 
-library.add(faStoreAltSlash, faGrinHearts, faHeartBroken, faUserGraduate);
+library.add(
+	faStoreAltSlash,
+	faGrinHearts,
+	faHeartBroken,
+	faUserGraduate,
+	faEraser,
+	faCalendarAlt
+);
 
 @Component({
 	components: {

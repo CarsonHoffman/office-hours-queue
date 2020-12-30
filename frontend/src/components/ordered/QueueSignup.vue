@@ -45,17 +45,20 @@
 					@click="signUp"
 					v-if="myEntry === undefined"
 				>
-					Sign Up
+					<span class="icon"><font-awesome-icon icon="user-plus"/></span>
+					<span>Sign Up</span>
 				</button>
 				<button
 					class="button is-warning level-item"
 					@click="updateRequest"
 					v-else-if="myEntryModified"
 				>
-					Update Request
+					<span class="icon"><font-awesome-icon icon="edit"/></span>
+					<span>Update Request</span>
 				</button>
 				<button class="button is-success level-item" disabled="true" v-else>
-					Signed up
+					<span class="icon"><font-awesome-icon icon="check"/></span>
+					<span>Signed up</span>
 				</button>
 				<p class="level-item" v-if="!$root.$data.loggedIn">
 					Log in to sign up!
@@ -74,9 +77,16 @@ import { QueueEntry } from '@/types/QueueEntry';
 import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faUser, faQuestion, faLink } from '@fortawesome/free-solid-svg-icons';
+import {
+	faUser,
+	faQuestion,
+	faLink,
+	faUserPlus,
+	faCheck,
+	faEdit,
+} from '@fortawesome/free-solid-svg-icons';
 
-library.add(faUser, faQuestion, faLink);
+library.add(faUser, faQuestion, faLink, faUserPlus, faCheck, faEdit);
 
 @Component
 export default class QueueSignup extends Vue {

@@ -26,13 +26,24 @@
 							class="button is-info is-loading"
 							v-if="!$root.$data.userInfoLoaded"
 						>
-							Log in
+							<span class="icon"><font-awesome-icon icon="sign-in-alt"/></span>
+							<span>Log in</span>
 						</button>
 						<a :href="loginUrl" v-else-if="!$root.$data.loggedIn">
-							<button class="button is-info">Log in</button>
+							<button class="button is-info">
+								<span class="icon"
+									><font-awesome-icon icon="sign-in-alt"
+								/></span>
+								<span>Log in</span>
+							</button>
 						</a>
 						<a :href="logoutUrl" v-else>
-							<button class="button is-danger">Log out</button>
+							<button class="button is-danger">
+								<span class="icon"
+									><font-awesome-icon icon="sign-out-alt"
+								/></span>
+								<span>Log out</span>
+							</button>
 						</a>
 					</div>
 				</div>
@@ -73,9 +84,10 @@ import CourseNavbarItem from '@/components/CourseNavbarItem.vue';
 import Course from './types/Course';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
+import { faSignInAlt, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
-library.add(faGithub);
+library.add(faSignInAlt, faSignOutAlt, faGithub);
 
 @Component({ components: { CourseNavbarItem } })
 export default class App extends Vue {
@@ -201,7 +213,7 @@ $colors: (
 
 .fade-enter-active,
 .fade-leave-active {
-	transition-duration: 0.2s;
+	transition-duration: 0.1s;
 	transition-property: opacity;
 	transition-timing-function: ease;
 }

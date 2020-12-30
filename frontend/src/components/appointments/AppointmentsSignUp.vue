@@ -90,7 +90,8 @@
 							v-if="selectedAppointment === null"
 							disabled
 						>
-							Select a time slot!
+							<span class="icon"><font-awesome-icon icon="user-clock"/></span>
+							<span>Select a time slot!</span>
 						</button>
 						<button
 							class="button is-success level-item"
@@ -99,8 +100,13 @@
 							v-else-if="myAppointment === undefined"
 							@click="signUp"
 						>
-							Schedule appointment at
-							{{ selectedAppointment.scheduledTime.format('LT') }}
+							<span class="icon"
+								><font-awesome-icon icon="calendar-check"
+							/></span>
+							<span
+								>Schedule appointment at
+								{{ selectedAppointment.scheduledTime.format('LT') }}</span
+							>
 						</button>
 						<button
 							class="button is-warning level-item"
@@ -108,10 +114,15 @@
 							v-else-if="myAppointmentModified"
 							@click="updateAppointment"
 						>
-							Update Appointment
+							<span class="icon"><font-awesome-icon icon="edit"/></span>
+							<span>Update Appointment</span>
 						</button>
 						<button class="button is-success level-item" disabled="true" v-else>
-							Scheduled for {{ myAppointment.scheduledTime.format('LT') }}
+							<span class="icon"><font-awesome-icon icon="check"/></span>
+							<span
+								>Scheduled for
+								{{ myAppointment.scheduledTime.format('LT') }}</span
+							>
 						</button>
 						<button
 							class="button is-danger level-item"
@@ -119,7 +130,10 @@
 							v-if="myAppointment !== undefined"
 							@click="cancelAppointment"
 						>
-							Cancel Appointment
+							<span class="icon"
+								><font-awesome-icon icon="calendar-times"
+							/></span>
+							<span>Cancel Appointment</span>
 						</button>
 						<p class="level-item" v-if="!$root.$data.loggedIn">
 							Log in to sign up!
@@ -141,9 +155,27 @@ import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faUser, faQuestion, faLink } from '@fortawesome/free-solid-svg-icons';
+import {
+	faUser,
+	faQuestion,
+	faLink,
+	faCalendarCheck,
+	faCalendarTimes,
+	faCheck,
+	faUserClock,
+	faEdit,
+} from '@fortawesome/free-solid-svg-icons';
 
-library.add(faUser, faQuestion, faLink);
+library.add(
+	faUser,
+	faQuestion,
+	faLink,
+	faCalendarCheck,
+	faCalendarTimes,
+	faCheck,
+	faUserClock,
+	faEdit
+);
 
 @Component({
 	components: { AppointmentsDisplay },
@@ -372,6 +404,8 @@ export default class AppointmentsSignUp extends Vue {
 			)} appointment?`,
 			type: 'is-danger',
 			hasIcon: true,
+			confirmText: 'Cancel Appointment',
+			cancelText: 'Close',
 			onConfirm: () => {
 				this.cancelAppointmentRequestRunning = true;
 				fetch(

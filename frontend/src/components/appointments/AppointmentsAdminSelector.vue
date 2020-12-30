@@ -101,7 +101,8 @@
 							v-if="selectedAppointment.staffEmail === undefined"
 							@click="claimTimeslot"
 						>
-							Claim
+							<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
+							<span>Claim</span>
 						</button>
 						<button
 							class="button is-danger"
@@ -110,7 +111,10 @@
 							"
 							@click="unclaimAppointment"
 						>
-							Unclaim
+							<span class="icon"
+								><font-awesome-icon icon="calendar-times"
+							/></span>
+							<span>Unclaim</span>
 						</button>
 					</div>
 					<div v-else>
@@ -118,7 +122,8 @@
 							Empty slot at {{ selectedAppointment.scheduledTime.format('LT') }}
 						</p>
 						<button class="button is-success" @click="claimTimeslot">
-							Claim
+							<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
+							<span>Claim</span>
 						</button>
 					</div>
 				</div>
@@ -144,9 +149,19 @@ import {
 	faQuestion,
 	faLink,
 	faChalkboardTeacher,
+	faHandPaper,
+	faCalendarTimes,
 } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faSignature, faAt, faQuestion, faLink, faChalkboardTeacher);
+library.add(
+	faSignature,
+	faAt,
+	faQuestion,
+	faLink,
+	faChalkboardTeacher,
+	faHandPaper,
+	faCalendarTimes
+);
 
 @Component({
 	components: { AppointmentsDisplay },
