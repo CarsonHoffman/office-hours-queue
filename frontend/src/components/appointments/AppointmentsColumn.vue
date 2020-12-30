@@ -73,6 +73,7 @@ export default class AppointmentsColumn extends Vue {
 	transform-origin: bottom left;
 	left: 1em;
 	bottom: 0;
+	z-index: 1;
 }
 
 .time-highlight {

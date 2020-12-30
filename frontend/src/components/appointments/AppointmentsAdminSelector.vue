@@ -1,7 +1,7 @@
 <template>
 	<div class="columns">
 		<div class="column is-two-thirds">
-			<div class="box">
+			<div class="box" style="position: relative">
 				<transition name="fade" mode="out-in">
 					<appointments-display
 						class="appointments-display"
@@ -16,6 +16,12 @@
 					/>
 					<b-skeleton height="10em" v-else key="loading"></b-skeleton>
 				</transition>
+				<button
+					class="button is-white edit-schedule-button"
+					@click="editSchedule"
+				>
+					<font-awesome-icon icon="cog" />
+				</button>
 			</div>
 		</div>
 		<div class="column is-one-third">
@@ -139,6 +145,7 @@ import { Component, Prop, Watch } from 'vue-property-decorator';
 import linkifyStr from 'linkifyjs/string';
 import { AppointmentsQueue } from '@/types/AppointmentsQueue';
 import AppointmentsDisplay from '@/components/appointments/AppointmentsDisplay.vue';
+import AppointmentsSchedule from '@/components/appointments/AppointmentsSchedule.vue';
 import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
 
@@ -260,6 +267,55 @@ export default class AppointmentsAdminSelector extends Vue {
 			}
 		});
 	}
+
+	editSchedule() {
+		fetch(
+			process.env.BASE_URL + `api/queues/${this.queue.id}/appointments/schedule`
+		)
+			.then((res) => res.json())
+			.then((schedule: [{ [index: string]: any }]) => {
+				schedule.sort(
+					(a: { [index: string]: any }, b: { [index: string]: any }) =>
+						a['day'] - b['day']
+				);
+				const schedules = schedule.map((s: { [index: string]: any }) =>
+					s['schedule'].split('').map((i: string) => parseInt(i))
+				);
+				const durations = schedule.map(
+					(s: { [index: string]: any }) => s['duration']
+				);
+				this.$buefy.modal.open({
+					parent: this,
+					component: AppointmentsSchedule,
+					props: { defaultSchedules: schedules, defaultDurations: durations },
+					events: {
+						saved: (day: number, duration: number, schedule: number[]) => {
+							const scheduleStr = schedule
+								.map((slot: number) => slot.toString())
+								.join('');
+							fetch(
+								process.env.BASE_URL +
+									`api/queues/${this.queue.id}/appointments/schedule/${day}`,
+								{
+									method: 'PUT',
+									body: JSON.stringify({
+										duration: duration,
+										padding: 2,
+										schedule: scheduleStr,
+									}),
+								}
+							).then((res) => {
+								if (res.status !== 204) {
+									return ErrorDialog(res);
+								}
+							});
+						},
+					},
+					hasModalCard: true,
+					trapFocus: true,
+				});
+			});
+	}
 }
 </script>
 
@@ -271,5 +327,11 @@ export default class AppointmentsAdminSelector extends Vue {
 
 .icon-row {
 	margin-bottom: 0px;
+}
+
+.edit-schedule-button {
+	position: absolute;
+	top: 10px;
+	right: 10px;
 }
 </style>
