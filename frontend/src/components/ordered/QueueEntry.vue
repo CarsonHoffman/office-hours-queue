@@ -105,11 +105,21 @@
 									class="button is-success"
 									:class="{ 'is-loading': removeRequestRunning }"
 									v-on:click="removeEntry"
+									v-if="admin"
 								>
 									<span class="icon"
 										><font-awesome-icon icon="hands-helping"
 									/></span>
 									<span>Help</span>
+								</button>
+								<button
+									class="button is-danger"
+									:class="{ 'is-loading': removeRequestRunning }"
+									v-on:click="removeEntry"
+									v-else
+								>
+									<span class="icon"><font-awesome-icon icon="times"/></span>
+									<span>Cancel</span>
 								</button>
 							</p>
 							<p class="control" v-if="!entry.pinned && admin">
