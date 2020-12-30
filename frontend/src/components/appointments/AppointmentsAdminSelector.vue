@@ -158,6 +158,7 @@ import {
 	faChalkboardTeacher,
 	faHandPaper,
 	faCalendarTimes,
+	faCog,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -167,7 +168,8 @@ library.add(
 	faLink,
 	faChalkboardTeacher,
 	faHandPaper,
-	faCalendarTimes
+	faCalendarTimes,
+	faCog
 );
 
 @Component({
