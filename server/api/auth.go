@@ -13,9 +13,12 @@ import (
 )
 
 const (
-	emailContextKey   = "email"
-	sessionContextKey = "session"
-	stateLength       = 64
+	emailContextKey          = "email"
+	profilePictureContextKey = "profile_pic"
+	nameContextKey           = "name"
+	firstNameContextKey      = "first_name"
+	sessionContextKey        = "session"
+	stateLength              = 64
 )
 
 var emptySessionCookie = &http.Cookie{
@@ -194,6 +197,8 @@ func (s *Server) OAuth2Callback() http.HandlerFunc {
 
 		session.Values["email"] = info.Email
 		session.Values["profile_pic"] = info.Picture
+		session.Values["name"] = info.Name
+		session.Values["first_name"] = info.GivenName
 		s.sessions.Save(r, w, session)
 
 		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
@@ -246,18 +251,21 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
 			return
 		}
 
-		// If the read or assertion fail, profilePicture will be empty and
+		// If any read or assertion fails, the string will be empty and
 		// will get caught by omitempty in the JSON encoding. It looks bad,
 		// but is actually not horrible!
-		pp, _ := r.Context().Value(sessionContextKey).(map[interface{}]interface{})["profile_pic"]
-		profilePicture, _ := pp.(string)
+		name, _ := r.Context().Value(nameContextKey).(string)
+		firstName, _ := r.Context().Value(firstNameContextKey).(string)
+		profilePicture, _ := r.Context().Value(profilePictureContextKey).(string)
 
 		resp := struct {
 			Email          string   `json:"email"`
 			SiteAdmin      bool     `json:"site_admin"`
 			AdminCourses   []string `json:"admin_courses"`
+			Name           string   `json:"name"`
+			FirstName      string   `json:"first_name"`
 			ProfilePicture string   `json:"profile_pic,omitempty"`
-		}{email, admin, courses, profilePicture}
+		}{email, admin, courses, name, firstName, profilePicture}
 
 		s.sendResponse(http.StatusOK, resp, w, r)
 	}

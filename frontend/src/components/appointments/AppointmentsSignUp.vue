@@ -2,26 +2,6 @@
 	<div>
 		<div class="field is-horizontal">
 			<div class="field-label">
-				<label class="label">Name</label>
-			</div>
-			<div class="field-body">
-				<div class="field">
-					<div class="control has-icons-left">
-						<input
-							class="input"
-							v-model="name"
-							type="text"
-							placeholder="Nice to meet you!"
-						/>
-						<span class="icon is-small is-left">
-							<font-awesome-icon icon="user" />
-						</span>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="field is-horizontal">
-			<div class="field-label">
 				<label class="label">Description</label>
 			</div>
 			<div class="field-body">
@@ -181,7 +161,6 @@ library.add(
 	components: { AppointmentsDisplay },
 })
 export default class AppointmentsSignUp extends Vue {
-	name = '';
 	description = '';
 	location = '';
 
@@ -242,7 +221,6 @@ export default class AppointmentsSignUp extends Vue {
 		oldAppointment: Appointment | undefined
 	) {
 		if (newAppointment !== oldAppointment && newAppointment !== undefined) {
-			this.name = newAppointment.name || '';
 			this.description = newAppointment.description || '';
 			this.location = newAppointment.location || '';
 			this.appointmentSelected(
@@ -285,8 +263,7 @@ export default class AppointmentsSignUp extends Vue {
 		const a = this.myAppointment;
 		return (
 			a !== undefined &&
-			(a.name !== this.name ||
-				a.description !== this.description ||
+			(a.description !== this.description ||
 				a.location !== this.location ||
 				(this.selectedAppointment !== null &&
 					a.timeslot !== this.selectedAppointment.timeslot))
@@ -296,10 +273,8 @@ export default class AppointmentsSignUp extends Vue {
 	get canSignUp() {
 		return (
 			this.$root.$data.loggedIn &&
-			this.name !== undefined &&
 			this.description !== undefined &&
 			this.location !== undefined &&
-			this.name.trim() !== '' &&
 			this.description.trim() !== '' &&
 			this.location.trim() !== ''
 		);
@@ -328,7 +303,6 @@ export default class AppointmentsSignUp extends Vue {
 			{
 				method: 'POST',
 				body: JSON.stringify({
-					name: this.name,
 					description: this.description,
 					location: this.location,
 				}),
@@ -372,7 +346,6 @@ export default class AppointmentsSignUp extends Vue {
 			{
 				method: 'PUT',
 				body: JSON.stringify({
-					name: this.name,
 					description: this.description,
 					location: this.location,
 					timeslot: this.selectedAppointment?.timeslot,

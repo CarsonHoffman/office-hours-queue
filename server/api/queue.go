@@ -441,6 +441,7 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
+		name := r.Context().Value(nameContextKey).(string)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"queue_id", q.ID,
@@ -479,8 +480,6 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 		}
 
 		var entry QueueEntry
-		entry.Queue = q.ID
-		entry.Email = email
 		err = json.NewDecoder(r.Body).Decode(&entry)
 		if err != nil {
 			l.Warnw("failed to decode queue entry from body", "err", err)
@@ -492,6 +491,9 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 			return
 		}
 
+		entry.Queue = q.ID
+		entry.Email = email
+		entry.Name = name
 		// Don't check location because it could be a map location;
 		// we're using the frontend as a bit of a crutch here
 		if entry.Description == "" || entry.Name == "" {
@@ -541,6 +543,7 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
+		name := r.Context().Value(nameContextKey).(string)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"entry_id", id,
@@ -590,6 +593,7 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 			)
 			return
 		}
+		newEntry.Name = name
 
 		if newEntry.Name == "" || newEntry.Description == "" {
 			l.Warnw("incomplete queue entry", "entry", entry)

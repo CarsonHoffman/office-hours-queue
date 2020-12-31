@@ -405,6 +405,7 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		day := r.Context().Value(appointmentDayContextKey).(int)
 		timeslot := r.Context().Value(appointmentTimeslotContextKey).(int)
 		email := r.Context().Value(emailContextKey).(string)
+		name := r.Context().Value(nameContextKey).(string)
 		admin := r.Context().Value(courseAdminContextKey).(bool)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
@@ -478,6 +479,7 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 			)
 			return
 		}
+		appointment.Name = &name
 
 		if appointment.Description == nil || appointment.Name == nil || appointment.Location == nil ||
 			*appointment.Description == "" || *appointment.Name == "" || *appointment.Location == "" {
@@ -600,6 +602,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
+		name := r.Context().Value(nameContextKey).(string)
 		admin := r.Context().Value(courseAdminContextKey).(bool)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
@@ -640,6 +643,7 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 			)
 			return
 		}
+		newAppointment.Name = &name
 
 		if newAppointment.Description == nil || newAppointment.Name == nil || newAppointment.Location == nil ||
 			*newAppointment.Description == "" || *newAppointment.Name == "" || *newAppointment.Location == "" {

@@ -1,20 +1,6 @@
 <template>
 	<div>
 		<div class="field">
-			<label class="label">Name</label>
-			<div class="control has-icons-left">
-				<input
-					class="input"
-					v-model="name"
-					type="text"
-					placeholder="Nice to meet you!"
-				/>
-				<span class="icon is-small is-left">
-					<font-awesome-icon icon="user" />
-				</span>
-			</div>
-		</div>
-		<div class="field">
 			<label class="label">Description</label>
 			<div class="control has-icons-left">
 				<input
@@ -90,7 +76,6 @@ library.add(faUser, faQuestion, faLink, faUserPlus, faCheck, faEdit);
 
 @Component
 export default class QueueSignup extends Vue {
-	name = '';
 	description = '';
 	location = '';
 
@@ -100,7 +85,6 @@ export default class QueueSignup extends Vue {
 	@Watch('myEntry')
 	myEntryUpdated(newEntry: QueueEntry | null) {
 		if (newEntry !== null) {
-			this.name = newEntry.name || '';
 			this.description = newEntry.description || '';
 			this.location = newEntry.location || '';
 		}
@@ -117,7 +101,6 @@ export default class QueueSignup extends Vue {
 		return (
 			this.$root.$data.loggedIn &&
 			this.queue.open(this.time) &&
-			this.name !== undefined &&
 			this.description.trim() !== '' &&
 			this.location.trim() !== '' &&
 			this.myEntry === null
@@ -131,7 +114,7 @@ export default class QueueSignup extends Vue {
 
 		return (
 			this.queue.entries.find(
-			(e) => e.email === this.$root.$data.userInfo.email
+				(e) => e.email === this.$root.$data.userInfo.email
 			) || null
 		);
 	}
@@ -140,9 +123,7 @@ export default class QueueSignup extends Vue {
 		const e = this.myEntry;
 		return (
 			e !== null &&
-			(e.name !== this.name ||
-				e.description !== this.description ||
-				e.location !== this.location)
+			(e.description !== this.description || e.location !== this.location)
 		);
 	}
 
@@ -164,7 +145,6 @@ export default class QueueSignup extends Vue {
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 			method: 'POST',
 			body: JSON.stringify({
-				name: this.name,
 				description: this.description,
 				location: this.location,
 			}),
@@ -175,7 +155,7 @@ export default class QueueSignup extends Vue {
 
 			this.$buefy.toast.open({
 				duration: 5000,
-				message: `You're on the queue!`,
+				message: `You're on the queue, ${this.$root.$data.userInfo.first_name}!`,
 				type: 'is-success',
 			});
 		});
@@ -189,7 +169,6 @@ export default class QueueSignup extends Vue {
 				{
 					method: 'PUT',
 					body: JSON.stringify({
-						name: this.name,
 						description: this.description,
 						location: this.location,
 					}),
