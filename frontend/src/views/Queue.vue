@@ -1,5 +1,9 @@
 <template>
 	<div class="box" v-if="found">
+		<button class="button is-light settings-button" @click="openManageDialog">
+			<span class="icon"><font-awesome-icon icon="cog"/></span>
+			<span>Manage Queue</span>
+		</button>
 		<section
 			v-if="queue !== null && queue.announcements.length > 0"
 			class="section"
@@ -48,6 +52,13 @@ import Announcement from '@/types/Announcement';
 import AnnouncementDisplay from '@/components/AnnouncementDisplay.vue';
 import OrderedQueueDisplay from '@/components/ordered/OrderedQueue.vue';
 import AppointmentsQueueDisplay from '@/components/appointments/AppointmentsQueue.vue';
+import QueueManage from '@/components/QueueManage.vue';
+import ErrorDialog from '@/util/ErrorDialog';
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
+
+library.add(faCog);
 
 @Component({
 	components: {
@@ -149,5 +160,75 @@ export default class QueuePage extends Vue {
 			this.$root.$data.userInfo.admin_courses.includes(this.$route.params.cid)
 		);
 	}
+
+	openManageDialog() {
+		Promise.all([
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/configuration`),
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/groups`),
+		])
+			.then(([config, groups]) => Promise.all([config.json(), groups.json()]))
+			.then(([configuration, groups]) => {
+				this.$buefy.modal.open({
+					parent: this,
+					component: QueueManage,
+					props: {
+						defaultConfiguration: configuration,
+						defaultGroups: groups,
+						type: this.queue.type,
+					},
+					events: {
+						configurationSaved: (newConfiguration: {
+							[index: string]: any;
+						}) => {
+							fetch(
+								process.env.BASE_URL +
+									`api/queues/${this.queue.id}/configuration`,
+								{
+									method: 'PUT',
+									body: JSON.stringify(newConfiguration),
+								}
+							).then((res) => {
+								if (res.status !== 204) {
+									return ErrorDialog(res);
+								}
+								this.$buefy.toast.open({
+									duration: 5000,
+									message: 'Queue settings saved!',
+									type: 'is-success',
+								});
+							});
+						},
+						groupsSaved: (newGroups: string[][]) => {
+							fetch(
+								process.env.BASE_URL + `api/queues/${this.queue.id}/groups`,
+								{
+									method: 'PUT',
+									body: JSON.stringify(newGroups),
+								}
+							).then((res) => {
+								if (res.status !== 204) {
+									return ErrorDialog(res);
+								}
+								this.$buefy.toast.open({
+									duration: 5000,
+									message: 'Queue groups saved!',
+									type: 'is-success',
+								});
+							});
+						},
+					},
+					hasModalCard: true,
+					trapFocus: true,
+				});
+			});
+	}
 }
 </script>
+
+<style scoped>
+.settings-button {
+	position: absolute;
+	top: 25px;
+	right: 10px;
+}
+</style>
