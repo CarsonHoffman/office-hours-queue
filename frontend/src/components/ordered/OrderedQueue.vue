@@ -33,7 +33,13 @@
 										class="block"
 									/>
 									<h1 class="title block">The queue is closed.</h1>
-									<h2 class="subtitle block">See you next time!</h2>
+										<h2 class="subtitle block">
+											See you next time{{
+												$root.$data.loggedIn
+													? ', ' + $root.$data.userInfo.first_name
+													: ''
+											}}!
+										</h2>
 								</span>
 								<span v-else-if="admin">
 									<font-awesome-icon
@@ -42,7 +48,9 @@
 										class="block"
 									/>
 									<h1 class="title block">The queue is empty.</h1>
-									<h2 class="subtitle block">Good job! Yes, you!</h2>
+										<h2 class="subtitle block">
+											Good job, {{ $root.$data.userInfo.first_name }}!
+										</h2>
 								</span>
 								<span v-else>
 									<font-awesome-icon
@@ -51,7 +59,13 @@
 										class="block"
 									/>
 									<h1 class="title block">The queue is empty.</h1>
-									<h2 class="subtitle block">We're lonely over here!</h2>
+										<h2 class="subtitle block">
+											We're lonely over here{{
+												$root.$data.loggedIn
+													? ', ' + $root.$data.userInfo.first_name
+													: ''
+											}}!
+										</h2>
 								</span>
 							</div>
 						</div>

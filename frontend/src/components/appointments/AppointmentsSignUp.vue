@@ -315,7 +315,9 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Scheduled',
-				message: `Your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
+				message: `Success, ${
+					this.$root.$data.userInfo.first_name
+				}—your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
 					'LT'
 				)}!`,
 				type: 'is-success',
