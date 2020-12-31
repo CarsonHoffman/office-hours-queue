@@ -3,36 +3,37 @@
 		<div class="column is-6">
 			<div class="entries">
 				<h1 class="title">Queue</h1>
-				<div v-if="loaded">
-					<transition name="fade" mode="out-in">
-						<transition-group
-							v-if="queue.entries.length > 0"
-							name="entries-group"
-							tag="div"
-						>
-							<div
-								v-for="entry in queue.entries"
-								:key="entry.id"
-								class="block entries-group-item"
+				<transition name="fade" mode="out-in">
+					<div v-if="loaded" key="queue-column-loaded">
+						<transition name="fade" mode="out-in">
+							<transition-group
+								v-if="queue.entries.length > 0"
+								name="entries-group"
+								tag="div"
 							>
-								<queue-entry-display
-									:entry="entry"
-									:stack="false"
-									:queue="queue"
-									:admin="admin"
-									:time="time"
-								/>
-							</div>
-						</transition-group>
-						<div class="hero is-primary" v-else>
-							<div class="hero-body">
-								<span v-if="!open">
-									<font-awesome-icon
-										icon="store-alt-slash"
-										size="10x"
-										class="block"
+								<div
+									v-for="entry in queue.entries"
+									:key="entry.id"
+									class="block entries-group-item"
+								>
+									<queue-entry-display
+										:entry="entry"
+										:stack="false"
+										:queue="queue"
+										:admin="admin"
+										:time="time"
 									/>
-									<h1 class="title block">The queue is closed.</h1>
+								</div>
+							</transition-group>
+							<div class="hero is-primary" v-else>
+								<div class="hero-body">
+									<span v-if="!open">
+										<font-awesome-icon
+											icon="store-alt-slash"
+											size="10x"
+											class="block"
+										/>
+										<h1 class="title block">The queue is closed.</h1>
 										<h2 class="subtitle block">
 											See you next time{{
 												$root.$data.loggedIn
@@ -40,25 +41,25 @@
 													: ''
 											}}!
 										</h2>
-								</span>
-								<span v-else-if="admin">
-									<font-awesome-icon
-										icon="grin-hearts"
-										size="10x"
-										class="block"
-									/>
-									<h1 class="title block">The queue is empty.</h1>
+									</span>
+									<span v-else-if="admin">
+										<font-awesome-icon
+											icon="grin-hearts"
+											size="10x"
+											class="block"
+										/>
+										<h1 class="title block">The queue is empty.</h1>
 										<h2 class="subtitle block">
 											Good job, {{ $root.$data.userInfo.first_name }}!
 										</h2>
-								</span>
-								<span v-else>
-									<font-awesome-icon
-										icon="heart-broken"
-										size="10x"
-										class="block"
-									/>
-									<h1 class="title block">The queue is empty.</h1>
+									</span>
+									<span v-else>
+										<font-awesome-icon
+											icon="heart-broken"
+											size="10x"
+											class="block"
+										/>
+										<h1 class="title block">The queue is empty.</h1>
 										<h2 class="subtitle block">
 											We're lonely over here{{
 												$root.$data.loggedIn
@@ -66,25 +67,26 @@
 													: ''
 											}}!
 										</h2>
-								</span>
+									</span>
+								</div>
+							</div>
+						</transition>
+					</div>
+					<div v-else>
+						<div v-for="i in 10" :key="i" class="block">
+							<div class="box">
+								<article class="media">
+									<div class="media-content">
+										<div class="content">
+											<b-skeleton></b-skeleton>
+											<b-skeleton></b-skeleton>
+										</div>
+									</div>
+								</article>
 							</div>
 						</div>
-					</transition>
-				</div>
-				<div v-else>
-					<div v-for="i in 10" :key="i" class="block">
-						<div class="box">
-							<article class="media">
-								<div class="media-content">
-									<div class="content">
-										<b-skeleton></b-skeleton>
-										<b-skeleton></b-skeleton>
-									</div>
-								</div>
-							</article>
-						</div>
 					</div>
-				</div>
+				</transition>
 			</div>
 		</div>
 		<div class="column is-5 is-offset-1">
