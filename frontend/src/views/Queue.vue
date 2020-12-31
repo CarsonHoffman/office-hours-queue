@@ -1,6 +1,10 @@
 <template>
 	<div class="box" v-if="found">
-		<button class="button is-light settings-button" @click="openManageDialog">
+		<button
+			class="button is-light settings-button"
+			@click="openManageDialog"
+			v-if="admin"
+		>
 			<span class="icon"><font-awesome-icon icon="cog"/></span>
 			<span>Manage Queue</span>
 		</button>
