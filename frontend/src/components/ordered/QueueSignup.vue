@@ -43,7 +43,7 @@
 					class="button is-success level-item"
 					:disabled="!canSignUp"
 					@click="signUp"
-					v-if="myEntry === undefined"
+					v-if="myEntry === null"
 				>
 					<span class="icon"><font-awesome-icon icon="user-plus"/></span>
 					<span>Sign Up</span>
@@ -98,45 +98,48 @@ export default class QueueSignup extends Vue {
 	@Prop({ required: true }) time!: Moment;
 
 	@Watch('myEntry')
-	myEntryUpdated(
-		newEntry: QueueEntry | undefined,
-		oldEntry: QueueEntry | undefined
-	) {
-		if (newEntry !== undefined) {
+	myEntryUpdated(newEntry: QueueEntry | null) {
+		if (newEntry !== null) {
 			this.name = newEntry.name || '';
 			this.description = newEntry.description || '';
 			this.location = newEntry.location || '';
 		}
 	}
 
-	get canSignUp() {
+	get canSignUp(): boolean {
+		// Don't remove this...for now. There's clearly something
+		// I'm not entirely grasping about Vue reactivity, and the "sign up"
+		// button is only instantly reactive if one of the expressions
+		// in the return statement is evaluated on its own, even though
+		// it *should* be evaluated in the return statement. If the next line
+		// is removed, it stops being reactive. What a Heisenbug.
+		this.myEntry;
 		return (
 			this.$root.$data.loggedIn &&
 			this.queue.open(this.time) &&
 			this.name !== undefined &&
-			this.description !== undefined &&
-			this.location !== undefined &&
-			this.name.trim() !== '' &&
 			this.description.trim() !== '' &&
 			this.location.trim() !== '' &&
-			this.myEntry === undefined
+			this.myEntry === null
 		);
 	}
 
-	get myEntry() {
-		if (this.$root.$data.userInfo.email === undefined) {
-			return undefined;
+	get myEntry(): QueueEntry | null {
+		if (this.$root.$data.userInfo.email === null) {
+			return null;
 		}
 
-		return this.queue.entries.find(
+		return (
+			this.queue.entries.find(
 			(e) => e.email === this.$root.$data.userInfo.email
+			) || null
 		);
 	}
 
 	get myEntryModified() {
 		const e = this.myEntry;
 		return (
-			e !== undefined &&
+			e !== null &&
 			(e.name !== this.name ||
 				e.description !== this.description ||
 				e.location !== this.location)
@@ -179,7 +182,7 @@ export default class QueueSignup extends Vue {
 	}
 
 	updateRequest() {
-		if (this.myEntry !== undefined) {
+		if (this.myEntry !== null) {
 			fetch(
 				process.env.BASE_URL +
 					`api/queues/${this.queue.id}/entries/${this.myEntry.id}`,
