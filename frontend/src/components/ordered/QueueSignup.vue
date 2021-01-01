@@ -108,7 +108,7 @@ export default class QueueSignup extends Vue {
 	}
 
 	get myEntry(): QueueEntry | null {
-		if (this.$root.$data.userInfo.email === null) {
+		if (this.$root.$data.userInfo.email === undefined) {
 			return null;
 		}
 
