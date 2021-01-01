@@ -152,6 +152,14 @@
 					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
 				</b-tooltip>
 			</figure>
+			<figure v-if="stack && !entry.helped" class="media-right">
+				<b-tooltip
+					label="This student wasn't able to be helped."
+					position="is-left"
+				>
+					<font-awesome-icon icon="frown-open" size="3x" fixed-width />
+				</b-tooltip>
+			</figure>
 		</article>
 	</div>
 </template>
@@ -177,6 +185,7 @@ import {
 	faThumbtack,
 	faEnvelope,
 	faHandsHelping,
+	faFrownOpen,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -190,7 +199,8 @@ library.add(
 	faTimes,
 	faThumbtack,
 	faEnvelope,
-	faHandsHelping
+	faHandsHelping,
+	faFrownOpen
 );
 
 @Component

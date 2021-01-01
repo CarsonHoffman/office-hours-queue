@@ -9,6 +9,7 @@ export class QueueEntry {
 	public readonly location: string | undefined;
 	public readonly priority!: number;
 	public readonly pinned!: boolean;
+	public readonly helped!: boolean;
 
 	constructor(data: { [index: string]: any }) {
 		this.id = data['id'];
@@ -19,6 +20,7 @@ export class QueueEntry {
 		this.location = data['location'];
 		this.priority = data['priority'] || 0;
 		this.pinned = data['pinned'] || false;
+		this.helped = data['helped'] || false;
 	}
 
 	// Get the humanized timestamp in relation to time.

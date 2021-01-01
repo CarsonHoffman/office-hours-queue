@@ -380,6 +380,14 @@ func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 	return err
 }
 
+func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped bool) error {
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE queue_entries SET helped=$1 WHERE id=$2",
+		helped, entry,
+	)
+	return err
+}
+
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
 	_, err := s.DB.ExecContext(ctx,
 		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, helped=FALSE WHERE NOT removed AND queue=$2",

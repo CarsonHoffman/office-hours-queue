@@ -1261,3 +1261,60 @@ func (s *Server) GetQueueLogs() http.HandlerFunc {
 		s.sendResponse(http.StatusOK, output, w, r)
 	}
 }
+
+type setNotHelped interface {
+	getQueueEntry
+	SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped bool) error
+}
+
+func (s *Server) SetNotHelped(sh setNotHelped) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		id := chi.URLParam(r, "entry_id")
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"entry_id", id,
+			"queue_id", q.ID,
+			"course_id", q.Course,
+			"email", email,
+		)
+
+		entryID, err := ksuid.Parse(id)
+		if err != nil {
+			l.Warnw("failed to parse entry ID", "err", err)
+			s.errorMessage(
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+				w, r,
+			)
+			return
+		}
+
+		entry, err := sh.GetQueueEntry(r.Context(), entryID, true)
+		if err != nil {
+			l.Warnw("attempted to get non-existent queue entry with valid ksuid")
+			s.errorMessage(
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+				w, r,
+			)
+			return
+		}
+
+		err = sh.SetHelpedStatus(r.Context(), entryID, false)
+		if err != nil {
+			l.Errorw("failed to set entry to not helped", "err", err)
+			s.internalServerError(w, r)
+			return
+		}
+
+		entry.Helped = false
+
+		l.Infow("set entry to not helped")
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+
+		s.ps.Pub(WS("ENTRY_UPDATE", entry.RemovedEntry()), QueueTopicAdmin(q.ID))
+		s.ps.Pub(WS("NOT_HELPED", nil), QueueTopicEmail(q.ID, email))
+	}
+}

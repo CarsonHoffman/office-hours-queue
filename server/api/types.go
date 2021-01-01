@@ -63,6 +63,25 @@ type QueueEntry struct {
 	Helped      bool           `json:"-" db:"helped"`
 }
 
+func (q *QueueEntry) RemovedEntry() *RemovedQueueEntry {
+	return &RemovedQueueEntry{
+		ID:          q.ID,
+		Queue:       q.Queue,
+		Email:       q.Email,
+		Name:        q.Name,
+		Description: q.Description,
+		Location:    q.Location,
+		MapX:        q.MapX,
+		MapY:        q.MapY,
+		Priority:    q.Priority,
+		Pinned:      q.Pinned,
+		Removed:     true,
+		RemovedBy:   q.RemovedBy.String,
+		RemovedAt:   q.RemovedAt.Time,
+		Helped:      q.Helped,
+	}
+}
+
 func (q *QueueEntry) MarshalJSON() ([]byte, error) {
 	type QueueEntryWithTimestamp QueueEntry
 	return json.Marshal(struct {

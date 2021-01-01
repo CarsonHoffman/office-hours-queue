@@ -8,6 +8,7 @@ import {
 import moment, { Moment } from 'moment-timezone';
 import linkifyStr from 'linkifyjs/string';
 import g from '../main';
+import ErrorDialog from '@/util/ErrorDialog';
 
 export default class OrderedQueue extends Queue {
 	public entries: QueueEntry[] = [];
@@ -70,13 +71,36 @@ export default class OrderedQueue extends Queue {
 					data.removed_by !== undefined &&
 					data.removed_by === g.$data.userInfo.email
 				) {
-					Dialog.alert({
+					Dialog.confirm({
 						title: 'Popped!',
-						message: `You popped ${data.email}! Their link is: ${linkifyStr(
-							data.location
-						)}`,
+						message:
+							`You popped ${data.email}! Their link is: ${linkifyStr(
+								data.location
+							)}.` +
+							`<br><br>If you weren't able to make contact with the student, click "Not Helped" and this won't count against their first-help-of-the-day status.`,
 						type: 'is-success',
 						hasIcon: true,
+						canCancel: ['button'],
+						cancelText: 'Not Helped',
+						onCancel: () => {
+							fetch(
+								process.env.BASE_URL +
+									`api/queues/${this.id}/entries/${data.id}/helped`,
+								{
+									method: 'DELETE',
+								}
+							).then((res) => {
+								if (res.status !== 204) {
+									return ErrorDialog(res);
+								}
+
+								Toast.open({
+									duration: 5000,
+									message: 'Successfully set that student was not helped!',
+									type: 'is-success',
+								});
+							});
+						},
 					});
 				} else if (
 					originalEntry !== undefined &&
@@ -105,8 +129,15 @@ export default class OrderedQueue extends Queue {
 				const i = this.entries.findIndex((e) => e.id === data.id);
 				if (i !== -1) {
 					this.entries.splice(i, 1, new QueueEntry(data));
+					this.sortEntries();
+				} else {
+					console.log('hi stack');
+					const stackIndex = this.stack.findIndex((e) => e.id === data.id);
+					if (stackIndex !== -1) {
+						console.log('inner');
+						this.stack.splice(stackIndex, 1, new RemovedQueueEntry(data));
+					}
 				}
-				this.sortEntries();
 				break;
 			}
 			case 'ENTRY_PINNED': {
@@ -144,6 +175,14 @@ export default class OrderedQueue extends Queue {
 					});
 				}
 				break;
+			}
+			case 'NOT_HELPED': {
+				Dialog.alert({
+					title: `We Couldn't Find You!`,
+					message: `A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your meeting link is still valid! <br><br><b>If your course prioritizes your first help session of the day, this one didn't count against you.</b>`,
+					hasIcon: true,
+					type: 'is-danger',
+				});
 			}
 		}
 
