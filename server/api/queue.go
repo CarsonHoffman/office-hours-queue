@@ -1315,6 +1315,6 @@ func (s *Server) SetNotHelped(sh setNotHelped) http.HandlerFunc {
 		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("ENTRY_UPDATE", entry.RemovedEntry()), QueueTopicAdmin(q.ID))
-		s.ps.Pub(WS("NOT_HELPED", nil), QueueTopicEmail(q.ID, email))
+		s.ps.Pub(WS("NOT_HELPED", nil), QueueTopicEmail(q.ID, entry.Email))
 	}
 }
