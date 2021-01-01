@@ -6,6 +6,11 @@
 		</header>
 		<section class="modal-card-body">
 			<div class="block">
+				<button class="button is-primary" @click="addAnnouncement">
+					Add Announcement
+				</button>
+			</div>
+			<div class="block">
 				<p class="title">Queue Settings</p>
 				<div class="field">
 					<b-checkbox v-model="configuration['prevent_unregistered']"
@@ -142,6 +147,14 @@ export default class QueueManage extends Vue {
 		for (let i = 0; i < this.defaultGroups.length; i++) {
 			this.groups.push([...this.defaultGroups[i]]);
 		}
+	}
+
+	addAnnouncement() {
+		this.$buefy.dialog.prompt({
+			message: 'Announcement content:',
+			confirmText: 'Add Announcement',
+			onConfirm: (content) => this.$emit('announcementAdded', content),
+		});
 	}
 
 	groupsPlaceholder = [

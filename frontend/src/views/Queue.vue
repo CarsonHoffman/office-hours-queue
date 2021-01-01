@@ -220,6 +220,22 @@ export default class QueuePage extends Vue {
 								});
 							});
 						},
+						announcementAdded: (content: string) => {
+							fetch(
+								process.env.BASE_URL +
+									`api/queues/${this.queue.id}/announcements`,
+								{ method: 'POST', body: JSON.stringify({ content: content }) }
+							).then((res) => {
+								if (res.status !== 201) {
+									return ErrorDialog(res);
+								}
+								this.$buefy.toast.open({
+									duration: 5000,
+									message: 'Announcement added!',
+									type: 'is-success',
+								});
+							});
+						},
 					},
 					hasModalCard: true,
 					trapFocus: true,

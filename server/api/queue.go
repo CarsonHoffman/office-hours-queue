@@ -865,7 +865,7 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 			"email", email,
 			"announcement", newAnnouncement,
 		)
-		s.sendResponse(http.StatusOK, newAnnouncement, w, r)
+		s.sendResponse(http.StatusCreated, newAnnouncement, w, r)
 
 		s.ps.Pub(WS("ANNOUNCEMENT_CREATE", newAnnouncement), QueueTopicGeneric(q.ID))
 	}
