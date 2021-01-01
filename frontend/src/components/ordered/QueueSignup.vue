@@ -91,19 +91,22 @@ export default class QueueSignup extends Vue {
 	}
 
 	get canSignUp(): boolean {
-		// Don't remove this...for now. There's clearly something
-		// I'm not entirely grasping about Vue reactivity, and the "sign up"
-		// button is only instantly reactive if one of the expressions
-		// in the return statement is evaluated on its own, even though
-		// it *should* be evaluated in the return statement. If the next line
-		// is removed, it stops being reactive. What a Heisenbug.
-		this.myEntry;
+		// Do not change the order of the expressions in this boolean
+		// expression. Because myEntry is a computed property, it seems
+		// that it has to be calculated at least once in order to be
+		// reactive, which means that putting it at the end of the
+		// expression means it isn't calculated until all of the previous
+		// parts of the expression are true, which is only calculated when
+		// deemed necessary based on reactivity. Thus, if one of the previous
+		// parts of the expression return false on the first calculation,
+		// we aren't reactive on myEntry until one of the previous
+		// parts had a reactive update. This took way too long to figure out :(
 		return (
+			this.myEntry === null &&
 			this.$root.$data.loggedIn &&
 			this.queue.open(this.time) &&
 			this.description.trim() !== '' &&
-			this.location.trim() !== '' &&
-			this.myEntry === null
+			this.location.trim() !== ''
 		);
 	}
 
