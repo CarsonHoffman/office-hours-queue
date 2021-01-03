@@ -247,6 +247,61 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 	}
 }
 
+type updateCourse interface {
+	UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName, fullName string) error
+}
+
+func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		course := r.Context().Value(courseContextKey).(*Course)
+
+		var bodyCourse Course
+		err := json.NewDecoder(r.Body).Decode(&bodyCourse)
+		if err != nil {
+			s.logger.Warnw("failed to decode course from body",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"err", err,
+			)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"We couldn't read the course from the request body.",
+				w, r,
+			)
+			return
+		}
+
+		if bodyCourse.ShortName == "" || bodyCourse.FullName == "" {
+			s.logger.Warnw("received incomplete course",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"course", bodyCourse,
+			)
+			s.errorMessage(
+				http.StatusBadRequest,
+				"It looks like you missed some fields in the course!",
+				w, r,
+			)
+			return
+		}
+
+		err = uc.UpdateCourse(r.Context(), course.ID, bodyCourse.ShortName, bodyCourse.FullName)
+		if err != nil {
+			s.logger.Errorw("failed to update course",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"err", err,
+			)
+			s.internalServerError(w, r)
+			return
+		}
+
+		s.logger.Infow("updated course",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", course.ID,
+			"email", r.Context().Value(emailContextKey).(string),
+		)
+		s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
 const defaultQueueSchedule = "cccccccccccccccccccccccccccccccccccccccccccccccc"
 
 var defaultAppointmentSchedule = &AppointmentSchedule{

@@ -99,6 +99,14 @@ func (s *Server) AddCourse(ctx context.Context, shortName, fullName string) (*ap
 	return &course, err
 }
 
+func (s *Server) UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName, fullName string) error {
+	_, err := s.DB.ExecContext(ctx,
+		"UPDATE courses SET short_name=$1, full_name=$2 WHERE id=$3",
+		shortName, fullName, course,
+	)
+	return err
+}
+
 func (s *Server) AddQueue(ctx context.Context, course ksuid.KSUID, queue *api.Queue) (*api.Queue, error) {
 	id := ksuid.New()
 	var newQueue api.Queue

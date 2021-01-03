@@ -12,6 +12,14 @@
 					</div>
 				</div>
 				<div class="navbar-end">
+					<div
+						class="navbar-item"
+						v-if="$root.$data.loggedIn && $root.$data.userInfo.site_admin"
+					>
+						<router-link to="/admin" class="no-link-color">
+							<font-awesome-icon icon="user-shield" size="2x" />
+						</router-link>
+					</div>
 					<div class="navbar-item">
 						<a
 							href="https://github.com/CarsonHoffman/office-hours-queue"
@@ -84,10 +92,14 @@ import CourseNavbarItem from '@/components/CourseNavbarItem.vue';
 import Course from './types/Course';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faSignInAlt, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import {
+	faSignInAlt,
+	faSignOutAlt,
+	faUserShield,
+} from '@fortawesome/free-solid-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
-library.add(faSignInAlt, faSignOutAlt, faGithub);
+library.add(faSignInAlt, faSignOutAlt, faUserShield, faGithub);
 
 @Component({ components: { CourseNavbarItem } })
 export default class App extends Vue {

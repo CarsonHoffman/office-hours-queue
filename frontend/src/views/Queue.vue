@@ -56,7 +56,7 @@ import Announcement from '@/types/Announcement';
 import AnnouncementDisplay from '@/components/AnnouncementDisplay.vue';
 import OrderedQueueDisplay from '@/components/ordered/OrderedQueue.vue';
 import AppointmentsQueueDisplay from '@/components/appointments/AppointmentsQueue.vue';
-import QueueManage from '@/components/QueueManage.vue';
+import QueueManage from '@/components/admin/QueueManage.vue';
 import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';

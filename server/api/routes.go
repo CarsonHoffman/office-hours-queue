@@ -36,6 +36,7 @@ type queueStore interface {
 	getCourse
 	getAdminCourses
 	addCourse
+	updateCourse
 	getCourseAdmins
 	addCourseAdmins
 	removeCourseAdmins
@@ -141,6 +142,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 			// Get course's queues
 			r.Get("/queues", s.GetQueues(q))
+
+			// Update course (site admin)
+			r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Put("/", s.UpdateCourse(q))
 
 			// Create queue on course (course admin)
 			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Post("/queues", s.AddQueue(q))
