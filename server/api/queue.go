@@ -257,10 +257,12 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 
 		events := s.ps.Sub(topics...)
 
-		s.logger.Infow("websocket connection opened",
-			"queue_id", q.ID,
-			"email", email,
-		)
+		if email != "" {
+			s.logger.Infow("websocket connection opened",
+				"queue_id", q.ID,
+				"email", email,
+			)
+		}
 
 		// The interval at which the server will expect pings from the client.
 		const pingInterval = 30 * time.Second
