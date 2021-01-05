@@ -1,7 +1,7 @@
 <template>
 	<div class="columns">
 		<div class="column is-two-thirds">
-			<div class="box" style="position: relative">
+			<div class="box" style="position: relative; height: 100%">
 				<transition name="fade" mode="out-in">
 					<appointments-display
 						class="appointments-display"
