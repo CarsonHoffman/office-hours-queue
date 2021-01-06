@@ -75,35 +75,26 @@
 						</button>
 					</div>
 				</div>
-				<p class="title is-4">Groups</p>
-				<div
-					class="box"
-					v-for="(group, i) in groups"
-					:key="i"
-					style="position: relative"
-				>
-					<button
-						class="button is-white is-small delete-button"
-						@click="removeGroup(i)"
-					>
-						<span class="icon"><font-awesome-icon icon="times"/></span>
-					</button>
-					<div
-						class="level icon-row is-mobile"
-						v-for="email in group"
-						:key="email"
-					>
-						<div class="level-left">
-							<p class="level-item">{{ email }}</p>
-							<button
-								class="button is-white is-small level-item"
-								@click="removeMember(i, email)"
-							>
-								<span class="icon"><font-awesome-icon icon="times"/></span>
-							</button>
-						</div>
+				<nav class="panel">
+					<p class="panel-heading">Groups</p>
+					<div class="panel-block" v-for="(group, i) in groups" :key="i">
+						<b-tooltip label="Delete Group">
+							<button class="button is-text" @click="removeGroup(i)">
+								<font-awesome-icon icon="times" /></button
+						></b-tooltip>
+						<p
+							v-for="(email, j) in group"
+							:key="email"
+							style="padding-right: 0.25em"
+						>
+							<b-tooltip :label="'Click to remove from group'">
+								<a @click="removeMember(i, email)">
+									{{ email + (j !== group.length - 1 ? ',' : '') }}</a
+								>
+							</b-tooltip>
+						</p>
 					</div>
-				</div>
+				</nav>
 			</div>
 		</section>
 		<footer class="modal-card-foot">
