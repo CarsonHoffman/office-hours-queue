@@ -1,57 +1,92 @@
 <template>
-	<div>
+	<div v-if="$root.$data.loggedIn">
 		<p class="title">Courses</p>
-		<button class="button is-primary is-fullwidth block" @click="addCourse">
+		<button
+			class="button is-primary is-fullwidth block"
+			@click="addCourse"
+			v-if="$root.$data.userInfo.site_admin"
+		>
 			Add Course
 		</button>
-		<div class="box" v-for="(course, i) in courses" :key="i">
-			<div class="level">
-				<div class="level-left">
-					<div class="level-item">
-						<strong>{{ course.shortName }}</strong>
+		<nav class="panel" v-for="(course, i) in courses" :key="i">
+			<div class="panel-heading">
+				<div class="level">
+					<div class="level-left">
+						<div class="level-item">
+							{{ course.shortName }}
+						</div>
+						<div class="level-item">
+							{{ course.fullName }}
+						</div>
 					</div>
-					<div class="level-item">
-						{{ course.fullName }}
-					</div>
-				</div>
-				<div class="level-right">
-					<div class="level-item">
-						<b-tooltip label="Edit Course">
-							<button class="button is-white" @click="editCourse(i)">
-								<span class="icon"
-									><font-awesome-icon icon="edit"
-								/></span></button
-						></b-tooltip>
-					</div>
-					<div class="level-item">
-						<b-tooltip label="Add Queue">
-							<button class="button is-white" @click="addQueue(i)">
-								<span class="icon"
-									><font-awesome-icon icon="plus"
-								/></span></button
-						></b-tooltip>
+					<div class="level-right">
+						<div class="level-item">
+							<b-tooltip label="Edit Course">
+								<button class="button is-text" @click="editCourse(i)">
+									<span class="icon"
+										><font-awesome-icon icon="edit"
+									/></span></button
+							></b-tooltip>
+						</div>
+						<div class="level-item">
+							<b-tooltip label="Add Queue">
+								<button class="button is-text" @click="addQueue(i)">
+									<span class="icon"
+										><font-awesome-icon icon="plus"
+									/></span></button
+							></b-tooltip>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+			<div class="panel-block" v-for="queue in course.queues" :key="queue.id">
+				<button class="button is-text" @click="deleteQueue(queue)">
+					<font-awesome-icon icon="times" />
+				</button>
+				<span class="panel-icon">
+					<font-awesome-icon
+						icon="hand-paper"
+						v-if="queue.type === 'ordered'"
+					/>
+					<font-awesome-icon
+						icon="calendar-alt"
+						v-else-if="queue.type === 'appointments'"
+					/>
+				</span>
+				<router-link :to="'/courses/' + course.id + '/queues/' + queue.id">
+					{{ queue.name }}
+				</router-link>
+			</div>
+		</nav>
 	</div>
 </template>
 
 <script lang="ts">
 import { Vue, Component } from 'vue-property-decorator';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faEdit, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+	faEdit,
+	faPlus,
+	faHandPaper,
+	faCalendarAlt,
+	faTimes,
+} from '@fortawesome/free-solid-svg-icons';
 import Course from '@/types/Course';
+import Queue from '@/types/Queue';
 import CourseEdit from '@/components/admin/CourseEdit.vue';
 import QueueAdd from '@/components/admin/QueueAdd.vue';
 import ErrorDialog from '@/util/ErrorDialog';
 
-library.add(faEdit, faPlus);
+library.add(faEdit, faPlus, faHandPaper, faCalendarAlt, faTimes);
 
 @Component
 export default class AdminPage extends Vue {
 	get courses(): Course[] {
-		return Object.values(this.$root.$data.courses);
+		return Object.values(
+			this.$root.$data.courses as Course[]
+		).filter((c: Course) =>
+			this.$root.$data.userInfo.admin_courses.includes(c.id)
+		);
 	}
 
 	addCourse() {
@@ -157,6 +192,25 @@ export default class AdminPage extends Vue {
 			},
 			hasModalCard: true,
 			trapFocus: true,
+		});
+	}
+
+	deleteQueue(queue: Queue) {
+		this.$buefy.dialog.confirm({
+			title: 'Delete Queue',
+			message: `Are you sure you want to delete ${queue.name}? <b>There is no undo.</b>`,
+			type: 'is-danger',
+			hasIcon: true,
+			onConfirm: () => {
+				fetch(process.env.BASE_URL + `api/queues/${queue.id}`, {
+					method: 'DELETE',
+				}).then((res) => {
+					if (res.status !== 204) {
+						return ErrorDialog(res);
+					}
+					location.reload();
+				});
+			},
 		});
 	}
 }
