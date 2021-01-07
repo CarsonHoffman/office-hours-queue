@@ -123,7 +123,23 @@
 					<queue-signup :queue="queue" :time="time" />
 				</div>
 				<div class="block" v-if="admin && queue.stack.length > 0">
-					<h1 class="title">Stack</h1>
+					<div class="level">
+						<div class="level-left">
+							<div class="level-item">
+								<p class="title">Stack</p>
+							</div>
+						</div>
+						<div class="level-right">
+							<div class="level-item">
+								<button
+									class="button is-small is-primary"
+									@click="downloadStackAsCSV"
+								>
+									Download all as .csv
+								</button>
+							</div>
+						</div>
+					</div>
 					<transition-group
 						v-if="queue.stack.length > 0"
 						name="entries-group"
@@ -152,6 +168,8 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
+import { json2csv } from 'json-2-csv';
+import fileDownload from 'js-file-download';
 import OrderedQueue from '@/types/OrderedQueue';
 import { QueueEntry, RemovedQueueEntry } from '@/types/QueueEntry';
 import QueueEntryDisplay from '@/components/ordered/QueueEntry.vue';
@@ -260,6 +278,25 @@ export default class OrderedQueueDisplay extends Vue {
 					},
 					hasModalCard: true,
 					trapFocus: true,
+				});
+			});
+	}
+
+	downloadStackAsCSV() {
+		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/stack`)
+			.then((res) => res.json())
+			.then((stack) => {
+				json2csv(stack, (err, csv) => {
+					if (err !== null || csv === undefined) {
+						this.$buefy.dialog.alert({
+							title: 'Error',
+							message: `Failed to create csv: ${err}`,
+							type: 'is-danger',
+							hasIcon: true,
+						});
+						return;
+					}
+					fileDownload(csv, 'stack.csv', 'text/csv');
 				});
 			});
 	}
