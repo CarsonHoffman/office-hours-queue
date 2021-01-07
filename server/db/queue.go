@@ -390,7 +390,7 @@ func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped 
 
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
 	_, err := s.DB.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, helped=FALSE WHERE NOT removed AND queue=$2",
+		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, pinned=FALSE, helped=FALSE WHERE NOT removed AND queue=$2",
 		remover, queue,
 	)
 	return err
