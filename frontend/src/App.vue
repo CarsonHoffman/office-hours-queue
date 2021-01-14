@@ -84,7 +84,7 @@
 						</transition>
 					</div>
 				</div>
-				<b-loading active="true" v-else></b-loading>
+				<b-loading :active="true" v-else></b-loading>
 			</div>
 		</section>
 	</div>
