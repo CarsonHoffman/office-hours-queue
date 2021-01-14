@@ -99,9 +99,7 @@ export default class QueuePage extends Vue {
 			this.time = moment();
 		}, 5 * 1000);
 
-		document.title =
-			this.$root.$data.courses[this.$route.params.cid].shortName +
-			' Office Hours';
+		document.title = this.queue.course.shortName + ' Office Hours';
 
 		// Block on WS open so we are connected to receive events
 		// *before* getting latest data

@@ -16,7 +16,7 @@ const routes: Array<RouteConfig> = [
 		},
 	},
 	{
-		path: '/courses/:cid/queues/:qid',
+		path: '/queues/:qid',
 		name: 'Queue',
 		component: Queue,
 	},
