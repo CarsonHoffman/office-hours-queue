@@ -179,7 +179,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueue(q))
 
-		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Delete("/", s.RemoveQueue(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Delete("/", s.RemoveQueue(q))
 
 		// Get queue's stack (queue admin)
 		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/stack", s.GetQueueStack(q))
