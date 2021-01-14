@@ -53,7 +53,7 @@
 						v-else-if="queue.type === 'appointments'"
 					/>
 				</span>
-				<router-link :to="'/courses/' + course.id + '/queues/' + queue.id">
+				<router-link :to="'/queues/' + queue.id">
 					{{ queue.name }}
 				</router-link>
 			</div>
