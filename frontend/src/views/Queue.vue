@@ -159,7 +159,7 @@ export default class QueuePage extends Vue {
 		return (
 			this.$root.$data.userInfo !== undefined &&
 			this.$root.$data.userInfo.admin_courses !== undefined &&
-			this.$root.$data.userInfo.admin_courses.includes(this.$route.params.cid)
+			this.$root.$data.userInfo.admin_courses.includes(this.queue.course.id)
 		);
 	}
 
