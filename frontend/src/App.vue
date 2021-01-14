@@ -16,7 +16,8 @@
 						class="navbar-item"
 						v-if="
 							$root.$data.loggedIn &&
-								$root.$data.userInfo.admin_courses.length > 0
+								($root.$data.userInfo.site_admin ||
+									$root.$data.userInfo.admin_courses.length > 0)
 						"
 					>
 						<router-link to="/admin" class="no-link-color">
