@@ -14,7 +14,7 @@
 				class="block"
 			/>
 			<h1 class="title block">Welcome to EECS Office Hours!</h1>
-			<h2 class="subtitle">Select a queue on the left to begin.</h2>
+			<h2 class="subtitle">Select a course on the left to begin.</h2>
 		</div>
 	</div>
 </template>
