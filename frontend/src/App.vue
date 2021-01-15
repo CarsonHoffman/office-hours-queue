@@ -65,13 +65,38 @@
 			<div class="container">
 				<div class="columns" v-if="fetchedCourses">
 					<div class="column is-one-fifth">
-						<b-menu class="sticky">
+						<b-menu class="sticky" :activable="false">
 							<b-menu-list label="Courses">
-								<course-navbar-item
-									v-for="course in courses"
-									:course="course"
-									:key="course.id"
-								/>
+								<span v-for="course in courses" :key="course.id">
+									<b-menu-item
+										:label="course.shortName"
+										:active="
+											course.queues.some((q) => $route.path.includes(q.id))
+										"
+										:expanded="
+											course.queues.some((q) => $route.path.includes(q.id))
+										"
+										v-if="course.queues.length > 1"
+									>
+										<b-menu-item
+											v-for="queue in course.queues"
+											:key="queue.id"
+											tag="router-link"
+											:to="'/queues/' + queue.id"
+											:label="queue.name"
+											:active="$route.path.includes(queue.id)"
+										></b-menu-item
+									></b-menu-item>
+									<b-menu-item
+										:label="course.shortName"
+										:active="
+											course.queues.some((q) => $route.path.includes(q.id))
+										"
+										tag="router-link"
+										:to="'/queues/' + course.queues[0].id"
+										v-else
+									></b-menu-item
+								></span>
 							</b-menu-list>
 						</b-menu>
 					</div>
@@ -92,7 +117,6 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
-import CourseNavbarItem from '@/components/CourseNavbarItem.vue';
 import Course from './types/Course';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
@@ -105,7 +129,7 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
 library.add(faSignInAlt, faSignOutAlt, faUserShield, faGithub);
 
-@Component({ components: { CourseNavbarItem } })
+@Component
 export default class App extends Vue {
 	@Prop() fetchedCourses = false;
 
