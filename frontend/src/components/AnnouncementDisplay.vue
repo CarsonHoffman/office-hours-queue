@@ -1,7 +1,7 @@
 <template>
 	<div class="notification is-warning">
 		<button class="delete" v-if="admin" @click="removeAnnouncement"></button>
-		<p v-html="linkifiedContent"></p>
+		<p v-html="linkifiedContent" class="announcement"></p>
 	</div>
 </template>
 
@@ -49,3 +49,9 @@ export default class AnnouncementDisplay extends Vue {
 	}
 }
 </script>
+
+<style scoped>
+.announcement {
+	overflow-wrap: break-word;
+}
+</style>

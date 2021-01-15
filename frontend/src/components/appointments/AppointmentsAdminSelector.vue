@@ -25,7 +25,7 @@
 			</div>
 		</div>
 		<div class="column is-one-third">
-			<div class="box" style="height: 100%">
+			<div class="box" style="height: 100%; overflow-x: hidden">
 				<p class="title is-5" v-if="selectedAppointment === null">
 					Select an appointment!
 				</p>
@@ -84,7 +84,7 @@
 											fixed-width
 										/>
 										<p
-											class="level-item link-in-container"
+											class="level-item stay-in-container"
 											v-html="selectedAppointmentLocation"
 										></p>
 									</div></div
@@ -335,5 +335,22 @@ export default class AppointmentsAdminSelector extends Vue {
 	position: absolute;
 	top: 10px;
 	right: 10px;
+}
+
+.level-left {
+	flex-shrink: 1;
+}
+
+.stay-in-container {
+	flex-shrink: 1;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	hyphens: auto;
+}
+
+.link-in-container {
+	flex-shrink: 1;
+	overflow-wrap: break-word;
+	word-break: break-all;
 }
 </style>
