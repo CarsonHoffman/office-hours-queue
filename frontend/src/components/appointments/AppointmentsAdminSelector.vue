@@ -84,7 +84,7 @@
 											fixed-width
 										/>
 										<p
-											class="level-item stay-in-container"
+											class="level-item link-in-container"
 											v-html="selectedAppointmentLocation"
 										></p>
 									</div></div
