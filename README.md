@@ -24,11 +24,19 @@ Next, set up the password for the database user. Note the `-n` option, which pre
 $ echo -n "goodpassword" > deploy/secrets/postgres_password
 ```
 
-Take your client ID from your Google OAuth2 application credentials, and insert the value into `QUEUE_OAUTH2_CLIENT_ID` in `deploy/docker-compose-dev.yml` or `deploy/docker-compose-prod.yml` depending on your environment (more on that later). You'll also want to change this value in `public/queue.html` in the `google-signin-client_id` `meta` tag.
+Take your client ID from your Google OAuth2 application credentials, and insert the value into `QUEUE_OAUTH2_CLIENT_ID` in `deploy/docker-compose-dev.yml` or `deploy/docker-compose-prod.yml` depending on your environment (more on that later). You'll also want to insert the client secret in `deploy/secrets/oauth2_client_secret`.
+
+Finally, the queue needs a password with which it controls access to the `/api/metrics` endpoint. Generate a password with:
+
+```sh
+$ openssl rand -hex 32 > deploy/secrets/metrics_password
+```
+
+You can then set up Prometheus to use basic auth, with username `queue` and the password you just generated, to retrieve statistics about the queue deployment!
 
 To enable certain features like notifications, browsers force the use of HTTPS. To accomplish this, we'll use [`mkcert`](https://github.com/FiloSottile/mkcert), a tool that installs a self-signed certificate authority into the system store and generates certificates with it (that the system will trust). Install it based on the instructions in the tool's README, then navigate to `deploy/secrets`, create a folder called `certs`, navigate into it, then run `mkcert lvh.me` (more on `lvh.me` later). That's it—the server is now running via HTTPS!
 
-Finally, ensure `node` is installed on your system, and run `npm install && npm run build`. I'd like to automate this in the future, but we're not directly building it into a container, which makes it a tad difficult. On the plus side, if any changes are made to the JS, another run of `npm run build` will rebuild the bundle and make it immediately available without a container restart.
+Finally, ensure `node` is installed on your system, navigate to the `frontend` directory, and run `npm install && npm run build`. I'd like to automate this in the future, but we're not directly building it into a container, which makes it a tad difficult. On the plus side, if any changes are made to the JS, another run of `npm run build` will rebuild the bundle and make it immediately available without a container restart.
 
 If you're looking to run a dev environment, that's it! Run `docker-compose -f deploy/docker-compose-dev.yml up -d`, and you're in business (you *might* need to restart the containers the first time you spin them up due to a race condition between the initialization of the database and the application, but once the database is initialized on the first run you shouldn't run into that again). Go to `https://lvh.me:8080` (`lvh.me` always resolves to localhost, but Google OAuth2 requires a domain), and you have a queue! To see the Kibana dashboard, go to `https://lvh.me:8080/kibana`. The default username and password are both `dev`.
 
