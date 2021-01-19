@@ -201,6 +201,11 @@ func (s *Server) OAuth2Callback() http.HandlerFunc {
 		session.Values["first_name"] = info.GivenName
 		s.sessions.Save(r, w, session)
 
+		s.logger.Infow("processed login",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"email", info.Email,
+			"name", info.Name,
+		)
 		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
 	}
 }
