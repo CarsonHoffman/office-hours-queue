@@ -205,7 +205,7 @@ export default class OrderedQueue extends Queue {
 				return b.priority - a.priority;
 			}
 
-			return a.id.localeCompare(b.id);
+			return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 		});
 	}
 
