@@ -28,6 +28,8 @@ type Server struct {
 // All of the abilities that a complete backing
 // store for the queue should have.
 type queueStore interface {
+	transactioner
+
 	siteAdmin
 	courseAdmin
 	getUserInfo
@@ -123,7 +125,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 	s.baseURL = os.Getenv("QUEUE_BASE_URL")
 
 	s.Router = chi.NewRouter()
-	s.Router.Use(instrumenter, ksuidInserter, s.recoverMiddleware, s.sessionRetriever)
+	s.Router.Use(instrumenter, ksuidInserter, s.recoverMiddleware, s.transaction(q), s.sessionRetriever)
 
 	// Course endpoints
 	s.Route("/courses", func(r chi.Router) {

@@ -11,8 +11,9 @@ import (
 )
 
 func (s *Server) GetQueue(ctx context.Context, queue ksuid.KSUID) (*api.Queue, error) {
+	tx := getTransaction(ctx)
 	var q api.Queue
-	err := s.DB.GetContext(ctx, &q,
+	err := tx.GetContext(ctx, &q,
 		"SELECT id, course, type, name, location, map, active FROM queues q WHERE active AND id=$1",
 		queue,
 	)
@@ -20,7 +21,8 @@ func (s *Server) GetQueue(ctx context.Context, queue ksuid.KSUID) (*api.Queue, e
 }
 
 func (s *Server) UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *api.Queue) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queues SET name=$1, location=$2 WHERE id=$3",
 		values.Name, values.Location, queue,
 	)
@@ -28,7 +30,8 @@ func (s *Server) UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *api
 }
 
 func (s *Server) RemoveQueue(ctx context.Context, queue ksuid.KSUID) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"DELETE FROM queues WHERE id=$1",
 		queue,
 	)
@@ -36,9 +39,10 @@ func (s *Server) RemoveQueue(ctx context.Context, queue ksuid.KSUID) error {
 }
 
 func (s *Server) GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (string, error) {
+	tx := getTransaction(ctx)
 	var schedule string
 	day := time.Now().Weekday()
-	err := s.DB.GetContext(ctx, &schedule,
+	err := tx.GetContext(ctx, &schedule,
 		"SELECT schedule FROM schedules WHERE queue=$1 AND day=$2",
 		queue, day,
 	)
@@ -46,8 +50,9 @@ func (s *Server) GetCurrentDaySchedule(ctx context.Context, queue ksuid.KSUID) (
 }
 
 func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemoved bool) (*api.QueueEntry, error) {
+	tx := getTransaction(ctx)
 	var e api.QueueEntry
-	err := s.DB.GetContext(ctx, &e,
+	err := tx.GetContext(ctx, &e,
 		"SELECT * FROM queue_entries WHERE id=$1 AND ($2 OR NOT removed)",
 		entry, allowRemoved,
 	)
@@ -55,19 +60,21 @@ func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemo
 }
 
 func (s *Server) GetQueueEntries(ctx context.Context, queue ksuid.KSUID, admin bool) ([]*api.QueueEntry, error) {
+	tx := getTransaction(ctx)
 	query := "SELECT id, queue, priority, pinned FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY pinned DESC, priority DESC, id"
 	if admin {
 		query = "SELECT * FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY pinned DESC, priority DESC, id"
 	}
 
 	entries := make([]*api.QueueEntry, 0)
-	err := s.DB.SelectContext(ctx, &entries, query, queue)
+	err := tx.SelectContext(ctx, &entries, query, queue)
 	return entries, err
 }
 
 func (s *Server) GetActiveQueueEntriesForUser(ctx context.Context, queue ksuid.KSUID, email string) ([]*api.QueueEntry, error) {
+	tx := getTransaction(ctx)
 	entries := make([]*api.QueueEntry, 0)
-	err := s.DB.SelectContext(ctx, &entries,
+	err := tx.SelectContext(ctx, &entries,
 		"SELECT * FROM queue_entries WHERE queue=$1 AND email=$2 AND NOT removed",
 		queue, email,
 	)
@@ -75,8 +82,9 @@ func (s *Server) GetActiveQueueEntriesForUser(ctx context.Context, queue ksuid.K
 }
 
 func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (*api.QueueConfiguration, error) {
+	tx := getTransaction(ctx)
 	var config api.QueueConfiguration
-	err := s.DB.GetContext(ctx, &config,
+	err := tx.GetContext(ctx, &config,
 		"SELECT id, prevent_unregistered, prevent_groups, prevent_groups_boost, prioritize_new FROM queues WHERE id=$1",
 		queue,
 	)
@@ -84,7 +92,8 @@ func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (
 }
 
 func (s *Server) UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID, config *api.QueueConfiguration) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queues SET prevent_unregistered=$1, prevent_groups=$2, prevent_groups_boost=$3, prioritize_new=$4 WHERE id=$5",
 		config.PreventUnregistered, config.PreventGroups, config.PreventGroupsBoost, config.PrioritizeNew, queue,
 	)
@@ -92,16 +101,18 @@ func (s *Server) UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID
 }
 
 func (s *Server) GetQueueRoster(ctx context.Context, queue ksuid.KSUID) ([]string, error) {
+	tx := getTransaction(ctx)
 	roster := make([]string, 0)
-	err := s.DB.SelectContext(ctx, &roster, "SELECT email FROM roster WHERE queue=$1 ORDER BY email", queue)
+	err := tx.SelectContext(ctx, &roster, "SELECT email FROM roster WHERE queue=$1 ORDER BY email", queue)
 	return roster, err
 }
 
 func (s *Server) GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]string, error) {
+	tx := getTransaction(ctx)
 	var groupIDs []string
 	groups := make([][]string, 0)
 
-	err := s.DB.SelectContext(ctx, &groupIDs,
+	err := tx.SelectContext(ctx, &groupIDs,
 		"SELECT DISTINCT group_id FROM groups WHERE queue=$1",
 		queue,
 	)
@@ -112,7 +123,7 @@ func (s *Server) GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]str
 
 	for _, id := range groupIDs {
 		var group []string
-		err = s.DB.SelectContext(ctx, &group,
+		err = tx.SelectContext(ctx, &group,
 			"SELECT email FROM groups WHERE queue=$1 AND group_id=$2",
 			queue, id,
 		)
@@ -126,12 +137,9 @@ func (s *Server) GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]str
 }
 
 func (s *Server) UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, groups [][]string) error {
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
+	tx := getTransaction(ctx)
 
-	_, err = tx.Exec("DELETE FROM groups WHERE queue=$1", queue)
+	_, err := tx.Exec("DELETE FROM groups WHERE queue=$1", queue)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to delete existing groups: %w", err)
@@ -139,7 +147,6 @@ func (s *Server) UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, group
 
 	insert, err := tx.Prepare(pq.CopyIn("groups", "queue", "group_id", "email"))
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
 	defer insert.Close()
@@ -149,24 +156,19 @@ func (s *Server) UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, group
 		for _, student := range group {
 			_, err = insert.Exec(queue, groupID, student)
 			if err != nil {
-				tx.Rollback()
 				return fmt.Errorf("failed to insert student %s into group %s: %w", student, groupID, err)
 			}
 		}
 	}
 
 	_, err = insert.Exec()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to exec insert statement: %w", err)
-	}
-
-	return tx.Commit()
+	return err
 }
 
 func (s *Server) UserInQueueRoster(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
+	tx := getTransaction(ctx)
 	var n int
-	err := s.DB.GetContext(ctx, &n,
+	err := tx.GetContext(ctx, &n,
 		"SELECT COUNT(*) FROM roster WHERE queue=$1 AND email=$2",
 		queue, email,
 	)
@@ -174,14 +176,10 @@ func (s *Server) UserInQueueRoster(ctx context.Context, queue ksuid.KSUID, email
 }
 
 func (s *Server) UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, students []string) error {
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
+	tx := getTransaction(ctx)
 
-	_, err = tx.Exec("DELETE FROM roster WHERE queue=$1", queue)
+	_, err := tx.Exec("DELETE FROM roster WHERE queue=$1", queue)
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to delete existing roster: %w", err)
 	}
 
@@ -195,23 +193,18 @@ func (s *Server) UpdateQueueRoster(ctx context.Context, queue ksuid.KSUID, stude
 	for _, student := range students {
 		_, err = insert.Exec(queue, student)
 		if err != nil {
-			tx.Rollback()
 			return fmt.Errorf("failed to insert student %s into roster: %w", student, err)
 		}
 	}
 
 	_, err = insert.Exec()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to exec insert statement: %w", err)
-	}
-
-	return tx.Commit()
+	return err
 }
 
 func (s *Server) TeammateInQueue(ctx context.Context, queue ksuid.KSUID, email string) (bool, error) {
+	tx := getTransaction(ctx)
 	var n int
-	err := s.DB.GetContext(ctx, &n,
+	err := tx.GetContext(ctx, &n,
 		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.queue=$1 AND t.email=$2 AND e.queue=$3 AND NOT e.removed",
 		queue, email, queue,
 	)
@@ -274,6 +267,7 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 }
 
 func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email string) (int, error) {
+	tx := getTransaction(ctx)
 	config, err := s.GetQueueConfiguration(ctx, queue)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get queue configuration: %w", err)
@@ -291,7 +285,7 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 	}
 
 	var personalEntries int
-	err = s.DB.GetContext(ctx, &personalEntries,
+	err = tx.GetContext(ctx, &personalEntries,
 		"SELECT COUNT(*) FROM queue_entries WHERE email=$1 AND queue=$2 AND id>=$3 AND removed_by!=email AND helped",
 		email, queue, firstIDOfDay,
 	)
@@ -308,7 +302,7 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 	}
 
 	var groupEntries int
-	err = s.DB.GetContext(ctx, &groupEntries,
+	err = tx.GetContext(ctx, &groupEntries,
 		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.email=$1 AND t.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email AND helped",
 		email, queue, firstIDOfDay,
 	)
@@ -323,9 +317,10 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 }
 
 func (s *Server) AddQueueEntry(ctx context.Context, e *api.QueueEntry) (*api.QueueEntry, error) {
+	tx := getTransaction(ctx)
 	var newEntry api.QueueEntry
 	id := ksuid.New()
-	err := s.DB.GetContext(ctx, &newEntry,
+	err := tx.GetContext(ctx, &newEntry,
 		"INSERT INTO queue_entries (id, queue, email, name, location, map_x, map_y, description, priority) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
 		id, e.Queue, e.Email, e.Name, e.Location, e.MapX, e.MapY, e.Description, e.Priority,
 	)
@@ -333,7 +328,8 @@ func (s *Server) AddQueueEntry(ctx context.Context, e *api.QueueEntry) (*api.Que
 }
 
 func (s *Server) UpdateQueueEntry(ctx context.Context, entry ksuid.KSUID, e *api.QueueEntry) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queue_entries SET name=$1, location=$2, description=$3, map_x=$4, map_y=$5 WHERE id=$6 AND NOT removed",
 		e.Name, e.Location, e.Description, e.MapX, e.MapY, entry,
 	)
@@ -341,6 +337,7 @@ func (s *Server) UpdateQueueEntry(ctx context.Context, entry ksuid.KSUID, e *api
 }
 
 func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, entry ksuid.KSUID, email string) (bool, error) {
+	tx := getTransaction(ctx)
 	q, err := s.GetQueue(ctx, queue)
 	if err != nil {
 		return false, fmt.Errorf("failed to get queue: %w", err)
@@ -356,7 +353,7 @@ func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, ent
 	}
 
 	var n int
-	err = s.DB.GetContext(ctx, &n,
+	err = tx.GetContext(ctx, &n,
 		"SELECT COUNT(*) FROM queue_entries WHERE id=$1 AND email=$2",
 		entry, email,
 	)
@@ -364,8 +361,9 @@ func (s *Server) CanRemoveQueueEntry(ctx context.Context, queue ksuid.KSUID, ent
 }
 
 func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*api.RemovedQueueEntry, error) {
+	tx := getTransaction(ctx)
 	var e api.RemovedQueueEntry
-	err := s.DB.GetContext(ctx, &e,
+	err := tx.GetContext(ctx, &e,
 		"UPDATE queue_entries SET pinned=FALSE, removed=TRUE, removed_at=NOW(), removed_by=$1, helped=TRUE WHERE NOT removed AND id=$2 RETURNING *",
 		remover, entry,
 	)
@@ -373,7 +371,8 @@ func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remove
 }
 
 func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queue_entries SET removed=FALSE, removed_at=NULL, removed_by=NULL, helped=FALSE, pinned=TRUE WHERE id=$1",
 		entry,
 	)
@@ -381,7 +380,8 @@ func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 }
 
 func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped bool) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queue_entries SET helped=$1 WHERE id=$2",
 		helped, entry,
 	)
@@ -389,7 +389,8 @@ func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped 
 }
 
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, pinned=FALSE, helped=FALSE WHERE NOT removed AND queue=$2",
 		remover, queue,
 	)
@@ -397,8 +398,9 @@ func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remov
 }
 
 func (s *Server) GetQueueStack(ctx context.Context, queue ksuid.KSUID, limit int) ([]*api.RemovedQueueEntry, error) {
+	tx := getTransaction(ctx)
 	entries := make([]*api.RemovedQueueEntry, 0)
-	err := s.DB.SelectContext(ctx, &entries,
+	err := tx.SelectContext(ctx, &entries,
 		"SELECT * FROM queue_entries WHERE queue=$1 AND removed ORDER BY removed_at DESC LIMIT $2",
 		queue, limit,
 	)
@@ -406,8 +408,9 @@ func (s *Server) GetQueueStack(ctx context.Context, queue ksuid.KSUID, limit int
 }
 
 func (s *Server) GetQueueAnnouncements(ctx context.Context, queue ksuid.KSUID) ([]*api.Announcement, error) {
+	tx := getTransaction(ctx)
 	announcements := make([]*api.Announcement, 0)
-	err := s.DB.SelectContext(ctx, &announcements,
+	err := tx.SelectContext(ctx, &announcements,
 		"SELECT id, queue, content FROM announcements WHERE queue=$1 ORDER BY id",
 		queue,
 	)
@@ -415,9 +418,10 @@ func (s *Server) GetQueueAnnouncements(ctx context.Context, queue ksuid.KSUID) (
 }
 
 func (s *Server) AddQueueAnnouncement(ctx context.Context, queue ksuid.KSUID, announcement *api.Announcement) (*api.Announcement, error) {
+	tx := getTransaction(ctx)
 	var newAnnouncement api.Announcement
 	id := ksuid.New()
-	err := s.DB.GetContext(ctx, &newAnnouncement,
+	err := tx.GetContext(ctx, &newAnnouncement,
 		"INSERT INTO announcements (id, queue, content) VALUES ($1, $2, $3) RETURNING id, queue, content",
 		id, announcement.Queue, announcement.Content,
 	)
@@ -425,7 +429,8 @@ func (s *Server) AddQueueAnnouncement(ctx context.Context, queue ksuid.KSUID, an
 }
 
 func (s *Server) RemoveQueueAnnouncement(ctx context.Context, announcement ksuid.KSUID) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"DELETE FROM announcements WHERE id=$1",
 		announcement,
 	)
@@ -433,8 +438,9 @@ func (s *Server) RemoveQueueAnnouncement(ctx context.Context, announcement ksuid
 }
 
 func (s *Server) GetQueueSchedule(ctx context.Context, queue ksuid.KSUID) ([]string, error) {
+	tx := getTransaction(ctx)
 	schedules := make([]string, 0)
-	err := s.DB.SelectContext(ctx, &schedules,
+	err := tx.SelectContext(ctx, &schedules,
 		"SELECT schedule FROM schedules WHERE queue=$1 ORDER BY day",
 		queue,
 	)
@@ -442,7 +448,8 @@ func (s *Server) GetQueueSchedule(ctx context.Context, queue ksuid.KSUID) ([]str
 }
 
 func (s *Server) AddQueueSchedule(ctx context.Context, queue ksuid.KSUID, day int, schedule string) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"INSERT INTO schedules (queue, day, schedule) VALUES ($1, $2, $3)",
 		queue, day, schedule,
 	)
@@ -450,8 +457,9 @@ func (s *Server) AddQueueSchedule(ctx context.Context, queue ksuid.KSUID, day in
 }
 
 func (s *Server) UpdateQueueSchedule(ctx context.Context, queue ksuid.KSUID, schedules []string) error {
+	tx := getTransaction(ctx)
 	for i, schedule := range schedules {
-		_, err := s.DB.ExecContext(ctx,
+		_, err := tx.ExecContext(ctx,
 			"UPDATE schedules SET schedule=$1 WHERE queue=$2 AND day=$3",
 			schedule, queue, i,
 		)
@@ -464,9 +472,10 @@ func (s *Server) UpdateQueueSchedule(ctx context.Context, queue ksuid.KSUID, sch
 }
 
 func (s *Server) SendMessage(ctx context.Context, queue ksuid.KSUID, content, sender, receiver string) (*api.Message, error) {
+	tx := getTransaction(ctx)
 	id := ksuid.New()
 	var message api.Message
-	err := s.DB.GetContext(ctx, &message,
+	err := tx.GetContext(ctx, &message,
 		"INSERT INTO messages (id, queue, content, sender, receiver) VALUES ($1, $2, $3, $4, $5) RETURNING id, queue, content, sender, receiver",
 		id, queue, content, sender, receiver,
 	)
@@ -474,8 +483,9 @@ func (s *Server) SendMessage(ctx context.Context, queue ksuid.KSUID, content, se
 }
 
 func (s *Server) ViewMessage(ctx context.Context, queue ksuid.KSUID, receiver string) (*api.Message, error) {
+	tx := getTransaction(ctx)
 	var message api.Message
-	err := s.DB.GetContext(ctx, &message,
+	err := tx.GetContext(ctx, &message,
 		"DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE queue=$1 AND receiver=$2 ORDER BY id LIMIT 1) RETURNING id, queue, content, sender, receiver",
 		queue, receiver,
 	)

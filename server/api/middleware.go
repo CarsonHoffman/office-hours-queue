@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/segmentio/ksuid"
 )
 
@@ -16,6 +17,64 @@ func ksuidInserter(next http.Handler) http.Handler {
 		w.Header().Add("X-Request-ID", id.String())
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+type transactioner interface {
+	BeginTx() (*sqlx.Tx, error)
+}
+
+const (
+	RequestErrorContextKey = "request_error"
+	TransactionContextKey  = "transaction"
+)
+
+// This function does tie the API package to sqlx to an extent, but it
+// doesn't need to be used in tests (individual handlers can still be
+// unit tested without this middleware, since the transaction is passed
+// through transparently in the context). I'm not advocating that this is
+// the cleanest pattern, but we definitely need to get transactions into
+// each request.
+func (s *Server) transaction(tr transactioner) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tx, err := tr.BeginTx()
+			if err != nil {
+				s.internalServerError(w, r)
+				return
+			}
+
+			// Yes, this is a pointer to an interface. Yes, having handlers
+			// propogate information back up via context is probably not the
+			// best pattern, but go-chi doesn't directly support handlers and
+			// middleware returning errors, and this only needs to occur in one
+			// other place (E.ServeHTTP).
+			ctx := context.WithValue(r.Context(), RequestErrorContextKey, &err)
+			ctx = context.WithValue(ctx, TransactionContextKey, tx)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+
+			// err might have been mutated by the handler since we passed the
+			// context a pointer to it.
+			if err != nil {
+				err = tx.Rollback()
+				// The handler already wrote a status code, so the best we can
+				// do is log the failed rollback.
+				s.logger.Errorw("transaction rollback failed",
+					"err", err,
+				)
+				return
+			}
+
+			err = tx.Commit()
+			if err != nil {
+				// The handler already wrote a status code, so the best we can
+				// do is log the failed commit.
+				s.logger.Errorw("transaction commit failed",
+					"err", err,
+				)
+			}
+		})
+	}
 }
 
 func (s *Server) sessionRetriever(next http.Handler) http.Handler {

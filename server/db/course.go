@@ -10,8 +10,9 @@ import (
 )
 
 func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
+	tx := getTransaction(ctx)
 	courses := make([]*api.Course, 0)
-	err := s.DB.SelectContext(ctx, &courses,
+	err := tx.SelectContext(ctx, &courses,
 		"SELECT id, short_name, full_name FROM courses ORDER BY id",
 	)
 
@@ -19,7 +20,7 @@ func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
 		return nil, fmt.Errorf("failed to get courses: %w", err)
 	}
 
-	qStmt, err := s.DB.Preparex("SELECT id, course, type, name, location, map, active FROM queues WHERE active AND course=$1 ORDER BY id")
+	qStmt, err := tx.Preparex("SELECT id, course, type, name, location, map, active FROM queues WHERE active AND course=$1 ORDER BY id")
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up queues statement: %w", err)
 	}
@@ -37,8 +38,9 @@ func (s *Server) GetCourses(ctx context.Context) ([]*api.Course, error) {
 }
 
 func (s *Server) GetCourse(ctx context.Context, id ksuid.KSUID) (*api.Course, error) {
+	tx := getTransaction(ctx)
 	var course api.Course
-	err := s.DB.GetContext(ctx, &course,
+	err := tx.GetContext(ctx, &course,
 		"SELECT id, short_name, full_name FROM courses WHERE id=$1",
 		id,
 	)
@@ -46,8 +48,9 @@ func (s *Server) GetCourse(ctx context.Context, id ksuid.KSUID) (*api.Course, er
 }
 
 func (s *Server) GetAdminCourses(ctx context.Context, email string) ([]string, error) {
+	tx := getTransaction(ctx)
 	var n int
-	err := s.DB.GetContext(ctx, &n,
+	err := tx.GetContext(ctx, &n,
 		"SELECT COUNT(*) FROM site_admins WHERE email=$1",
 		email,
 	)
@@ -58,13 +61,13 @@ func (s *Server) GetAdminCourses(ctx context.Context, email string) ([]string, e
 	courses := make([]string, 0)
 	// Check if user is site admin; if so, they are admin for all courses
 	if n > 0 {
-		err = s.DB.SelectContext(ctx, &courses,
+		err = tx.SelectContext(ctx, &courses,
 			"SELECT id FROM courses",
 		)
 		return courses, err
 	}
 
-	err = s.DB.SelectContext(ctx, &courses,
+	err = tx.SelectContext(ctx, &courses,
 		"SELECT course FROM course_admins WHERE email=$1",
 		email,
 	)
@@ -72,8 +75,9 @@ func (s *Server) GetAdminCourses(ctx context.Context, email string) ([]string, e
 }
 
 func (s *Server) GetQueues(ctx context.Context, course ksuid.KSUID) ([]*api.Queue, error) {
+	tx := getTransaction(ctx)
 	queues := make([]*api.Queue, 0)
-	err := s.DB.SelectContext(ctx, &queues,
+	err := tx.SelectContext(ctx, &queues,
 		"SELECT id, course, type, name, location, map, active FROM queues WHERE course=$1 AND active ORDER BY id",
 		course,
 	)
@@ -81,8 +85,9 @@ func (s *Server) GetQueues(ctx context.Context, course ksuid.KSUID) ([]*api.Queu
 }
 
 func (s *Server) CourseAdmin(ctx context.Context, course ksuid.KSUID, email string) (bool, error) {
+	tx := getTransaction(ctx)
 	var n int
-	err := s.DB.GetContext(ctx, &n,
+	err := tx.GetContext(ctx, &n,
 		"SELECT COUNT(*) FROM (SELECT email FROM site_admins UNION SELECT email FROM course_admins WHERE course=$1) AS admins WHERE email=$2",
 		course, email,
 	)
@@ -90,9 +95,10 @@ func (s *Server) CourseAdmin(ctx context.Context, course ksuid.KSUID, email stri
 }
 
 func (s *Server) AddCourse(ctx context.Context, shortName, fullName string) (*api.Course, error) {
+	tx := getTransaction(ctx)
 	id := ksuid.New()
 	var course api.Course
-	err := s.DB.GetContext(ctx, &course,
+	err := tx.GetContext(ctx, &course,
 		"INSERT INTO courses (id, short_name, full_name) VALUES ($1, $2, $3) RETURNING id, short_name, full_name",
 		id, shortName, fullName,
 	)
@@ -100,7 +106,8 @@ func (s *Server) AddCourse(ctx context.Context, shortName, fullName string) (*ap
 }
 
 func (s *Server) UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName, fullName string) error {
-	_, err := s.DB.ExecContext(ctx,
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
 		"UPDATE courses SET short_name=$1, full_name=$2 WHERE id=$3",
 		shortName, fullName, course,
 	)
@@ -108,9 +115,10 @@ func (s *Server) UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName
 }
 
 func (s *Server) AddQueue(ctx context.Context, course ksuid.KSUID, queue *api.Queue) (*api.Queue, error) {
+	tx := getTransaction(ctx)
 	id := ksuid.New()
 	var newQueue api.Queue
-	err := s.DB.GetContext(ctx, &newQueue,
+	err := tx.GetContext(ctx, &newQueue,
 		"INSERT INTO queues (id, course, type, name, location, map, active) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, course, type, name, location, map, active",
 		id, course, queue.Type, queue.Name, queue.Location, queue.Map, true,
 	)
@@ -118,19 +126,17 @@ func (s *Server) AddQueue(ctx context.Context, course ksuid.KSUID, queue *api.Qu
 }
 
 func (s *Server) GetCourseAdmins(ctx context.Context, course ksuid.KSUID) ([]string, error) {
+	tx := getTransaction(ctx)
 	admins := make([]string, 0)
-	err := s.DB.SelectContext(ctx, &admins, "SELECT email FROM course_admins WHERE course=$1", course)
+	err := tx.SelectContext(ctx, &admins, "SELECT email FROM course_admins WHERE course=$1", course)
 	return admins, err
 }
 
 func (s *Server) AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string, overwrite bool) error {
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
+	tx := getTransaction(ctx)
 
 	if overwrite {
-		_, err = tx.Exec("DELETE FROM course_admins WHERE course=$1", course)
+		_, err := tx.Exec("DELETE FROM course_admins WHERE course=$1", course)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to delete existing admins: %w", err)
@@ -139,7 +145,6 @@ func (s *Server) AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins
 
 	insert, err := tx.Prepare(pq.CopyIn("course_admins", "course", "email"))
 	if err != nil {
-		tx.Rollback()
 		return fmt.Errorf("failed to prepare insert statement: %w", err)
 	}
 	defer insert.Close()
@@ -153,27 +158,18 @@ func (s *Server) AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins
 	}
 
 	_, err = insert.Exec()
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to exec insert statement: %w", err)
-	}
-
-	return tx.Commit()
+	return err
 }
 
 func (s *Server) RemoveCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string) error {
-	tx, err := s.DB.Begin()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
+	tx := getTransaction(ctx)
 
 	for _, email := range admins {
-		_, err = tx.Exec("DELETE FROM course_admins WHERE course=$1 AND email=$2", course, email)
+		_, err := tx.Exec("DELETE FROM course_admins WHERE course=$1 AND email=$2", course, email)
 		if err != nil {
-			tx.Rollback()
 			return fmt.Errorf("failed to delete %s from course %s admins: %w", email, course, err)
 		}
 	}
 
-	return tx.Commit()
+	return nil
 }
