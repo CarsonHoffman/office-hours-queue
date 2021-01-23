@@ -2,11 +2,53 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/segmentio/ksuid"
 )
+
+// E is a custom handler type that supports returning an error.
+// The name is short to cut down on repetition since every handler
+// needs to be converted to this type---see testing.T, for example.
+type E func(w http.ResponseWriter, r *http.Request) error
+
+type StatusError struct {
+	status  int
+	message string
+}
+
+func (s StatusError) Error() string { return s.message }
+
+// A custom handler wrapper to support the use of error-returning
+// handlers that have their errors serialized automatically.
+func (e E) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := e(w, r)
+	if err != nil {
+		m := struct {
+			Message string `json:"message"`
+		}{}
+		var s StatusError
+		if !errors.As(err, &s) {
+			s = internalServerError(r)
+		}
+		m.Message = s.message
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(s.status)
+		json.NewEncoder(w).Encode(m)
+		return
+	}
+}
+
+func internalServerError(r *http.Request) StatusError {
+	return StatusError{status: http.StatusInternalServerError,
+		message: "Oops! Something bad happened on our end. If this is happening consistently, please get in touch with us, and include the following ID: " +
+			r.Context().Value(RequestIDContextKey).(ksuid.KSUID).String()}
+}
+
+// Types and functions supporting error returns from middleware.
 
 type ErrorMessage struct {
 	Message string `json:"message"`
@@ -24,14 +66,13 @@ func (s *Server) internalServerError(w http.ResponseWriter, r *http.Request) {
 	s.sendResponse(
 		http.StatusInternalServerError,
 		ErrorMessage{
-			Message: "Oops! Something bad happened on our end. If this is happening consistently, please get in touch with us, and include the following ID: " +
-				r.Context().Value(RequestIDContextKey).(ksuid.KSUID).String(),
+			Message: internalServerError(r).message,
 		},
 		w, r,
 	)
 }
 
-func (s *Server) sendResponse(code int, data interface{}, w http.ResponseWriter, r *http.Request) {
+func (s *Server) sendResponse(code int, data interface{}, w http.ResponseWriter, r *http.Request) error {
 	var body []byte
 	if data != nil {
 		w.Header().Add("Content-Type", "application/json")
@@ -43,7 +84,7 @@ func (s *Server) sendResponse(code int, data interface{}, w http.ResponseWriter,
 				"err", err,
 			)
 			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return err
 		}
 	}
 
@@ -55,6 +96,7 @@ func (s *Server) sendResponse(code int, data interface{}, w http.ResponseWriter,
 			"err", err,
 		)
 	}
+	return err
 }
 
 func CurrentHalfHour() int {

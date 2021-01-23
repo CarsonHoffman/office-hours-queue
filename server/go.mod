@@ -11,11 +11,14 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jmoiron/sqlx v1.2.0
-	github.com/lib/pq v1.0.0
+	github.com/lib/pq v1.2.0
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/olivere/elastic/v7 v7.0.20
-	github.com/prometheus/client_golang v1.8.0
+	github.com/prometheus/client_golang v1.9.0
 	github.com/segmentio/ksuid v1.0.3
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	google.golang.org/api v0.30.0
+	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98 // indirect
 )

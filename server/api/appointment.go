@@ -117,8 +117,8 @@ type getAppointments interface {
 	GetAppointmentsWithStudent(ctx context.Context, queue ksuid.KSUID, from, to time.Time) ([]*AppointmentSlot, error)
 }
 
-func (s *Server) GetAppointments(ga getAppointments) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAppointments(ga getAppointments) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		admin := r.Context().Value(courseAdminContextKey).(bool)
 		day := r.Context().Value(appointmentDayContextKey).(int)
@@ -137,11 +137,10 @@ func (s *Server) GetAppointments(ga getAppointments) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, appointments, w, r)
+		return s.sendResponse(http.StatusOK, appointments, w, r)
 	}
 }
 
@@ -149,8 +148,8 @@ type getAppointmentsForUser interface {
 	GetAppointmentsForUser(ctx context.Context, queue ksuid.KSUID, from, to time.Time, email string) ([]*AppointmentSlot, error)
 }
 
-func (s *Server) GetAppointmentsForCurrentUser(ga getAppointmentsForUser) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAppointmentsForCurrentUser(ga getAppointmentsForUser) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		day := r.Context().Value(appointmentDayContextKey).(int)
@@ -164,11 +163,10 @@ func (s *Server) GetAppointmentsForCurrentUser(ga getAppointmentsForUser) http.H
 				"email", email,
 				"day", day,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, appointments, w, r)
+		return s.sendResponse(http.StatusOK, appointments, w, r)
 	}
 }
 
@@ -176,8 +174,8 @@ type getAppointmentSchedule interface {
 	GetAppointmentSchedule(ctx context.Context, queue ksuid.KSUID) ([]*AppointmentSchedule, error)
 }
 
-func (s *Server) GetAppointmentSchedule(gs getAppointmentSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAppointmentSchedule(gs getAppointmentSchedule) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		schedules, err := gs.GetAppointmentSchedule(r.Context(), q.ID)
@@ -187,11 +185,10 @@ func (s *Server) GetAppointmentSchedule(gs getAppointmentSchedule) http.HandlerF
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, schedules, w, r)
+		return s.sendResponse(http.StatusOK, schedules, w, r)
 	}
 }
 
@@ -199,8 +196,8 @@ type getAppointmentScheduleForDay interface {
 	GetAppointmentScheduleForDay(ctx context.Context, queue ksuid.KSUID, day int) (*AppointmentSchedule, error)
 }
 
-func (s *Server) GetAppointmentScheduleForDay(gs getAppointmentScheduleForDay) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetAppointmentScheduleForDay(gs getAppointmentScheduleForDay) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		day := r.Context().Value(appointmentDayContextKey).(int)
 
@@ -212,11 +209,10 @@ func (s *Server) GetAppointmentScheduleForDay(gs getAppointmentScheduleForDay) h
 				"day", day,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, schedule, w, r)
+		return s.sendResponse(http.StatusOK, schedule, w, r)
 	}
 }
 
@@ -224,8 +220,8 @@ type claimTimeslot interface {
 	ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, timeslot int, email string) (*AppointmentSlot, error)
 }
 
-func (s *Server) ClaimTimeslot(cs claimTimeslot) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ClaimTimeslot(cs claimTimeslot) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		day := r.Context().Value(appointmentDayContextKey).(int)
@@ -241,18 +237,17 @@ func (s *Server) ClaimTimeslot(cs claimTimeslot) http.HandlerFunc {
 		appointment, err := cs.ClaimTimeslot(r.Context(), q.ID, day, timeslot, email)
 		if err != nil {
 			l.Errorw("failed to claim timeslot", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
-				"Failed to claim timeslot. Perhaps it has already been claimed? error: "+err.Error(),
-				w, r,
-			)
-			return
+				"Failed to claim timeslot. Perhaps it has already been claimed? error: " + err.Error(),
+			}
 		}
 
 		l.Infow("appointment claimed")
-		s.sendResponse(http.StatusCreated, nil, w, r)
 
 		s.ps.Pub(WS("APPOINTMENT_CREATE", appointment), QueueTopicAdmin(q.ID))
+
+		return s.sendResponse(http.StatusCreated, nil, w, r)
 	}
 }
 
@@ -260,8 +255,8 @@ type unclaimAppointment interface {
 	UnclaimAppointment(ctx context.Context, appointment ksuid.KSUID) (deleted bool, err error)
 }
 
-func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UnclaimAppointment(us unclaimAppointment) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		appointment := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 
@@ -272,8 +267,7 @@ func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 				"appointment_id", appointment.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("removed appointment claim",
@@ -281,7 +275,6 @@ func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 			"appointment_id", appointment.ID,
 			"email", r.Context().Value(emailContextKey),
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		if deleted {
 			s.ps.Pub(WS("APPOINTMENT_REMOVE", appointment), QueueTopicAdmin(q.ID))
@@ -289,6 +282,8 @@ func (s *Server) UnclaimAppointment(us unclaimAppointment) http.HandlerFunc {
 			appointment.StaffEmail = nil
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", appointment), QueueTopicAdmin(q.ID))
 		}
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -299,8 +294,8 @@ type updateAppointmentSchedule interface {
 	UpdateAppointmentSchedule(ctx context.Context, queue ksuid.KSUID, day int, schedule *AppointmentSchedule) error
 }
 
-func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		day := r.Context().Value(appointmentDayContextKey).(int)
@@ -314,45 +309,39 @@ func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.Ha
 		currentSchedule, err := us.GetAppointmentScheduleForDay(r.Context(), q.ID, day)
 		if err != nil {
 			l.Errorw("failed to get existing appointment schedule", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		var schedule AppointmentSchedule
 		err = json.NewDecoder(r.Body).Decode(&schedule)
 		if err != nil {
 			l.Warnw("failed to decode schedule from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the schedule in the request body.",
-				w, r,
-			)
+			}
 		}
 
 		from, to := WeekdayBounds(day)
 		appointments, err := us.GetAppointments(r.Context(), q.ID, from, to)
 		if err != nil {
 			l.Errorw("failed to get appointments", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if len(appointments) > 0 && currentSchedule.Duration != schedule.Duration {
 			l.Warnw("appointment schedule duration update attempted with existing appointments")
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"You can't change the appointment duration with active or past appointments on this day.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		for i, n := range schedule.Schedule {
 			currentTimeslotUsage, err := us.GetAppointmentsByTimeslot(r.Context(), q.ID, from, to, i)
 			if err != nil {
 				l.Errorw("failed to check appointments for timeslot", "err", err, "timeslot", i)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 
 			newTimeslotAvailability := int(n - '0')
@@ -362,26 +351,25 @@ func (s *Server) UpdateAppointmentSchedule(us updateAppointmentSchedule) http.Ha
 					"current_appointments", len(currentTimeslotUsage),
 					"new_slots", newTimeslotAvailability,
 				)
-				s.errorMessage(http.StatusConflict,
+				return StatusError{
+					http.StatusConflict,
 					fmt.Sprintf("Setting that appointment schedule would remove an existing appointment. There are %d appointments at timeslot %d, but the new schedule only has %d slots at that time.",
 						len(currentTimeslotUsage), i, newTimeslotAvailability),
-					w, r,
-				)
-				return
+				}
 			}
 		}
 
 		err = us.UpdateAppointmentSchedule(r.Context(), q.ID, day, &schedule)
 		if err != nil {
 			l.Errorw("failed to update appointment schedule", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("updated appointment schedule")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -399,8 +387,8 @@ type signupForAppointment interface {
 	SignupForAppointment(ctx context.Context, queue ksuid.KSUID, appointment *AppointmentSlot) (*AppointmentSlot, error)
 }
 
-func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SignupForAppointment(sa signupForAppointment) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		day := r.Context().Value(appointmentDayContextKey).(int)
 		timeslot := r.Context().Value(appointmentTimeslotContextKey).(int)
@@ -418,34 +406,29 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		config, err := sa.GetQueueConfiguration(r.Context(), q.ID)
 		if err != nil {
 			l.Errorw("failed to get queue configuration", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if config.PreventUnregistered {
 			inRoster, err := sa.UserInQueueRoster(r.Context(), q.ID, email)
 			if err != nil {
 				l.Errorw("failed to get queue roster", "err", err)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 
 			if !inRoster {
 				l.Warnw("student not in queue roster attempted to sign up for appointment")
-				s.errorMessage(
+				return StatusError{
 					http.StatusForbidden,
 					"It doesn't look like you're in the roster for this queue. Contact your course staff if you think this is a mistake!",
-					w, r,
-				)
-				return
+				}
 			}
 		}
 
 		schedule, err := sa.GetAppointmentScheduleForDay(r.Context(), q.ID, day)
 		if err != nil {
 			l.Errorw("failed to get appointment schedule", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if config.PreventGroups {
@@ -453,18 +436,15 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 			teammateHasAppointment, err := sa.TeammateHasAppointment(r.Context(), q.ID, time.Now().Add(-time.Minute*time.Duration(schedule.Duration)), BigTime(), email)
 			if err != nil {
 				l.Errorw("failed to get teammate appointments", "err", err)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 
 			if teammateHasAppointment {
 				l.Warnw("student attempted to sign up for appointment with teammate on queue")
-				s.errorMessage(
+				return StatusError{
 					http.StatusConflict,
 					"It looks like one of your group members already has an appointment!",
-					w, r,
-				)
-				return
+				}
 			}
 		}
 
@@ -472,34 +452,28 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		err = json.NewDecoder(r.Body).Decode(&appointment)
 		if err != nil {
 			l.Warnw("failed to decode appointment", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read your appointment in the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 		appointment.Name = &name
 
 		if appointment.Description == nil || appointment.Name == nil || appointment.Location == nil ||
 			*appointment.Description == "" || *appointment.Name == "" || *appointment.Location == "" {
 			l.Warnw("got incomplete appointment", "appointment", appointment)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields in the appointment.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if timeslot > len(schedule.Schedule) {
 			l.Warnw("attempted to sign up for non-existent timeslot", "num_slots", len(schedule.Schedule))
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"That timeslot doesn't exist!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		start, end := WeekdayBounds(day)
@@ -508,8 +482,7 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		timeslotAppointments, err := sa.GetAppointmentsByTimeslot(r.Context(), q.ID, start, end, timeslot)
 		if err != nil {
 			l.Errorw("failed to get appointments for timeslot", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		open := int(schedule.Schedule[timeslot] - '0')
@@ -521,12 +494,10 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 
 		if open < 1 {
 			l.Warnw("no appointment slots available at timeslot")
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"There are no slots open at that time!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		// Check if the user has an appointment starting in the future
@@ -535,18 +506,15 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		appointments, err := sa.GetAppointmentsForUser(r.Context(), q.ID, startFutureCheck, BigTime(), email)
 		if err != nil {
 			l.Errorw("failed to get future appointments for user", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if len(appointments) > 0 {
 			l.Warn("user attempted to sign up for appointment with one in future")
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"You already have an appointment in the future!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		// Force some values that were previously validated by middleware
@@ -567,21 +535,21 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) http.HandlerFunc 
 		newAppointment, err := sa.SignupForAppointment(r.Context(), q.ID, &appointment)
 		if err != nil {
 			l.Errorw("failed to sign up for appointment", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("new appointment sign up",
 			"appointment_id", newAppointment.ID,
 			"scheduled_time", appointment.ScheduledTime,
 		)
-		s.sendResponse(http.StatusCreated, newAppointment, w, r)
 
 		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("APPOINTMENT_CREATE", newAppointment.Anonymized()), QueueTopicNonPrivileged(q.ID))
 		if !admin {
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 		}
+
+		return s.sendResponse(http.StatusCreated, newAppointment, w, r)
 	}
 }
 
@@ -597,8 +565,8 @@ type updateAppointment interface {
 	UpdateAppointment(ctx context.Context, appointment ksuid.KSUID, newAppointment *AppointmentSlot) error
 }
 
-func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateAppointment(ua updateAppointment) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
@@ -612,48 +580,40 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 
 		if a.StudentEmail == nil {
 			l.Warnw("attempted to update deleted appointment", "appointment_id", a.ID)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"This appointment doesn't exist. Perhaps it was already deleted?",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if *a.StudentEmail != email {
 			l.Warnw("user attempted to update appointment with other email",
 				"expected_email", *a.StudentEmail,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusForbidden,
 				"You can't update someone else's appointment!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		var newAppointment AppointmentSlot
 		err := json.NewDecoder(r.Body).Decode(&newAppointment)
 		if err != nil {
 			l.Warnw("failed to decode appointment", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read your appointment in the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 		newAppointment.Name = &name
 
 		if newAppointment.Description == nil || newAppointment.Name == nil || newAppointment.Location == nil ||
 			*newAppointment.Description == "" || *newAppointment.Name == "" || *newAppointment.Location == "" {
 			l.Warnw("got incomplete appointment", "appointment", newAppointment)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields in the appointment.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		newAppointment.ID = a.ID
@@ -676,18 +636,16 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 			err = ua.UpdateAppointment(r.Context(), a.ID, &newAppointment)
 			if err != nil {
 				l.Errorw("failed to update appointment", "err", err)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 			l.Infow("updated appointment")
-
-			s.sendResponse(http.StatusNoContent, nil, w, r)
 
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", &newAppointment), QueueTopicAdmin(q.ID))
 			if !admin {
 				s.ps.Pub(WS("APPOINTMENT_UPDATE", newAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 			}
-			return
+
+			return s.sendResponse(http.StatusNoContent, nil, w, r)
 		}
 
 		// We're changing the appointment time. Not so simple.
@@ -699,19 +657,16 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		// If the new time is in the past, stop.
 		if time.Now().After(newTime) {
 			l.Warnw("user attempted to change appointment to past", "new_time", newTime)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"You can't change your appointment to the past! Let us know if you have a time machine.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		schedule, err := ua.GetAppointmentScheduleForDay(r.Context(), a.Queue, day)
 		if err != nil {
 			l.Errorw("failed to get appointment schedule", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if newAppointment.Timeslot > len(schedule.Schedule) {
@@ -719,19 +674,16 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 				"timeslot", newAppointment.Timeslot,
 				"num_slots", len(schedule.Schedule),
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"That timeslot doesn't exist!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		timeslotAppointments, err := ua.GetAppointmentsByTimeslot(r.Context(), a.Queue, start, end, newAppointment.Timeslot)
 		if err != nil {
 			l.Errorw("failed to get appointments for timeslot", "timeslot", newAppointment.Timeslot, "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		open := int(schedule.Schedule[newAppointment.Timeslot] - '0')
@@ -743,20 +695,17 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 
 		if open < 1 {
 			l.Warnw("no appointment slots available at timeslot", "timeslot", newAppointment.Timeslot)
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"There are no slots open at that time!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		// Add first so student doesn't lose appointment if the add fails
 		createdAppointment, err := ua.SignupForAppointment(r.Context(), a.Queue, &newAppointment)
 		if err != nil {
 			l.Errorw("failed to create new appointment for update", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		l.Infow("created appointment for update", "new_appointment_id", createdAppointment.ID)
 
@@ -764,12 +713,9 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		deleted, newSlot, err := ua.RemoveAppointmentSignup(r.Context(), a.ID)
 		if err != nil {
 			l.Errorw("failed to remove appointment for update", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		l.Infow("removed appointment for update")
-
-		s.sendResponse(http.StatusCreated, createdAppointment, w, r)
 
 		if deleted {
 			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicGeneric(q.ID))
@@ -783,11 +729,13 @@ func (s *Server) UpdateAppointment(ua updateAppointment) http.HandlerFunc {
 		if !admin {
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", createdAppointment.NoStaffEmail()), QueueTopicEmail(q.ID, email))
 		}
+
+		return s.sendResponse(http.StatusCreated, createdAppointment, w, r)
 	}
 }
 
-func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		a := r.Context().Value(appointmentContextKey).(*AppointmentSlot)
 		email := r.Context().Value(emailContextKey).(string)
@@ -802,41 +750,35 @@ func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.Handle
 			// Return 200 for idempotency---if someone tries to delete an appointment
 			// twice, the second request still had the intended effect
 			w.WriteHeader(http.StatusOK)
-			return
+			return nil
 		}
 
 		if *a.StudentEmail != email {
 			l.Warnw("user attempted to delete appointment with other email",
 				"expected_email", *a.StudentEmail,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusForbidden,
 				"You can't delete someone else's appointment!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		// If an appointment happened, it happened. How did people do this in Spring D:
 		if time.Now().After(a.ScheduledTime) {
 			l.Warnw("user attempted to delete appointment in the past")
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"You can't delete an appointment that already happened! Let's try not to cause a paradox here.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		deleted, newSlot, err := rs.RemoveAppointmentSignup(r.Context(), a.ID)
 		if err != nil {
 			l.Errorw("failed to remove signup for appointment", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("removed signup for appointment")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		if deleted {
 			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicGeneric(q.ID))
@@ -844,5 +786,7 @@ func (s *Server) RemoveAppointmentSignup(rs removeAppointmentSignup) http.Handle
 			s.ps.Pub(WS("APPOINTMENT_UPDATE", newSlot), QueueTopicAdmin(q.ID))
 			s.ps.Pub(WS("APPOINTMENT_REMOVE", a.Anonymized()), QueueTopicNonPrivileged(q.ID))
 		}
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

@@ -87,16 +87,19 @@ func init() {
 	prometheus.MustRegister(requestsCounter, requestsTimer, requestsSize)
 }
 
-func (s *Server) MetricsHandler() http.HandlerFunc {
+func (s *Server) MetricsHandler() E {
 	handler := promhttp.Handler()
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		_, pass, ok := r.BasicAuth()
 		if !ok || pass != s.metricsPassword {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+			return StatusError{
+				status:  http.StatusUnauthorized,
+				message: "Nice try!",
+			}
 		}
 
 		handler.ServeHTTP(w, r)
+		return nil
 	}
 }
 

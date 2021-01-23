@@ -128,42 +128,42 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 	// Course endpoints
 	s.Route("/courses", func(r chi.Router) {
 		// Get all courses
-		r.Get("/", s.GetCourses(q))
+		r.Method("GET", "/", s.GetCourses(q))
 
 		// Create course (course admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Post("/", s.AddCourse(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureSiteAdmin(q)).Method("POST", "/", s.AddCourse(q))
 
 		// Course by ID endpoints
 		r.Route("/{id:[a-zA-Z0-9]{27}}", func(r chi.Router) {
 			r.Use(s.CourseIDMiddleware(q))
 
 			// Get course by ID
-			r.Get("/", s.GetCourse(q))
+			r.Method("GET", "/", s.GetCourse(q))
 
 			// Get course's queues
-			r.Get("/queues", s.GetQueues(q))
+			r.Method("GET", "/queues", s.GetQueues(q))
 
 			// Update course (course admin)
-			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Put("/", s.UpdateCourse(q))
+			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateCourse(q))
 
 			// Create queue on course (course admin)
-			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Post("/queues", s.AddQueue(q))
+			r.With(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin).Method("POST", "/queues", s.AddQueue(q))
 
 			// Course admin management (course admin)
 			r.Route("/admins", func(r chi.Router) {
 				r.Use(s.ValidLoginMiddleware, s.CheckCourseAdmin(q), s.EnsureCourseAdmin)
 
 				// Get course admins (course admin)
-				r.Get("/", s.GetCourseAdmins(q))
+				r.Method("GET", "/", s.GetCourseAdmins(q))
 
 				// Add course admins (course admin)
-				r.Post("/", s.AddCourseAdmins(q))
+				r.Method("POST", "/", s.AddCourseAdmins(q))
 
 				// Overwrite course admins (course admin)
-				r.Put("/", s.UpdateCourseAdmins(q))
+				r.Method("PUT", "/", s.UpdateCourseAdmins(q))
 
 				// Remove course admins (course admin)
-				r.Delete("/", s.RemoveCourseAdmins(q))
+				r.Method("DELETE", "/", s.RemoveCourseAdmins(q))
 			})
 		})
 	})
@@ -173,41 +173,41 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 		r.Use(s.QueueIDMiddleware(q), s.CheckCourseAdmin(q))
 
 		// Get queue by ID (more information with queue admin)
-		r.Get("/", s.GetQueue(q))
+		r.Method("GET", "/", s.GetQueue(q))
 
-		r.Get("/ws", s.QueueWebsocket())
+		r.Method("GET", "/ws", s.QueueWebsocket())
 
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueue(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateQueue(q))
 
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Delete("/", s.RemoveQueue(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("DELETE", "/", s.RemoveQueue(q))
 
 		// Get queue's stack (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/stack", s.GetQueueStack(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("GET", "/stack", s.GetQueueStack(q))
 
 		// Get queue logs (course admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/logs", s.GetQueueLogs())
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("GET", "/logs", s.GetQueueLogs())
 
 		// Entry by ID endpoints
 		r.Route("/entries", func(r chi.Router) {
 			r.Use(s.ValidLoginMiddleware)
 
 			// Add queue entry (valid login)
-			r.Post("/", s.AddQueueEntry(q))
+			r.Method("POST", "/", s.AddQueueEntry(q))
 
 			// Update queue entry (valid login, same user as creator)
-			r.Put("/{entry_id:[a-zA-Z0-9]{27}}", s.UpdateQueueEntry(q))
+			r.Method("PUT", "/{entry_id:[a-zA-Z0-9]{27}}", s.UpdateQueueEntry(q))
 
 			// Remove queue entry (valid login, same user or queue admin)
-			r.Delete("/{entry_id:[a-zA-Z0-9]{27}}", s.RemoveQueueEntry(q))
+			r.Method("DELETE", "/{entry_id:[a-zA-Z0-9]{27}}", s.RemoveQueueEntry(q))
 
 			// Pin queue entry (course admin)
-			r.With(s.EnsureCourseAdmin).Post("/{entry_id:[a-zA-Z0-9]{27}}/pin", s.PinQueueEntry(q))
+			r.With(s.EnsureCourseAdmin).Method("POST", "/{entry_id:[a-zA-Z0-9]{27}}/pin", s.PinQueueEntry(q))
 
 			// Set student not helped (queue admin)
-			r.With(s.EnsureCourseAdmin).Delete("/{entry_id:[a-zA-Z0-9]{27}}/helped", s.SetNotHelped(q))
+			r.With(s.EnsureCourseAdmin).Method("DELETE", "/{entry_id:[a-zA-Z0-9]{27}}/helped", s.SetNotHelped(q))
 
 			// Clear queue (queue admin)
-			r.With(s.EnsureCourseAdmin).Delete("/", s.ClearQueueEntries(q))
+			r.With(s.EnsureCourseAdmin).Method("DELETE", "/", s.ClearQueueEntries(q))
 		})
 
 		// Announcements endpoints
@@ -215,45 +215,45 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
 
 			// Create announcement (queue admin)
-			r.Post("/", s.AddQueueAnnouncement(q))
+			r.Method("POST", "/", s.AddQueueAnnouncement(q))
 
 			// Remove announcement (queue admin)
-			r.Delete("/{announcement_id:[a-zA-Z0-9]{27}}", s.RemoveQueueAnnouncement(q))
+			r.Method("DELETE", "/{announcement_id:[a-zA-Z0-9]{27}}", s.RemoveQueueAnnouncement(q))
 		})
 
 		// Queue-wide (all days) schedule endpoints
 		r.Route("/schedule", func(r chi.Router) {
 			// Get queue schedule
-			r.Get("/", s.GetQueueSchedule(q))
+			r.Method("GET", "/", s.GetQueueSchedule(q))
 
 			// Update queue schedule (queue admin)
-			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueueSchedule(q))
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateQueueSchedule(q))
 		})
 
 		// Queue configuration endpoints
 		r.Route("/configuration", func(r chi.Router) {
 			// Get queue configuration
-			r.Get("/", s.GetQueueConfiguration(q))
+			r.Method("GET", "/", s.GetQueueConfiguration(q))
 
 			// Update queue configuration (queue admin)
-			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateQueueConfiguration(q))
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateQueueConfiguration(q))
 		})
 
 		// Send message (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Post("/messages", s.SendMessage(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("POST", "/messages", s.SendMessage(q))
 
 		// Get queue roster (queue admin)
-		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Get("/roster", s.GetQueueRoster(q))
+		r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("GET", "/roster", s.GetQueueRoster(q))
 
 		// Queue groups endpoints
 		r.Route("/groups", func(r chi.Router) {
 			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
 
 			// Get queue groups (queue admin)
-			r.Get("/", s.GetQueueGroups(q))
+			r.Method("GET", "/", s.GetQueueGroups(q))
 
 			// Update queue groups (queue admin)
-			r.Put("/", s.UpdateQueueGroups(q))
+			r.Method("PUT", "/", s.UpdateQueueGroups(q))
 		})
 
 		// Appointments endpoints
@@ -263,20 +263,20 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 				r.Use(s.AppointmentDayMiddleware)
 
 				// Get endpoints on day (more information with queue admin)
-				r.Get("/", s.GetAppointments(q))
+				r.Method("GET", "/", s.GetAppointments(q))
 
 				// Get appointments for current user on day
-				r.With(s.ValidLoginMiddleware).Get("/@me", s.GetAppointmentsForCurrentUser(q))
+				r.With(s.ValidLoginMiddleware).Method("GET", "/@me", s.GetAppointmentsForCurrentUser(q))
 
 				// Create appointment on day at timeslot
-				r.With(s.ValidLoginMiddleware, s.AppointmentTimeslotMiddleware).Post(`/{timeslot:\d+}`, s.SignupForAppointment(q))
+				r.With(s.ValidLoginMiddleware, s.AppointmentTimeslotMiddleware).Method("POST", `/{timeslot:\d+}`, s.SignupForAppointment(q))
 
 				// Appointment claiming (queue admin)
 				r.Route(`/claims/{timeslot:\d+}`, func(r chi.Router) {
 					r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin, s.AppointmentTimeslotMiddleware)
 
 					// Claim appointment on day at timeslot (queue admin)
-					r.Put("/", s.ClaimTimeslot(q))
+					r.Method("PUT", "/", s.ClaimTimeslot(q))
 				})
 			})
 
@@ -285,7 +285,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 				r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin, s.AppointmentIDMiddleware(q))
 
 				// Un-claim appointment (queue admin)
-				r.Delete("/", s.UnclaimAppointment(q))
+				r.Method("DELETE", "/", s.UnclaimAppointment(q))
 			})
 
 			// Appointment by ID endpoints
@@ -293,43 +293,43 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 				r.Use(s.ValidLoginMiddleware, s.AppointmentIDMiddleware(q))
 
 				// Update appointment (valid login, same user as creator)
-				r.Put("/", s.UpdateAppointment(q))
+				r.Method("PUT", "/", s.UpdateAppointment(q))
 
 				// Cancel appointment (valid login, same user as creator)
-				r.Delete("/", s.RemoveAppointmentSignup(q))
+				r.Method("DELETE", "/", s.RemoveAppointmentSignup(q))
 			})
 
 			// Appointment schedule endpoints
 			r.Route("/schedule", func(r chi.Router) {
 				// Get appointment schedule for all days
-				r.Get("/", s.GetAppointmentSchedule(q))
+				r.Method("GET", "/", s.GetAppointmentSchedule(q))
 
 				// Per-day schedules
 				r.Route(`/{day:\d+}`, func(r chi.Router) {
 					r.Use(s.AppointmentDayMiddleware)
 
 					// Get appointment schedule for day
-					r.Get("/", s.GetAppointmentScheduleForDay(q))
+					r.Method("GET", "/", s.GetAppointmentScheduleForDay(q))
 
 					// Update appointment schedule for day (queue admin)
-					r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Put("/", s.UpdateAppointmentSchedule(q))
+					r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateAppointmentSchedule(q))
 				})
 			})
 		})
 	})
 
 	// Login handler (takes Google idtoken, sets up session)
-	s.Post("/login", s.Login())
+	s.Method("POST", "/login", s.Login())
 
-	s.Get("/oauth2login", s.OAuth2LoginLink())
+	s.Method("GET", "/oauth2login", s.OAuth2LoginLink())
 
-	s.Get("/oauth2callback", s.OAuth2Callback())
+	s.Method("GET", "/oauth2callback", s.OAuth2Callback())
 
-	s.Get("/logout", s.Logout())
+	s.Method("GET", "/logout", s.Logout())
 
-	s.With(s.ValidLoginMiddleware).Get("/users/@me", s.GetCurrentUserInfo(q))
+	s.With(s.ValidLoginMiddleware).Method("GET", "/users/@me", s.GetCurrentUserInfo(q))
 
-	s.Get("/metrics", s.MetricsHandler())
+	s.Method("GET", "/metrics", s.MetricsHandler())
 
 	s.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

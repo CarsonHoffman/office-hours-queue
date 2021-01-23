@@ -76,8 +76,8 @@ func (s *Server) ValidLoginMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) Login() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Login() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		session, err := s.sessions.New(r, "session")
 		if err != nil {
 			s.logger.Errorw("got invalid session on login",
@@ -86,7 +86,7 @@ func (s *Server) Login() http.HandlerFunc {
 			)
 			http.SetCookie(w, emptySessionCookie)
 			http.Redirect(w, r, s.baseURL+"api/login", http.StatusTemporaryRedirect)
-			return
+			return nil
 		}
 
 		token := r.FormValue("idtoken")
@@ -96,12 +96,10 @@ func (s *Server) Login() http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusUnauthorized,
 				"Something doesn't look quite right with your login.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		email, ok := payload.Claims["email"].(string)
@@ -110,8 +108,7 @@ func (s *Server) Login() http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("processed login",
@@ -120,12 +117,12 @@ func (s *Server) Login() http.HandlerFunc {
 		)
 
 		session.Values["email"] = email
-		s.sessions.Save(r, w, session)
+		return s.sessions.Save(r, w, session)
 	}
 }
 
-func (s *Server) OAuth2LoginLink() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) OAuth2LoginLink() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		session, err := s.sessions.New(r, "session")
 		if err != nil {
 			s.logger.Errorw("got invalid session on login",
@@ -134,7 +131,7 @@ func (s *Server) OAuth2LoginLink() http.HandlerFunc {
 			)
 			http.SetCookie(w, emptySessionCookie)
 			http.Redirect(w, r, s.baseURL+"api/oauth2login", http.StatusTemporaryRedirect)
-			return
+			return nil
 		}
 
 		state := uniuri.NewLen(64)
@@ -144,11 +141,12 @@ func (s *Server) OAuth2LoginLink() http.HandlerFunc {
 		url := s.oauthConfig.AuthCodeURL(state)
 
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		return nil
 	}
 }
 
-func (s *Server) OAuth2Callback() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) OAuth2Callback() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		l := s.logger.With(RequestIDContextKey, r.Context().Value(RequestIDContextKey))
 		code := r.FormValue("code")
 		state := r.FormValue("state")
@@ -158,41 +156,39 @@ func (s *Server) OAuth2Callback() http.HandlerFunc {
 			l.Errorw("got invalid session on login", "err", err)
 			http.SetCookie(w, emptySessionCookie)
 			http.Redirect(w, r, s.baseURL+"api/oauth2login", http.StatusTemporaryRedirect)
-			return
+			return nil
 		}
 
 		savedState, ok := session.Values["state"].(string)
 		if !ok {
 			l.Errorw("failed to get state from session", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if state != savedState {
 			l.Warnw("state doesn't match stored state", "received", state, "expected", savedState)
-			s.errorMessage(http.StatusUnauthorized, "Something went really wrong.", w, r)
-			return
+			return StatusError{
+				http.StatusUnauthorized,
+				"Something went really wrong.",
+			}
 		}
 
 		token, err := s.oauthConfig.Exchange(r.Context(), code)
 		if err != nil {
 			l.Errorw("failed to exchange token", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		service, err := goauth2.NewService(r.Context(), option.WithTokenSource(s.oauthConfig.TokenSource(r.Context(), token)))
 		if err != nil {
 			l.Errorw("failed to set up OAuth2 service", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		info, err := service.Userinfo.V2.Me.Get().Do()
 		if err != nil {
 			l.Errorw("failed to fetch user info", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		session.Values["email"] = info.Email
@@ -207,11 +203,12 @@ func (s *Server) OAuth2Callback() http.HandlerFunc {
 			"name", info.Name,
 		)
 		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
+		return nil
 	}
 }
 
-func (s *Server) Logout() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Logout() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		s.logger.Infow("logged out",
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			emailContextKey, r.Context().Value(emailContextKey),
@@ -219,6 +216,7 @@ func (s *Server) Logout() http.HandlerFunc {
 
 		http.SetCookie(w, emptySessionCookie)
 		http.Redirect(w, r, s.baseURL, http.StatusTemporaryRedirect)
+		return nil
 	}
 }
 
@@ -231,8 +229,8 @@ type getUserInfo interface {
 	getAdminCourses
 }
 
-func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetCurrentUserInfo(gi getUserInfo) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		email := r.Context().Value(emailContextKey).(string)
 
 		admin, err := gi.SiteAdmin(r.Context(), email)
@@ -241,8 +239,7 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"email", email,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		courses, err := gi.GetAdminCourses(r.Context(), email)
@@ -252,8 +249,7 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
 				"email", email,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		// If any read or assertion fails, the string will be empty and
@@ -272,6 +268,6 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) http.HandlerFunc {
 			ProfilePicture string   `json:"profile_pic,omitempty"`
 		}{email, admin, courses, name, firstName, profilePicture}
 
-		s.sendResponse(http.StatusOK, resp, w, r)
+		return s.sendResponse(http.StatusOK, resp, w, r)
 	}
 }

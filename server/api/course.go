@@ -148,25 +148,24 @@ type getCourses interface {
 	GetCourses(context.Context) ([]*Course, error)
 }
 
-func (s *Server) GetCourses(gc getCourses) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetCourses(gc getCourses) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		courses, err := gc.GetCourses(r.Context())
 		if err != nil {
 			s.logger.Errorw("failed to fetch courses from DB",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, courses, w, r)
+		return s.sendResponse(http.StatusOK, courses, w, r)
 	}
 }
 
-func (s *Server) GetCourse(gc getCourse) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		s.sendResponse(http.StatusOK, r.Context().Value(courseContextKey), w, r)
+func (s *Server) GetCourse(gc getCourse) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		return s.sendResponse(http.StatusOK, r.Context().Value(courseContextKey), w, r)
 	}
 }
 
@@ -175,8 +174,8 @@ type getQueues interface {
 	GetQueues(ctx context.Context, course ksuid.KSUID) ([]*Queue, error)
 }
 
-func (s *Server) GetQueues(gq getQueues) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueues(gq getQueues) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 
 		queues, err := gq.GetQueues(r.Context(), c.ID)
@@ -186,11 +185,10 @@ func (s *Server) GetQueues(gq getQueues) http.HandlerFunc {
 				"course_id", c.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, queues, w, r)
+		return s.sendResponse(http.StatusOK, queues, w, r)
 	}
 }
 
@@ -198,8 +196,8 @@ type addCourse interface {
 	AddCourse(ctx context.Context, shortName, fullName string) (*Course, error)
 }
 
-func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddCourse(ac addCourse) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		var course Course
 		err := json.NewDecoder(r.Body).Decode(&course)
 		if err != nil {
@@ -207,12 +205,10 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the course from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if course.ShortName == "" || course.FullName == "" {
@@ -220,12 +216,10 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"course", course,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you missed some fields in the course!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		newCourse, err := ac.AddCourse(r.Context(), course.ShortName, course.FullName)
@@ -234,8 +228,7 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("created course",
@@ -243,7 +236,7 @@ func (s *Server) AddCourse(ac addCourse) http.HandlerFunc {
 			"course_id", newCourse.ID,
 			"email", r.Context().Value(emailContextKey).(string),
 		)
-		s.sendResponse(http.StatusCreated, newCourse, w, r)
+		return s.sendResponse(http.StatusCreated, newCourse, w, r)
 	}
 }
 
@@ -251,8 +244,8 @@ type updateCourse interface {
 	UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName, fullName string) error
 }
 
-func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateCourse(uc updateCourse) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		course := r.Context().Value(courseContextKey).(*Course)
 
 		var bodyCourse Course
@@ -262,12 +255,10 @@ func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the course from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if bodyCourse.ShortName == "" || bodyCourse.FullName == "" {
@@ -275,12 +266,10 @@ func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"course", bodyCourse,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you missed some fields in the course!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = uc.UpdateCourse(r.Context(), course.ID, bodyCourse.ShortName, bodyCourse.FullName)
@@ -289,8 +278,7 @@ func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("updated course",
@@ -298,7 +286,7 @@ func (s *Server) UpdateCourse(uc updateCourse) http.HandlerFunc {
 			"course_id", course.ID,
 			"email", r.Context().Value(emailContextKey).(string),
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -316,8 +304,8 @@ type addQueue interface {
 	AddAppointmentSchedule(ctx context.Context, queue ksuid.KSUID, day int, schedule *AppointmentSchedule) error
 }
 
-func (s *Server) AddQueue(aq addQueue) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddQueue(aq addQueue) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
@@ -328,39 +316,32 @@ func (s *Server) AddQueue(aq addQueue) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&queue)
 		if err != nil {
 			l.Warnw("failed to decode queue from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the queue from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if queue.Name == "" {
 			l.Warnw("got incomplete queue", "queue", queue)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you missed some fields in the queue!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if queue.Type != Ordered && queue.Type != Appointments {
 			l.Warnw("got unknown queue type", "type", queue.Type)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				fmt.Sprintf(`I haven't seen the queue type "%s" before.`, queue.Type),
-				w, r,
-			)
-			return
+			}
 		}
 
 		newQueue, err := aq.AddQueue(r.Context(), c.ID, &queue)
 		if err != nil {
 			l.Errorw("failed to create queue", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		l.Infow("created queue",
 			"queue_id", newQueue.ID,
@@ -374,8 +355,7 @@ func (s *Server) AddQueue(aq addQueue) http.HandlerFunc {
 					"day", day,
 					"err", err,
 				)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 
 			if queue.Type == Appointments {
@@ -385,13 +365,12 @@ func (s *Server) AddQueue(aq addQueue) http.HandlerFunc {
 						"day", day,
 						"err", err,
 					)
-					s.internalServerError(w, r)
-					return
+					return err
 				}
 			}
 		}
 
-		s.sendResponse(http.StatusCreated, newQueue, w, r)
+		return s.sendResponse(http.StatusCreated, newQueue, w, r)
 	}
 }
 
@@ -399,8 +378,8 @@ type getCourseAdmins interface {
 	GetCourseAdmins(ctx context.Context, course ksuid.KSUID) ([]string, error)
 }
 
-func (s *Server) GetCourseAdmins(ga getCourseAdmins) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetCourseAdmins(ga getCourseAdmins) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 
 		admins, err := ga.GetCourseAdmins(r.Context(), c.ID)
@@ -410,11 +389,10 @@ func (s *Server) GetCourseAdmins(ga getCourseAdmins) http.HandlerFunc {
 				"course_id", c.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, admins, w, r)
+		return s.sendResponse(http.StatusOK, admins, w, r)
 	}
 }
 
@@ -422,8 +400,8 @@ type addCourseAdmins interface {
 	AddCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string, overwrite bool) error
 }
 
-func (s *Server) AddCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddCourseAdmins(aa addCourseAdmins) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -436,37 +414,32 @@ func (s *Server) AddCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&admins)
 		if err != nil {
 			l.Warnw("failed to decode admins from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
-				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
-				w, r,
-			)
-			return
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: " + err.Error(),
+			}
 		}
 
 		err = aa.AddCourseAdmins(r.Context(), c.ID, admins, false)
 		var pqerr *pq.Error
 		if errors.As(err, &pqerr) && pqerr.Code == "23505" {
 			l.Warnw("site admin attempted to add already existing course admin", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like one of the admins you attempted to insert is already an admin. No admins were inserted. Unfortunately I don't know more.",
-				w, r,
-			)
-			return
+			}
 		} else if err != nil {
 			l.Errorw("failed to update course admins", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("added admins", "admins", admins)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
-func (s *Server) UpdateCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateCourseAdmins(aa addCourseAdmins) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -479,23 +452,20 @@ func (s *Server) UpdateCourseAdmins(aa addCourseAdmins) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&admins)
 		if err != nil {
 			l.Warnw("failed to decode admins from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
-				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
-				w, r,
-			)
-			return
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: " + err.Error(),
+			}
 		}
 
 		err = aa.AddCourseAdmins(r.Context(), c.ID, admins, true)
 		if err != nil {
 			l.Errorw("failed to update course admins", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("overwrote admins", "admins", admins)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -503,8 +473,8 @@ type removeCourseAdmins interface {
 	RemoveCourseAdmins(ctx context.Context, course ksuid.KSUID, admins []string) error
 }
 
-func (s *Server) RemoveCourseAdmins(ra removeCourseAdmins) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveCourseAdmins(ra removeCourseAdmins) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		c := r.Context().Value(courseContextKey).(*Course)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -517,22 +487,19 @@ func (s *Server) RemoveCourseAdmins(ra removeCourseAdmins) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&admins)
 		if err != nil {
 			l.Warnw("failed to decode admins from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
-				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: "+err.Error(),
-				w, r,
-			)
-			return
+				"I couldn't decode the body. Are you sure it's a JSON array of emails (strings)? This error might help: " + err.Error(),
+			}
 		}
 
 		err = ra.RemoveCourseAdmins(r.Context(), c.ID, admins)
 		if err != nil {
 			l.Errorw("failed to remove admins", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("removed admins", "admins", admins)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }

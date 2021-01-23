@@ -110,8 +110,8 @@ type getQueueDetails interface {
 	viewMessage
 }
 
-func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueue(gd getQueueDetails) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		l := s.logger.With(
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
@@ -130,8 +130,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 		entries, err := gd.GetQueueEntries(r.Context(), q.ID, admin)
 		if err != nil {
 			l.Errorw("failed to get queue entries", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		// If user is logged in but not admin, check to
@@ -142,8 +141,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 				l.Errorw("failed to get active queue entries for user",
 					"err", err,
 				)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 
 			for _, userEntry := range userEntries {
@@ -161,8 +159,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 			stack, err := gd.GetQueueStack(r.Context(), q.ID, 20)
 			if err != nil {
 				l.Errorw("failed to get queue stack", "err", err)
-				s.internalServerError(w, r)
-				return
+				return err
 			}
 			response["stack"] = stack
 		}
@@ -170,8 +167,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 		schedule, err := gd.GetCurrentDaySchedule(r.Context(), q.ID)
 		if err != nil {
 			l.Errorw("failed to get queue schedule", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		response["schedule"] = schedule
 
@@ -182,8 +178,7 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 		announcements, err := gd.GetQueueAnnouncements(r.Context(), q.ID)
 		if err != nil {
 			l.Errorw("failed to get queue announcements", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		response["announcements"] = announcements
 
@@ -192,14 +187,13 @@ func (s *Server) GetQueue(gd getQueueDetails) http.HandlerFunc {
 			if errors.Is(err, sql.ErrNoRows) {
 			} else if err != nil {
 				l.Errorw("failed to fetch message", "err", err)
-				s.internalServerError(w, r)
-				return
+				return err
 			} else {
 				response["message"] = message
 			}
 		}
 
-		s.sendResponse(http.StatusOK, response, w, r)
+		return s.sendResponse(http.StatusOK, response, w, r)
 	}
 }
 
@@ -223,8 +217,8 @@ var upgrader = &websocket.Upgrader{
 	HandshakeTimeout: 30 * time.Second,
 }
 
-func (s *Server) QueueWebsocket() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) QueueWebsocket() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		var topics []string
 
 		q := r.Context().Value(queueContextKey).(*Queue)
@@ -250,7 +244,7 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 				"email", email,
 				"err", err,
 			)
-			return
+			return err
 		}
 
 		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Inc()
@@ -294,36 +288,40 @@ func (s *Server) QueueWebsocket() http.HandlerFunc {
 			}
 		}()
 
-		pingTicker := time.NewTicker(pingInterval)
-		for {
-			var eventName string
-			select {
-			case <-pingTicker.C:
-				// Using a custom ping message rather than a ping control
-				// frame because browsers can't access control frames :(
-				err = conn.WriteJSON(WS("PING", nil))
-				eventName = "PING"
-			case event, ok := <-events:
-				if !ok {
+		go func() {
+			pingTicker := time.NewTicker(pingInterval)
+			for {
+				var eventName string
+				select {
+				case <-pingTicker.C:
+					// Using a custom ping message rather than a ping control
+					// frame because browsers can't access control frames :(
+					err = conn.WriteJSON(WS("PING", nil))
+					eventName = "PING"
+				case event, ok := <-events:
+					if !ok {
+						return
+					}
+					err = conn.WriteJSON(event)
+					e, ok := event.(*WSMessage)
+					if ok {
+						eventName = e.Event
+					}
+				}
+				websocketEventCounter.With(prometheus.Labels{"queue": q.ID.String(), "event": eventName}).Inc()
+
+				// If the write fails, we presume that the read will also
+				// fail, so the read loop will take care of unsubbing and
+				// closing the connection. We also can't unsub on the same
+				// goroutine from which we're listening for events. We should
+				// just return.
+				if err != nil {
 					return
 				}
-				err = conn.WriteJSON(event)
-				e, ok := event.(*WSMessage)
-				if ok {
-					eventName = e.Event
-				}
 			}
-			websocketEventCounter.With(prometheus.Labels{"queue": q.ID.String(), "event": eventName}).Inc()
+		}()
 
-			// If the write fails, we presume that the read will also
-			// fail, so the read loop will take care of unsubbing and
-			// closing the connection. We also can't unsub on the same
-			// goroutine from which we're listening for events. We should
-			// just return.
-			if err != nil {
-				return
-			}
-		}
+		return nil
 	}
 }
 
@@ -331,8 +329,8 @@ type updateQueue interface {
 	UpdateQueue(ctx context.Context, queue ksuid.KSUID, values *Queue) error
 }
 
-func (s *Server) UpdateQueue(uq updateQueue) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateQueue(uq updateQueue) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -345,33 +343,28 @@ func (s *Server) UpdateQueue(uq updateQueue) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&queue)
 		if err != nil {
 			l.Warnw("failed to decode queue from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the queue from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if queue.Name == "" {
 			l.Warnw("got incomplete queue", "queue", queue)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you missed some fields in the queue!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = uq.UpdateQueue(r.Context(), q.ID, &queue)
 		if err != nil {
 			l.Errorw("failed to update queue", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("updated queue")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -379,8 +372,8 @@ type removeQueue interface {
 	RemoveQueue(ctx context.Context, queue ksuid.KSUID) error
 }
 
-func (s *Server) RemoveQueue(rq removeQueue) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveQueue(rq removeQueue) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -392,17 +385,16 @@ func (s *Server) RemoveQueue(rq removeQueue) http.HandlerFunc {
 		err := rq.RemoveQueue(r.Context(), q.ID)
 		if err != nil {
 			l.Errorw("failed to remove queue", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("removed queue")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
-func (s *Server) GetQueueStack(gs getQueueStack) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueStack(gs getQueueStack) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 
@@ -413,8 +405,7 @@ func (s *Server) GetQueueStack(gs getQueueStack) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("fetched stack",
@@ -423,7 +414,7 @@ func (s *Server) GetQueueStack(gs getQueueStack) http.HandlerFunc {
 			"email", email,
 			"stack_length", len(stack),
 		)
-		s.sendResponse(http.StatusOK, stack, w, r)
+		return s.sendResponse(http.StatusOK, stack, w, r)
 	}
 }
 
@@ -439,8 +430,8 @@ type addQueueEntry interface {
 	AddQueueEntry(context.Context, *QueueEntry) (*QueueEntry, error)
 }
 
-func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddQueueEntry(ae addQueueEntry) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		name := r.Context().Value(nameContextKey).(string)
@@ -454,43 +445,36 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 		currentEntries, err := ae.GetActiveQueueEntriesForUser(r.Context(), q.ID, email)
 		if err != nil {
 			l.Errorw("failed to fetch current queue entries for user", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		if len(currentEntries) > 0 {
 			l.Warnw("attempted queue sign up with already existing entry",
 				"conflicting_entry", currentEntries[0].ID,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"Don't get greedy! You can only be on the queue once at a time.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		canSignUp, err := ae.CanAddEntry(r.Context(), q.ID, email)
 		if err != nil || !canSignUp {
 			l.Warnw("user attempting to sign up for queue not allowed to", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusForbidden,
 				"My records say you aren't allowed to sign up right now. Are you in the course, or is another group member on the queue?",
-				w, r,
-			)
-			return
+			}
 		}
 
 		var entry QueueEntry
 		err = json.NewDecoder(r.Body).Decode(&entry)
 		if err != nil {
 			l.Warnw("failed to decode queue entry from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the queue entry from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		entry.Queue = q.ID
@@ -500,31 +484,26 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 		// we're using the frontend as a bit of a crutch here
 		if entry.Description == "" || entry.Name == "" {
 			l.Warnw("incomplete queue entry", "entry", entry)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields in the queue entry!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		priority, err := ae.GetEntryPriority(r.Context(), q.ID, email)
 		if err != nil {
 			l.Errorw("failed to get entry priority", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 		entry.Priority = priority
 
 		newEntry, err := ae.AddQueueEntry(r.Context(), &entry)
 		if err != nil {
 			l.Errorw("failed to insert queue entry", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("created queue entry", "entry_id", newEntry.ID)
-		s.sendResponse(http.StatusCreated, newEntry, w, r)
 
 		s.ps.Pub(WS("ENTRY_CREATE", newEntry), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("ENTRY_CREATE", newEntry.Anonymized()), QueueTopicNonPrivileged(q.ID))
@@ -532,6 +511,8 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) http.HandlerFunc {
 		// Send an update with more information to the user who
 		// created the queue entry.
 		s.ps.Pub(WS("ENTRY_UPDATE", newEntry), QueueTopicEmail(q.ID, email))
+
+		return s.sendResponse(http.StatusCreated, newEntry, w, r)
 	}
 }
 
@@ -540,8 +521,8 @@ type updateQueueEntry interface {
 	UpdateQueueEntry(ctx context.Context, entry ksuid.KSUID, newEntry *QueueEntry) error
 }
 
-func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateQueueEntry(ue updateQueueEntry) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
@@ -555,67 +536,55 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 		entry, err := ksuid.Parse(id)
 		if err != nil {
 			l.Warnw("failed to parse entry ID", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		e, err := ue.GetQueueEntry(r.Context(), entry, false)
 		if err != nil {
 			l.Warnw("failed to get entry with valid ksuid", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry. Perhaps you were popped off quite recently?",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if e.Email != email {
 			l.Warnw("user tried to update other user's queue entry", "entry_email", e.Email)
-			s.errorMessage(
+			return StatusError{
 				http.StatusForbidden,
 				"You can't edit someone else's queue entry!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		var newEntry QueueEntry
 		err = json.NewDecoder(r.Body).Decode(&newEntry)
 		if err != nil {
 			l.Warnw("failed to decode queue entry from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the queue entry from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 		newEntry.Name = name
 
 		if newEntry.Name == "" || newEntry.Description == "" {
 			l.Warnw("incomplete queue entry", "entry", entry)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields in the queue entry!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = ue.UpdateQueueEntry(r.Context(), entry, &newEntry)
 		if err != nil {
 			l.Errorw("failed to update queue entry", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("queue entry updated", "old_entry", e)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		newEntry.ID = entry
 		newEntry.Queue = q.ID
@@ -625,6 +594,8 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) http.HandlerFunc {
 
 		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicEmail(q.ID, email))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -637,8 +608,8 @@ type removeQueueEntry interface {
 	RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remover string) (*RemovedQueueEntry, error)
 }
 
-func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveQueueEntry(re removeQueueEntry) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
@@ -653,48 +624,42 @@ func (s *Server) RemoveQueueEntry(re removeQueueEntry) http.HandlerFunc {
 		entry, err := ksuid.Parse(id)
 		if err != nil {
 			l.Warnw("failed to parse entry ID", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		canRemove, err := re.CanRemoveQueueEntry(r.Context(), q.ID, entry, email)
 		if err != nil || !canRemove {
 			l.Warnw("attempted to remove queue entry without access", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusForbidden,
 				"Removing someone else's queue entry isn't very nice!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		e, err := re.RemoveQueueEntry(r.Context(), entry, email)
 		if errors.Is(err, sql.ErrNoRows) {
 			l.Warnw("attempted to remove already-removed queue entry", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"That queue entry was already removed by another staff member! Try the next one on the queue.",
-				w, r,
-			)
-			return
+			}
 		} else if err != nil {
 			l.Errorw("failed to remove queue entry", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		l.Infow("removed queue entry",
 			"student_email", e.Email,
 			"time_spent", time.Now().Sub(e.ID.Time()),
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("ENTRY_REMOVE", e), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("ENTRY_REMOVE", e.Anonymized()), QueueTopicNonPrivileged(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -704,8 +669,8 @@ type pinQueueEntry interface {
 	PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error
 }
 
-func (s *Server) PinQueueEntry(pb pinQueueEntry) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) PinQueueEntry(pb pinQueueEntry) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
@@ -720,23 +685,19 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) http.HandlerFunc {
 		entryID, err := ksuid.Parse(id)
 		if err != nil {
 			l.Warnw("failed to parse entry ID", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		entry, err := pb.GetQueueEntry(r.Context(), entryID, true)
 		if err != nil {
 			l.Warnw("attempted to get non-existent queue entry with valid ksuid")
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		entries, err := pb.GetActiveQueueEntriesForUser(r.Context(), q.ID, entry.Email)
@@ -746,25 +707,21 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) http.HandlerFunc {
 
 		if entry.Removed && len(entries) > 0 {
 			l.Warnw("attempted to pin queue entry with student on queue")
-			s.errorMessage(
+			return StatusError{
 				http.StatusConflict,
 				"That user is already on the queue. Pin their new entry!",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = pb.PinQueueEntry(r.Context(), entryID)
 		if err != nil {
 			l.Errorw("failed to pin queue entry", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		entry.Pinned = true
 
 		l.Infow("pinned queue entry")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("STACK_REMOVE", entry), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("ENTRY_CREATE", entry), QueueTopicAdmin(q.ID))
@@ -774,6 +731,8 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) http.HandlerFunc {
 		// created the queue entry.
 		s.ps.Pub(WS("ENTRY_UPDATE", entry), QueueTopicEmail(q.ID, email))
 		s.ps.Pub(WS("ENTRY_PINNED", entry), QueueTopicEmail(q.ID, entry.Email))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -781,8 +740,8 @@ type clearQueueEntries interface {
 	ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error
 }
 
-func (s *Server) ClearQueueEntries(ce clearQueueEntries) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ClearQueueEntries(ce clearQueueEntries) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		err := ce.ClearQueueEntries(r.Context(), q.ID, email)
@@ -793,8 +752,7 @@ func (s *Server) ClearQueueEntries(ce clearQueueEntries) http.HandlerFunc {
 				"email", email,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("cleared queue",
@@ -803,10 +761,10 @@ func (s *Server) ClearQueueEntries(ce clearQueueEntries) http.HandlerFunc {
 			"email", email,
 		)
 
-		s.sendResponse(http.StatusNoContent, nil, w, r)
-
 		s.ps.Pub(WS("QUEUE_CLEAR", email), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("QUEUE_CLEAR", nil), QueueTopicNonPrivileged(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -814,8 +772,8 @@ type addQueueAnnouncement interface {
 	AddQueueAnnouncement(context.Context, ksuid.KSUID, *Announcement) (*Announcement, error)
 }
 
-func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 
@@ -827,12 +785,10 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 				"email", email,
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the announcement from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		announcement.Queue = q.ID
@@ -842,12 +798,10 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 				"email", email,
 				"announcement", announcement,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields in the announcement.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		newAnnouncement, err := aa.AddQueueAnnouncement(r.Context(), q.ID, &announcement)
@@ -858,8 +812,7 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 				"announcement", announcement,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("created announcement",
@@ -867,9 +820,10 @@ func (s *Server) AddQueueAnnouncement(aa addQueueAnnouncement) http.HandlerFunc 
 			"email", email,
 			"announcement", newAnnouncement,
 		)
-		s.sendResponse(http.StatusCreated, newAnnouncement, w, r)
 
 		s.ps.Pub(WS("ANNOUNCEMENT_CREATE", newAnnouncement), QueueTopicGeneric(q.ID))
+
+		return s.sendResponse(http.StatusCreated, newAnnouncement, w, r)
 	}
 }
 
@@ -877,8 +831,8 @@ type removeQueueAnnouncement interface {
 	RemoveQueueAnnouncement(context.Context, ksuid.KSUID) error
 }
 
-func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		id := chi.URLParam(r, "announcement_id")
@@ -889,12 +843,10 @@ func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.Handle
 				"announcement_id", id,
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I couldn't find that announcement anywhere.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = ra.RemoveQueueAnnouncement(r.Context(), announcement)
@@ -904,8 +856,7 @@ func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.Handle
 				"announcement_id", announcement,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("removed announcement",
@@ -913,9 +864,10 @@ func (s *Server) RemoveQueueAnnouncement(ra removeQueueAnnouncement) http.Handle
 			"announcement_id", announcement,
 			"email", r.Context().Value(emailContextKey),
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("ANNOUNCEMENT_DELETE", announcement.String()), QueueTopicGeneric(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -923,8 +875,8 @@ type getQueueSchedule interface {
 	GetQueueSchedule(ctx context.Context, queue ksuid.KSUID) ([]string, error)
 }
 
-func (s *Server) GetQueueSchedule(gs getQueueSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueSchedule(gs getQueueSchedule) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		schedules, err := gs.GetQueueSchedule(r.Context(), q.ID)
 		if err != nil {
@@ -933,11 +885,10 @@ func (s *Server) GetQueueSchedule(gs getQueueSchedule) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, schedules, w, r)
+		return s.sendResponse(http.StatusOK, schedules, w, r)
 	}
 }
 
@@ -945,8 +896,8 @@ type updateQueueSchedule interface {
 	UpdateQueueSchedule(ctx context.Context, queue ksuid.KSUID, schedules []string) error
 }
 
-func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		var schedules []string
@@ -957,12 +908,10 @@ func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the schedules from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		for i, schedule := range schedules {
@@ -974,12 +923,10 @@ func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) http.HandlerFunc {
 					"day", i,
 					"schedule", schedule,
 				)
-				s.errorMessage(
+				return StatusError{
 					http.StatusBadRequest,
 					"Make sure your schedule is 48 characters long!",
-					w, r,
-				)
-				return
+				}
 			}
 		}
 
@@ -990,17 +937,17 @@ func (s *Server) UpdateQueueSchedule(us updateQueueSchedule) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("updated queue schedule",
 			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"queue_id", q.ID,
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -1008,8 +955,8 @@ type getQueueConfiguration interface {
 	GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (*QueueConfiguration, error)
 }
 
-func (s *Server) GetQueueConfiguration(gc getQueueConfiguration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueConfiguration(gc getQueueConfiguration) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		config, err := gc.GetQueueConfiguration(r.Context(), q.ID)
@@ -1019,11 +966,10 @@ func (s *Server) GetQueueConfiguration(gc getQueueConfiguration) http.HandlerFun
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, config, w, r)
+		return s.sendResponse(http.StatusOK, config, w, r)
 	}
 }
 
@@ -1031,8 +977,8 @@ type updateQueueConfiguration interface {
 	UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID, configuration *QueueConfiguration) error
 }
 
-func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		var config QueueConfiguration
@@ -1043,12 +989,10 @@ func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) http.Hand
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the configuration from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = uc.UpdateQueueConfiguration(r.Context(), q.ID, &config)
@@ -1058,15 +1002,14 @@ func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) http.Hand
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("updated queue configuration", RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 			"queue_id", q.ID,
 			"configuration", config,
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
@@ -1074,8 +1017,8 @@ type sendMessage interface {
 	SendMessage(ctx context.Context, queue ksuid.KSUID, content, from, to string) (*Message, error)
 }
 
-func (s *Server) SendMessage(sm sendMessage) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SendMessage(sm sendMessage) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -1088,34 +1031,29 @@ func (s *Server) SendMessage(sm sendMessage) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
 			l.Warnw("failed to decode message from body", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"We couldn't read the message from the request body.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		if message.Receiver == "" || message.Content == "" {
 			l.Warnw("got incomplete message", "message", message)
-			s.errorMessage(
+			return StatusError{
 				http.StatusBadRequest,
 				"It looks like you left out some fields from the message.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		newMessage, err := sm.SendMessage(r.Context(), q.ID, message.Content, email, message.Receiver)
 		if err != nil {
 			l.Errorw("failed to create message", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusCreated, newMessage, w, r)
-
 		s.ps.Pub(WS("MESSAGE_CREATE", newMessage), QueueTopicEmail(q.ID, message.Receiver))
+
+		return s.sendResponse(http.StatusCreated, newMessage, w, r)
 	}
 }
 
@@ -1123,8 +1061,8 @@ type getQueueRoster interface {
 	GetQueueRoster(ctx context.Context, queue ksuid.KSUID) ([]string, error)
 }
 
-func (s *Server) GetQueueRoster(gr getQueueRoster) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueRoster(gr getQueueRoster) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		roster, err := gr.GetQueueRoster(r.Context(), q.ID)
@@ -1134,11 +1072,10 @@ func (s *Server) GetQueueRoster(gr getQueueRoster) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, roster, w, r)
+		return s.sendResponse(http.StatusOK, roster, w, r)
 	}
 }
 
@@ -1146,8 +1083,8 @@ type getQueueGroups interface {
 	GetQueueGroups(ctx context.Context, queue ksuid.KSUID) ([][]string, error)
 }
 
-func (s *Server) GetQueueGroups(gg getQueueGroups) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueGroups(gg getQueueGroups) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		groups, err := gg.GetQueueGroups(r.Context(), q.ID)
@@ -1157,11 +1094,10 @@ func (s *Server) GetQueueGroups(gg getQueueGroups) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
-		s.sendResponse(http.StatusOK, groups, w, r)
+		return s.sendResponse(http.StatusOK, groups, w, r)
 	}
 }
 
@@ -1170,8 +1106,8 @@ type updateQueueGroups interface {
 	UpdateQueueGroups(ctx context.Context, queue ksuid.KSUID, groups [][]string) error
 }
 
-func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateQueueGroups(ug updateQueueGroups) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 
 		var groups [][]string
@@ -1182,8 +1118,10 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.errorMessage(http.StatusBadRequest, fmt.Sprintf("I couldn't read the groups you uploaded. Make sure the file is structured as an array of arrays of students' emails, each inner array representing a group. This error might help: %v", err), w, r)
-			return
+			return StatusError{
+				http.StatusBadRequest,
+				fmt.Sprintf("I couldn't read the groups you uploaded. Make sure the file is structured as an array of arrays of students' emails, each inner array representing a group. This error might help: %v", err),
+			}
 		}
 
 		err = ug.UpdateQueueGroups(r.Context(), q.ID, groups)
@@ -1193,8 +1131,7 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		var students []string
@@ -1211,8 +1148,7 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 				"queue_id", q.ID,
 				"err", err,
 			)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		s.logger.Infow("updated groups",
@@ -1220,12 +1156,12 @@ func (s *Server) UpdateQueueGroups(ug updateQueueGroups) http.HandlerFunc {
 			"queue_id", q.ID,
 			"email", r.Context().Value(emailContextKey),
 		)
-		s.sendResponse(http.StatusNoContent, nil, w, r)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
 
-func (s *Server) GetQueueLogs() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetQueueLogs() E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		email := r.Context().Value(emailContextKey).(string)
 		l := s.logger.With(
@@ -1237,8 +1173,7 @@ func (s *Server) GetQueueLogs() http.HandlerFunc {
 		es, err := elastic.NewClient(elastic.SetURL("http://elasticsearch:9200"))
 		if err != nil {
 			l.Errorw("couldn't set up elastic connection", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		result, err := es.Search().
@@ -1250,8 +1185,7 @@ func (s *Server) GetQueueLogs() http.HandlerFunc {
 
 		if err != nil {
 			l.Errorw("failed to fetch elastic results", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		var output []json.RawMessage
@@ -1260,7 +1194,7 @@ func (s *Server) GetQueueLogs() http.HandlerFunc {
 		}
 
 		l.Infow("fetched logs", "num_entries", len(result.Hits.Hits))
-		s.sendResponse(http.StatusOK, output, w, r)
+		return s.sendResponse(http.StatusOK, output, w, r)
 	}
 }
 
@@ -1269,8 +1203,8 @@ type setNotHelped interface {
 	SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped bool) error
 }
 
-func (s *Server) SetNotHelped(sh setNotHelped) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) SetNotHelped(sh setNotHelped) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		q := r.Context().Value(queueContextKey).(*Queue)
 		id := chi.URLParam(r, "entry_id")
 		email := r.Context().Value(emailContextKey).(string)
@@ -1285,38 +1219,34 @@ func (s *Server) SetNotHelped(sh setNotHelped) http.HandlerFunc {
 		entryID, err := ksuid.Parse(id)
 		if err != nil {
 			l.Warnw("failed to parse entry ID", "err", err)
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		entry, err := sh.GetQueueEntry(r.Context(), entryID, true)
 		if err != nil {
 			l.Warnw("attempted to get non-existent queue entry with valid ksuid")
-			s.errorMessage(
+			return StatusError{
 				http.StatusNotFound,
 				"I'm not able to find that queue entry.",
-				w, r,
-			)
-			return
+			}
 		}
 
 		err = sh.SetHelpedStatus(r.Context(), entryID, false)
 		if err != nil {
 			l.Errorw("failed to set entry to not helped", "err", err)
-			s.internalServerError(w, r)
-			return
+			return err
 		}
 
 		entry.Helped = false
 
 		l.Infow("set entry to not helped")
-		s.sendResponse(http.StatusNoContent, nil, w, r)
 
 		s.ps.Pub(WS("ENTRY_UPDATE", entry.RemovedEntry()), QueueTopicAdmin(q.ID))
 		s.ps.Pub(WS("NOT_HELPED", nil), QueueTopicEmail(q.ID, entry.Email))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
