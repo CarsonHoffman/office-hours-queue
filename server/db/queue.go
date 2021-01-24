@@ -401,7 +401,7 @@ func (s *Server) GetQueueStack(ctx context.Context, queue ksuid.KSUID, limit int
 	tx := getTransaction(ctx)
 	entries := make([]*api.RemovedQueueEntry, 0)
 	err := tx.SelectContext(ctx, &entries,
-		"SELECT * FROM queue_entries WHERE queue=$1 AND removed ORDER BY removed_at DESC LIMIT $2",
+		"SELECT * FROM queue_entries WHERE queue=$1 AND removed ORDER BY removed_at DESC, id DESC LIMIT $2",
 		queue, limit,
 	)
 	return entries, err

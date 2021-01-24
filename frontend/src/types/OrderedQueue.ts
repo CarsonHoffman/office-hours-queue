@@ -160,7 +160,16 @@ export default class OrderedQueue extends Queue {
 				break;
 			}
 			case 'QUEUE_CLEAR': {
+				// Estimate what the stack will look like based on
+				// the information received from the event. The removed
+				// time might differ by a second or so versus when the
+				// user refreshes, but this should work fine.
+				const removed = this.entries.map((e) =>
+					RemovedQueueEntry.fromEntry(e, moment(), data)
+				);
 				this.entries = [];
+				this.stack.unshift(...removed);
+				this.sortStack();
 				if (data !== null) {
 					Toast.open({
 						duration: 60000,
@@ -206,6 +215,15 @@ export default class OrderedQueue extends Queue {
 			}
 
 			return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+		});
+	}
+
+	public sortStack() {
+		this.stack.sort((a, b) => {
+			if (a.removedAt != b.removedAt) {
+				return b.removedAt.clone().diff(a.removedAt);
+			}
+			return a.id > b.id ? -1 : a.id < b.id ? 1 : 0;
 		});
 	}
 

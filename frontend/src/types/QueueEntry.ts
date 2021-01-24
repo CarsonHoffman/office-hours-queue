@@ -52,4 +52,20 @@ export class RemovedQueueEntry extends QueueEntry {
 	get tooltipTimestamp() {
 		return this.removedAt.format('YYYY-MM-DD h:mm:ss a');
 	}
+
+	static fromEntry(
+		entry: QueueEntry,
+		removedAt: Moment,
+		removedBy: string
+	): RemovedQueueEntry {
+		// This isn't pretty with having to re-parse the timestamp,
+		// but it works!
+		return new RemovedQueueEntry({
+			...entry,
+			pinned: false,
+			id_timestamp: entry.timestamp.format(),
+			removed_at: removedAt,
+			removed_by: removedBy,
+		});
+	}
 }
