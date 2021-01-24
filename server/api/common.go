@@ -26,6 +26,7 @@ func (s StatusError) Error() string { return s.message }
 func (e E) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := e(w, r)
 	if err != nil {
+		*(r.Context().Value(RequestErrorContextKey).(*error)) = err
 		m := struct {
 			Message string `json:"message"`
 		}{}

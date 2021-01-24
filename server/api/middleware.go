@@ -59,9 +59,12 @@ func (s *Server) transaction(tr transactioner) func(http.Handler) http.Handler {
 				err = tx.Rollback()
 				// The handler already wrote a status code, so the best we can
 				// do is log the failed rollback.
-				s.logger.Errorw("transaction rollback failed",
-					"err", err,
-				)
+				if err != nil {
+					s.logger.Errorw("transaction rollback failed",
+						RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+						"err", err,
+					)
+				}
 				return
 			}
 
@@ -70,6 +73,7 @@ func (s *Server) transaction(tr transactioner) func(http.Handler) http.Handler {
 				// The handler already wrote a status code, so the best we can
 				// do is log the failed commit.
 				s.logger.Errorw("transaction commit failed",
+					RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 					"err", err,
 				)
 			}
