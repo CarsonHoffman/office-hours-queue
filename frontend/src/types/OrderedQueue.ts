@@ -77,7 +77,10 @@ export default class OrderedQueue extends Queue {
 							`You popped ${data.email}! Their link is: ${linkifyStr(
 								data.location
 							)}.` +
-							`<br><br>If you weren't able to make contact with the student, click "Not Helped" and this won't count against their first-help-of-the-day status.`,
+							`<br><br>If you weren't able to make contact with the student, click "Not Helped" to alert the student that you attempted to help them.` +
+							(this.prioritizeNew
+								? ` Additionally, this won't count against their first-help-of-the-day status.`
+								: ''),
 						type: 'is-success',
 						hasIcon: true,
 						canCancel: ['button'],
@@ -188,7 +191,11 @@ export default class OrderedQueue extends Queue {
 			case 'NOT_HELPED': {
 				Dialog.alert({
 					title: `We Couldn't Find You!`,
-					message: `A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your meeting link is still valid! <br><br><b>If your course prioritizes your first help session of the day, this one didn't count against you.</b>`,
+					message:
+						`A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your meeting link is still valid!` +
+						(this.prioritizeNew
+							? `<br><br><b>This didn't count as your first meeting of the day.</b>`
+							: ''),
 					hasIcon: true,
 					type: 'is-danger',
 				});
