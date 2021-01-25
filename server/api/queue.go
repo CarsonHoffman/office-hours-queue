@@ -1024,6 +1024,9 @@ func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) E {
 			"queue_id", q.ID,
 			"configuration", config,
 		)
+
+		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
+
 		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
