@@ -279,10 +279,12 @@ func (s *Server) QueueWebsocket() E {
 					conn.Close()
 
 					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Dec()
-					s.logger.Infow("websocket connection closed",
-						"queue_id", q.ID,
-						"email", email,
-					)
+					if email != "" {
+						s.logger.Infow("websocket connection closed",
+							"queue_id", q.ID,
+							"email", email,
+						)
+					}
 					return
 				}
 			}
