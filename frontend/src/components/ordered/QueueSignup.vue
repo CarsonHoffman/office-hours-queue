@@ -14,7 +14,9 @@
 				</span>
 			</div>
 		</div>
-		<div class="field">
+		<!-- The !== false looks weird, but it's so that we still show
+         the field before the queue information is loaded. -->
+		<div class="field" v-if="queue.enableLocationField !== false">
 			<label class="label">Meeting Link</label>
 			<div class="control has-icons-left">
 				<input class="input" v-model="location" type="text" />
@@ -106,7 +108,7 @@ export default class QueueSignup extends Vue {
 			this.$root.$data.loggedIn &&
 			this.queue.open(this.time) &&
 			this.description.trim() !== '' &&
-			this.location.trim() !== ''
+			(this.location.trim() !== '' || !this.queue.enableLocationField)
 		);
 	}
 
@@ -145,11 +147,16 @@ export default class QueueSignup extends Vue {
 	}
 
 	signUpRequest() {
+		// No, this doesn't prevent students from manually hitting the API to specify
+		// a location. l33t h4x!
+		const location = this.queue.enableLocationField
+			? this.location
+			: '(disabled)';
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 			method: 'POST',
 			body: JSON.stringify({
 				description: this.description,
-				location: this.location,
+				location,
 			}),
 		}).then((res) => {
 			if (res.status !== 201) {

@@ -13,6 +13,11 @@
 			<div class="block">
 				<p class="title">Queue Settings</p>
 				<div class="field">
+					<b-checkbox v-model="configuration['enable_location_field']"
+						>Allow students to specify meeting link</b-checkbox
+					>
+				</div>
+				<div class="field">
 					<b-checkbox v-model="configuration['prevent_unregistered']"
 						>Prevent students not registered in any group from signing up at
 						all</b-checkbox

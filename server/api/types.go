@@ -34,6 +34,7 @@ type Queue struct {
 
 type QueueConfiguration struct {
 	ID                  ksuid.KSUID `json:"id" db:"id"`
+	EnableLocationField bool        `json:"enable_location_field" db:"enable_location_field"`
 	PreventUnregistered bool        `json:"prevent_unregistered" db:"prevent_unregistered"`
 	PreventGroups       bool        `json:"prevent_groups" db:"prevent_groups"`
 	PreventGroupsBoost  bool        `json:"prevent_groups_boost" db:"prevent_groups_boost"`

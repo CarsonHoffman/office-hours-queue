@@ -13,6 +13,7 @@ export default class Queue {
 	public announcements: Announcement[] = [];
 
 	public confirmSignupMessage: string | undefined;
+	public enableLocationField: boolean | undefined;
 	public preventGroups: boolean | undefined;
 	public preventGroupsBoost: boolean | undefined;
 	public preventUnregistered: boolean | undefined;
@@ -38,6 +39,7 @@ export default class Queue {
 					(a: any) => new Announcement(a)
 				);
 				this.confirmSignupMessage = data['confirm_signup_message'];
+				this.enableLocationField = data['enable_location_field'];
 				this.preventGroups = data['prevent_groups'];
 				this.preventGroupsBoost = data['prevent_groups_boost'];
 				this.preventUnregistered = data['prevent_unregistered'];

@@ -201,6 +201,7 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 		}
 
 		// Add in configuration information. This is a bit painful.
+		response["enable_location_field"] = config.EnableLocationField
 		response["prevent_unregistered"] = config.PreventUnregistered
 		response["prevent_groups"] = config.PreventGroups
 		response["prevent_groups_boost"] = config.PreventGroupsBoost

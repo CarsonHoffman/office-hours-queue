@@ -158,6 +158,7 @@ CREATE TABLE public.queues (
     location text NOT NULL,
     map text NOT NULL,
     active boolean NOT NULL,
+    enable_location_field boolean DEFAULT true NOT NULL,
     prevent_unregistered boolean DEFAULT false NOT NULL,
     prevent_groups boolean DEFAULT false NOT NULL,
     prevent_groups_boost boolean DEFAULT false NOT NULL,
