@@ -10,8 +10,13 @@ export default class Queue {
 	public readonly name!: string;
 	public readonly location!: string;
 	public readonly map!: string;
-	public confirmSignupMessage: string | undefined;
 	public announcements: Announcement[] = [];
+
+	public confirmSignupMessage: string | undefined;
+	public preventGroups: boolean | undefined;
+	public preventGroupsBoost: boolean | undefined;
+	public preventUnregistered: boolean | undefined;
+	public prioritizeNew: boolean | undefined;
 
 	public course!: Course;
 
@@ -33,6 +38,10 @@ export default class Queue {
 					(a: any) => new Announcement(a)
 				);
 				this.confirmSignupMessage = data['confirm_signup_message'];
+				this.preventGroups = data['prevent_groups'];
+				this.preventGroupsBoost = data['prevent_groups_boost'];
+				this.preventUnregistered = data['prevent_unregistered'];
+				this.prioritizeNew = data['prioritize_new'];
 
 				return data;
 			});

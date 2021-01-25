@@ -108,6 +108,7 @@ type getQueueDetails interface {
 	getQueueAnnouncements
 	getCurrentDaySchedule
 	viewMessage
+	getQueueConfiguration
 }
 
 func (s *Server) GetQueue(gd getQueueDetails) E {
@@ -192,6 +193,18 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 				response["message"] = message
 			}
 		}
+
+		config, err := gd.GetQueueConfiguration(r.Context(), q.ID)
+		if err != nil {
+			l.Errorw("failed to get queue configuration", "err", err)
+			return err
+		}
+
+		// Add in configuration information. This is a bit painful.
+		response["prevent_unregistered"] = config.PreventUnregistered
+		response["prevent_groups"] = config.PreventGroups
+		response["prevent_groups_boost"] = config.PreventGroupsBoost
+		response["prioritize_new"] = config.PrioritizeNew
 
 		return s.sendResponse(http.StatusOK, response, w, r)
 	}
