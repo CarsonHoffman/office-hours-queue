@@ -139,7 +139,7 @@ CREATE TABLE public.queue_entries (
     description text NOT NULL,
     priority smallint NOT NULL,
     pinned boolean DEFAULT false NOT NULL,
-    removed boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true, -- Nullable so that we can set up unique relation
     removed_by text,
     removed_at timestamp without time zone,
     helped boolean DEFAULT true NOT NULL
@@ -147,6 +147,9 @@ CREATE TABLE public.queue_entries (
 
 
 ALTER TABLE public.queue_entries OWNER TO queue;
+
+ALTER TABLE ONLY public.queue_entries
+    ADD CONSTRAINT one_active_entry_per_student_per_queue UNIQUE (queue, email, active);
 
 --
 -- Name: queues; Type: TABLE; Schema: public; Owner: queue

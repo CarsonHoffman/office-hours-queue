@@ -53,7 +53,7 @@ func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemo
 	tx := getTransaction(ctx)
 	var e api.QueueEntry
 	err := tx.GetContext(ctx, &e,
-		"SELECT * FROM queue_entries WHERE id=$1 AND ($2 OR NOT removed)",
+		"SELECT * FROM queue_entries WHERE id=$1 AND ($2 OR active IS NOT NULL)",
 		entry, allowRemoved,
 	)
 	return &e, err
@@ -61,9 +61,9 @@ func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemo
 
 func (s *Server) GetQueueEntries(ctx context.Context, queue ksuid.KSUID, admin bool) ([]*api.QueueEntry, error) {
 	tx := getTransaction(ctx)
-	query := "SELECT id, queue, priority, pinned FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY pinned DESC, priority DESC, id"
+	query := "SELECT id, queue, priority, pinned FROM queue_entries WHERE queue=$1 AND active IS NOT NULL ORDER BY pinned DESC, priority DESC, id"
 	if admin {
-		query = "SELECT * FROM queue_entries WHERE queue=$1 AND NOT removed ORDER BY pinned DESC, priority DESC, id"
+		query = "SELECT * FROM queue_entries WHERE queue=$1 AND active IS NOT NULL ORDER BY pinned DESC, priority DESC, id"
 	}
 
 	entries := make([]*api.QueueEntry, 0)
@@ -75,7 +75,7 @@ func (s *Server) GetActiveQueueEntriesForUser(ctx context.Context, queue ksuid.K
 	tx := getTransaction(ctx)
 	entries := make([]*api.QueueEntry, 0)
 	err := tx.SelectContext(ctx, &entries,
-		"SELECT * FROM queue_entries WHERE queue=$1 AND email=$2 AND NOT removed",
+		"SELECT * FROM queue_entries WHERE queue=$1 AND email=$2 AND active IS NOT NULL",
 		queue, email,
 	)
 	return entries, err
@@ -205,7 +205,7 @@ func (s *Server) TeammateInQueue(ctx context.Context, queue ksuid.KSUID, email s
 	tx := getTransaction(ctx)
 	var n int
 	err := tx.GetContext(ctx, &n,
-		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.queue=$1 AND t.email=$2 AND e.queue=$3 AND NOT e.removed",
+		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.queue=$1 AND t.email=$2 AND e.queue=$3 AND e.active IS NOT NULL",
 		queue, email, queue,
 	)
 	return n > 0, err
@@ -330,7 +330,7 @@ func (s *Server) AddQueueEntry(ctx context.Context, e *api.QueueEntry) (*api.Que
 func (s *Server) UpdateQueueEntry(ctx context.Context, entry ksuid.KSUID, e *api.QueueEntry) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,
-		"UPDATE queue_entries SET name=$1, location=$2, description=$3, map_x=$4, map_y=$5 WHERE id=$6 AND NOT removed",
+		"UPDATE queue_entries SET name=$1, location=$2, description=$3, map_x=$4, map_y=$5 WHERE id=$6 AND active IS NOT NULL",
 		e.Name, e.Location, e.Description, e.MapX, e.MapY, entry,
 	)
 	return err
@@ -364,7 +364,7 @@ func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remove
 	tx := getTransaction(ctx)
 	var e api.RemovedQueueEntry
 	err := tx.GetContext(ctx, &e,
-		"UPDATE queue_entries SET pinned=FALSE, removed=TRUE, removed_at=NOW(), removed_by=$1, helped=TRUE WHERE NOT removed AND id=$2 RETURNING *",
+		"UPDATE queue_entries SET pinned=FALSE, active=NULL, removed_at=NOW(), removed_by=$1, helped=TRUE WHERE active IS NOT NULL AND id=$2 RETURNING *",
 		remover, entry,
 	)
 	return &e, err
@@ -373,7 +373,7 @@ func (s *Server) RemoveQueueEntry(ctx context.Context, entry ksuid.KSUID, remove
 func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=FALSE, removed_at=NULL, removed_by=NULL, helped=FALSE, pinned=TRUE WHERE id=$1",
+		"UPDATE queue_entries SET active=TRUE, removed_at=NULL, removed_by=NULL, helped=FALSE, pinned=TRUE WHERE id=$1",
 		entry,
 	)
 	return err
@@ -391,7 +391,7 @@ func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped 
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,
-		"UPDATE queue_entries SET removed=TRUE, removed_at=NOW(), removed_by=$1, pinned=FALSE, helped=FALSE WHERE NOT removed AND queue=$2",
+		"UPDATE queue_entries SET active=NULL, removed_at=NOW(), removed_by=$1, pinned=FALSE, helped=FALSE WHERE active IS NOT NULL AND queue=$2",
 		remover, queue,
 	)
 	return err
@@ -401,7 +401,7 @@ func (s *Server) GetQueueStack(ctx context.Context, queue ksuid.KSUID, limit int
 	tx := getTransaction(ctx)
 	entries := make([]*api.RemovedQueueEntry, 0)
 	err := tx.SelectContext(ctx, &entries,
-		"SELECT * FROM queue_entries WHERE queue=$1 AND removed ORDER BY removed_at DESC, id DESC LIMIT $2",
+		"SELECT * FROM queue_entries WHERE queue=$1 AND active IS NULL ORDER BY removed_at DESC, id DESC LIMIT $2",
 		queue, limit,
 	)
 	return entries, err
@@ -495,7 +495,7 @@ func (s *Server) ViewMessage(ctx context.Context, queue ksuid.KSUID, receiver st
 func (s *Server) QueueStats() ([]api.QueueStats, error) {
 	var queues []api.QueueStats
 
-	rows, err := s.DB.Query(`SELECT q.id, c.id, COUNT(e.id) FROM queues q LEFT JOIN queue_entries e ON e.queue=q.id AND NOT e.removed
+	rows, err := s.DB.Query(`SELECT q.id, c.id, COUNT(e.id) FROM queues q LEFT JOIN queue_entries e ON e.queue=q.id AND e.active IS NOT NULL
 							 LEFT JOIN courses c ON c.id=q.course WHERE q.active AND q.type='ordered' GROUP BY q.id, c.id`)
 
 	if err != nil {

@@ -58,7 +58,7 @@ type QueueEntry struct {
 	MapY        float32        `json:"map_y,omitempty" db:"map_y"`
 	Priority    int            `json:"priority" db:"priority"`
 	Pinned      bool           `json:"pinned,omitempty" db:"pinned"`
-	Removed     bool           `json:"-" db:"removed"`
+	Active      sql.NullBool   `json:"-" db:"active"`
 	RemovedBy   sql.NullString `json:"-" db:"removed_by"`
 	RemovedAt   sql.NullTime   `json:"-" db:"removed_at"`
 	Helped      bool           `json:"-" db:"helped"`
@@ -76,7 +76,7 @@ func (q *QueueEntry) RemovedEntry() *RemovedQueueEntry {
 		MapY:        q.MapY,
 		Priority:    q.Priority,
 		Pinned:      q.Pinned,
-		Removed:     true,
+		Active:      sql.NullBool{Bool: true, Valid: true},
 		RemovedBy:   q.RemovedBy.String,
 		RemovedAt:   q.RemovedAt.Time,
 		Helped:      q.Helped,
@@ -106,20 +106,20 @@ func (q *QueueEntry) Anonymized() *QueueEntry {
 }
 
 type RemovedQueueEntry struct {
-	ID          ksuid.KSUID `json:"id" db:"id"`
-	Queue       ksuid.KSUID `json:"queue" db:"queue"`
-	Email       string      `json:"email,omitempty" db:"email"`
-	Name        string      `json:"name,omitempty" db:"name"`
-	Description string      `json:"description,omitempty" db:"description"`
-	Location    string      `json:"location,omitempty" db:"location"`
-	MapX        float32     `json:"map_x,omitempty" db:"map_x"`
-	MapY        float32     `json:"map_y,omitempty" db:"map_y"`
-	Priority    int         `json:"priority" db:"priority"`
-	Pinned      bool        `json:"pinned,omitempty" db:"pinned"`
-	Removed     bool        `json:"-" db:"removed"`
-	RemovedBy   string      `json:"removed_by,omitempty" db:"removed_by"`
-	RemovedAt   time.Time   `json:"removed_at" db:"removed_at"`
-	Helped      bool        `json:"helped" db:"helped"`
+	ID          ksuid.KSUID  `json:"id" db:"id"`
+	Queue       ksuid.KSUID  `json:"queue" db:"queue"`
+	Email       string       `json:"email,omitempty" db:"email"`
+	Name        string       `json:"name,omitempty" db:"name"`
+	Description string       `json:"description,omitempty" db:"description"`
+	Location    string       `json:"location,omitempty" db:"location"`
+	MapX        float32      `json:"map_x,omitempty" db:"map_x"`
+	MapY        float32      `json:"map_y,omitempty" db:"map_y"`
+	Priority    int          `json:"priority" db:"priority"`
+	Pinned      bool         `json:"pinned,omitempty" db:"pinned"`
+	Active      sql.NullBool `json:"-" db:"active"`
+	RemovedBy   string       `json:"removed_by,omitempty" db:"removed_by"`
+	RemovedAt   time.Time    `json:"removed_at" db:"removed_at"`
+	Helped      bool         `json:"helped" db:"helped"`
 }
 
 func (q *RemovedQueueEntry) MarshalJSON() ([]byte, error) {

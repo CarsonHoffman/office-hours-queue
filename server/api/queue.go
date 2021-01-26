@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
+	"github.com/lib/pq"
 	"github.com/olivere/elastic/v7"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/segmentio/ksuid"
@@ -515,6 +516,14 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) E {
 
 		newEntry, err := ae.AddQueueEntry(r.Context(), &entry)
 		if err != nil {
+			var p *pq.Error
+			if errors.As(err, &p) {
+				l.Warnw("attempted queue sign up with already existing entry", "err", err)
+				return StatusError{
+					http.StatusConflict,
+					"Don't get greedy! You can only be on the queue once at a time.",
+				}
+			}
 			l.Errorw("failed to insert queue entry", "err", err)
 			return err
 		}
@@ -721,7 +730,7 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) E {
 			l.Errorw("failed to get queue entries for user")
 		}
 
-		if entry.Removed && len(entries) > 0 {
+		if entry.Active.Valid && entry.Active.Bool && len(entries) > 0 {
 			l.Warnw("attempted to pin queue entry with student on queue")
 			return StatusError{
 				http.StatusConflict,
