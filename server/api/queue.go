@@ -728,9 +728,10 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) E {
 		entries, err := pb.GetActiveQueueEntriesForUser(r.Context(), q.ID, entry.Email)
 		if err != nil {
 			l.Errorw("failed to get queue entries for user")
+			return err
 		}
 
-		if entry.Active.Valid && entry.Active.Bool && len(entries) > 0 {
+		if !entry.Active.Valid && len(entries) > 0 {
 			l.Warnw("attempted to pin queue entry with student on queue")
 			return StatusError{
 				http.StatusConflict,
