@@ -6,7 +6,13 @@
 		:disabled="
 			appointmentSlot.scheduledTime
 				.clone()
-				.add(admin ? appointmentSlot.duration : 0, 'minutes') < time
+				.add(admin ? appointmentSlot.duration : 0, 'minutes') < time ||
+				(!admin &&
+					appointmentSlot.filled &&
+					!(
+						$root.$data.userInfo.email !== undefined &&
+						appointmentSlot.studentEmail === $root.$data.userInfo.email
+					))
 		"
 		@mouseover="$emit('hover', true)"
 		@mouseleave="$emit('hover', false)"
