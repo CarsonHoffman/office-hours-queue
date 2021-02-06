@@ -114,6 +114,15 @@ func (s *Server) UpdateCourse(ctx context.Context, course ksuid.KSUID, shortName
 	return err
 }
 
+func (s *Server) DeleteCourse(ctx context.Context, course ksuid.KSUID) error {
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
+		"DELETE FROM courses WHERE id=$1",
+		course,
+	)
+	return err
+}
+
 func (s *Server) AddQueue(ctx context.Context, course ksuid.KSUID, queue *api.Queue) (*api.Queue, error) {
 	tx := getTransaction(ctx)
 	id := ksuid.New()

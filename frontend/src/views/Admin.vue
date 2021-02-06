@@ -21,6 +21,14 @@
 					</div>
 					<div class="level-right">
 						<div class="level-item">
+							<b-tooltip label="Add Queue">
+								<button class="button is-text" @click="addQueue(i)">
+									<span class="icon"
+										><font-awesome-icon icon="plus"
+									/></span></button
+							></b-tooltip>
+						</div>
+						<div class="level-item">
 							<b-tooltip label="Edit Course">
 								<button class="button is-text" @click="editCourse(i)">
 									<span class="icon"
@@ -29,10 +37,10 @@
 							></b-tooltip>
 						</div>
 						<div class="level-item">
-							<b-tooltip label="Add Queue">
-								<button class="button is-text" @click="addQueue(i)">
+							<b-tooltip label="Delete Course">
+								<button class="button is-text" @click="deleteCourse(i)">
 									<span class="icon"
-										><font-awesome-icon icon="plus"
+										><font-awesome-icon icon="trash-alt"
 									/></span></button
 							></b-tooltip>
 						</div>
@@ -41,7 +49,7 @@
 			</div>
 			<div class="panel-block" v-for="queue in course.queues" :key="queue.id">
 				<button class="button is-text" @click="deleteQueue(queue)">
-					<font-awesome-icon icon="times" />
+					<font-awesome-icon icon="trash-alt" />
 				</button>
 				<span class="panel-icon">
 					<font-awesome-icon
@@ -69,7 +77,7 @@ import {
 	faPlus,
 	faHandPaper,
 	faCalendarAlt,
-	faTimes,
+	faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import Course from '@/types/Course';
 import Queue from '@/types/Queue';
@@ -77,7 +85,7 @@ import CourseEdit from '@/components/admin/CourseEdit.vue';
 import QueueAdd from '@/components/admin/QueueAdd.vue';
 import ErrorDialog from '@/util/ErrorDialog';
 
-library.add(faEdit, faPlus, faHandPaper, faCalendarAlt, faTimes);
+library.add(faEdit, faPlus, faHandPaper, faCalendarAlt, faTrashAlt);
 
 @Component
 export default class AdminPage extends Vue {
@@ -166,6 +174,25 @@ export default class AdminPage extends Vue {
 					trapFocus: true,
 				});
 			});
+	}
+
+	deleteCourse(index: number) {
+		const course = this.courses[index];
+		this.$buefy.dialog.confirm({
+			type: 'is-danger',
+			title: `Delete Course`,
+			message: `Are you sure you want to delete ${course.shortName}? This will also delete all associated queues. <b>There is no undo.</b>`,
+			onConfirm: () => {
+				fetch(process.env.BASE_URL + `api/courses/${course.id}`, {
+					method: 'DELETE',
+				}).then((res) => {
+					if (res.status !== 204) {
+						return ErrorDialog(res);
+					}
+					location.reload();
+				});
+			},
+		});
 	}
 
 	addQueue(index: number) {

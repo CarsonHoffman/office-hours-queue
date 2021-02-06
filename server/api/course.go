@@ -290,6 +290,33 @@ func (s *Server) UpdateCourse(uc updateCourse) E {
 	}
 }
 
+type deleteCourse interface {
+	DeleteCourse(ctx context.Context, course ksuid.KSUID) error
+}
+
+func (s *Server) DeleteCourse(dc deleteCourse) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		course := r.Context().Value(courseContextKey).(*Course)
+
+		err := dc.DeleteCourse(r.Context(), course.ID)
+		if err != nil {
+			s.logger.Errorw("failed to delete course",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"email", r.Context().Value(emailContextKey).(string),
+				"err", err,
+			)
+			return err
+		}
+
+		s.logger.Infow("deleted course",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"course_id", course.ID,
+			"email", r.Context().Value(emailContextKey).(string),
+		)
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
 const defaultQueueSchedule = "cccccccccccccccccccccccccccccccccccccccccccccccc"
 
 var defaultAppointmentSchedule = &AppointmentSchedule{
