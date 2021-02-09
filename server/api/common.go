@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -27,6 +28,15 @@ func (e E) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := e(w, r)
 	if err != nil {
 		*(r.Context().Value(RequestErrorContextKey).(*error)) = err
+		if errors.Is(err, context.Canceled) {
+			// Custom nginx response code indicating client close.
+			// The client won't actually receive this (since they
+			// closed), but it'll help internal bookkeeping, like
+			// in metrics (rather than reporting a 500).
+			w.WriteHeader(499)
+			return
+		}
+
 		m := struct {
 			Message string `json:"message"`
 		}{}
