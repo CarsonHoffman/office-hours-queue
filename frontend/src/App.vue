@@ -12,14 +12,26 @@
 					</div>
 				</div>
 				<div class="navbar-end">
-					<div
-						class="navbar-item"
-						v-if="
-							$root.$data.loggedIn &&
-								($root.$data.userInfo.site_admin ||
-									$root.$data.userInfo.admin_courses.length > 0)
-						"
-					>
+					<div class="navbar-item" v-if="admin">
+						<b-tooltip class="is-left" label="Student View">
+							<font-awesome-icon
+								class="clickable-icon"
+								icon="user-graduate"
+								size="2x"
+								@click="setStudentView(true)"
+						/></b-tooltip>
+					</div>
+					<div class="navbar-item" v-if="studentView">
+						<b-tooltip class="is-left" label="Exit Student View">
+							<font-awesome-icon
+								class="clickable-icon"
+								icon="user-shield"
+								size="2x"
+								@click="setStudentView(false)"
+							/>
+						</b-tooltip>
+					</div>
+					<div class="navbar-item" v-if="admin">
 						<router-link to="/admin" class="no-link-color">
 							<font-awesome-icon icon="user-shield" size="2x" />
 						</router-link>
@@ -101,7 +113,7 @@
 									></b-menu-item
 									><font-awesome-icon
 										:icon="[course.favorite ? 'fas' : 'far', 'star']"
-										class="course-favorite"
+										class="clickable-icon course-favorite"
 										:class="{
 											'white-icon': course.queues.some((q) =>
 												$route.path.includes(q.id)
@@ -117,6 +129,7 @@
 						<transition name="fade" mode="out-in">
 							<router-view
 								:key="$route.fullPath"
+								:studentView="studentView"
 								@disconnected="restart"
 							></router-view>
 						</transition>
@@ -138,6 +151,7 @@ import {
 	faSignOutAlt,
 	faUserShield,
 	faStar as solidStar,
+	faUserGraduate,
 } from '@fortawesome/free-solid-svg-icons';
 import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
@@ -148,12 +162,14 @@ library.add(
 	faUserShield,
 	faGithub,
 	solidStar,
-	regularStar
+	regularStar,
+	faUserGraduate
 );
 
 @Component
 export default class App extends Vue {
 	@Prop() fetchedCourses = false;
+	studentView = false;
 
 	created() {
 		if ('Notification' in window) {
@@ -180,6 +196,20 @@ export default class App extends Vue {
 				}
 				return a.id < b.id ? -1 : 1;
 			});
+	}
+
+	get admin() {
+		return (
+			!this.studentView &&
+			this.$root.$data.loggedIn &&
+			(this.$root.$data.userInfo.site_admin ||
+				this.$root.$data.userInfo.admin_courses.length > 0)
+		);
+	}
+
+	setStudentView(studentView: boolean) {
+		this.studentView = studentView;
+		this.$root.$data.studentView = studentView;
 	}
 
 	// Drop all courses and authorization information and re-start
@@ -319,13 +349,16 @@ $colors: (
 	flex-grow: 1;
 }
 
+.clickable-icon {
+	pointer-events: auto;
+	cursor: pointer;
+}
+
 .course-favorite {
 	position: absolute;
 	right: 0;
 	margin-right: 0.6em;
 	margin-top: 0.6em;
-	pointer-events: auto;
-	cursor: pointer;
 }
 
 .white-icon {

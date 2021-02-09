@@ -32,6 +32,14 @@ export default class OrderedQueue extends Queue {
 		document.title = `${this.course.shortName} Office Hours (${this.entries.length})`;
 	}
 
+	get admin(): boolean {
+		return (
+			!g.studentView &&
+			g.$data.userInfo.admin_courses !== undefined &&
+			g.$data.userInfo.admin_courses.includes(this.course.id)
+		);
+	}
+
 	public handleWSMessage(type: string, data: any, ws: WebSocket) {
 		super.handleWSMessage(type, data, ws);
 
@@ -44,10 +52,7 @@ export default class OrderedQueue extends Queue {
 					return;
 				}
 
-				if (
-					g.$data.userInfo.admin_courses !== undefined &&
-					g.$data.userInfo.admin_courses.includes(this.course.id)
-				) {
+				if (this.admin) {
 					Toast.open({
 						duration: 2000,
 						message: `${data.email} joined the queue!`,
@@ -68,6 +73,7 @@ export default class OrderedQueue extends Queue {
 			case 'ENTRY_REMOVE': {
 				const originalEntry = this.entries.find((e) => e.id === data.id);
 				if (
+					this.admin &&
 					data.removed_by !== undefined &&
 					data.removed_by === g.$data.userInfo.email
 				) {
@@ -173,7 +179,7 @@ export default class OrderedQueue extends Queue {
 				this.entries = [];
 				this.stack.unshift(...removed);
 				this.sortStack();
-				if (data !== null) {
+				if (this.admin && data !== null) {
 					Toast.open({
 						duration: 60000,
 						message: `${data} cleared the queue!`,

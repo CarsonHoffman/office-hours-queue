@@ -64,5 +64,6 @@ export default new Vue({
 		userInfoLoaded: false,
 		loggedIn: false,
 		userInfo: {},
+		studentView: false,
 	},
 }).$mount('#app');

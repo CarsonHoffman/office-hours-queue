@@ -72,6 +72,8 @@ library.add(faCog);
 	},
 })
 export default class QueuePage extends Vue {
+	@Prop({ required: true }) studentView!: boolean;
+
 	found = false;
 	loaded = false;
 	ws!: WebSocket;
@@ -157,6 +159,7 @@ export default class QueuePage extends Vue {
 
 	get admin() {
 		return (
+			!this.studentView &&
 			this.$root.$data.userInfo !== undefined &&
 			this.$root.$data.userInfo.admin_courses !== undefined &&
 			this.$root.$data.userInfo.admin_courses.includes(this.queue.course.id)

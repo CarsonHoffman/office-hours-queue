@@ -212,7 +212,11 @@ export default class QueueEntryDisplay extends Vue {
 	@Prop({ required: true }) time!: Moment;
 
 	get anonymous() {
-		return this.entry.name === undefined || this.entry.name === '';
+		return !(
+			this.admin ||
+			(this.$root.$data.userInfo.email !== undefined &&
+				this.entry.email === this.$root.$data.userInfo.email)
+		);
 	}
 
 	get name() {
