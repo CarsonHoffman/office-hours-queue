@@ -9,6 +9,8 @@ export default class Course {
 
 	public readonly queues: Queue[] = [];
 
+	public favorite = false;
+
 	constructor(data: { [index: string]: any }) {
 		this.id = data['id'];
 		this.shortName = data['short_name'];

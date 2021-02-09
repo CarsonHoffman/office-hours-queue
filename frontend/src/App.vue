@@ -67,8 +67,9 @@
 					<div class="column is-one-fifth">
 						<b-menu class="sticky" :activable="false">
 							<b-menu-list label="Courses">
-								<span v-for="course in courses" :key="course.id">
+								<div class="course" v-for="course in courses" :key="course.id">
 									<b-menu-item
+										class="course-item"
 										:label="course.shortName"
 										:active="
 											course.queues.some((q) => $route.path.includes(q.id))
@@ -79,6 +80,7 @@
 										v-if="course.queues.length > 1"
 									>
 										<b-menu-item
+											class="course-item"
 											v-for="queue in course.queues"
 											:key="queue.id"
 											tag="router-link"
@@ -88,6 +90,7 @@
 										></b-menu-item
 									></b-menu-item>
 									<b-menu-item
+										class="course-item"
 										:label="course.shortName"
 										:active="
 											course.queues.some((q) => $route.path.includes(q.id))
@@ -96,7 +99,17 @@
 										:to="'/queues/' + course.queues[0].id"
 										v-else
 									></b-menu-item
-								></span>
+									><font-awesome-icon
+										:icon="[course.favorite ? 'fas' : 'far', 'star']"
+										class="course-favorite"
+										:class="{
+											'white-icon': course.queues.some((q) =>
+												$route.path.includes(q.id)
+											),
+										}"
+										@click="toggleFavorite(course)"
+									/>
+								</div>
 							</b-menu-list>
 						</b-menu>
 					</div>
@@ -124,10 +137,19 @@ import {
 	faSignInAlt,
 	faSignOutAlt,
 	faUserShield,
+	faStar as solidStar,
 } from '@fortawesome/free-solid-svg-icons';
+import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
 
-library.add(faSignInAlt, faSignOutAlt, faUserShield, faGithub);
+library.add(
+	faSignInAlt,
+	faSignOutAlt,
+	faUserShield,
+	faGithub,
+	solidStar,
+	regularStar
+);
 
 @Component
 export default class App extends Vue {
@@ -150,9 +172,14 @@ export default class App extends Vue {
 	}
 
 	get courses() {
-		return Object.values(this.$root.$data.courses).filter(
-			(c: Course) => c.queues.length > 0
-		);
+		return Object.values(this.$root.$data.courses)
+			.filter((c: Course) => c.queues.length > 0)
+			.sort((a: Course, b: Course) => {
+				if (a.favorite !== b.favorite) {
+					return a.favorite ? -1 : 1;
+				}
+				return a.id < b.id ? -1 : 1;
+			});
 	}
 
 	// Drop all courses and authorization information and re-start
@@ -172,6 +199,8 @@ export default class App extends Vue {
 			.then((data) => {
 				data.map((c: any) => {
 					const course = new Course(c);
+					course.favorite =
+						localStorage.getItem('favoriteCourses-' + course.id) !== null;
 					Vue.set(this.$root.$data.courses, c.id, course);
 					for (const q of course.queues) {
 						Vue.set(this.$root.$data.queues, q.id, q);
@@ -193,6 +222,16 @@ export default class App extends Vue {
 				Vue.set(this.$root.$data, 'userInfo', data);
 			})
 			.catch((p) => (this.$root.$data.userInfoLoaded = true));
+	}
+
+	toggleFavorite(c: Course) {
+		const original = c.favorite;
+		if (original) {
+			localStorage.removeItem('favoriteCourses-' + c.id);
+		} else {
+			localStorage.setItem('favoriteCourses-' + c.id, 'favorite');
+		}
+		c.favorite = !original;
 	}
 }
 </script>
@@ -269,5 +308,27 @@ $colors: (
 		position: sticky;
 		top: 1.5em;
 	}
+}
+
+.course {
+	display: flex;
+	align-items: start;
+}
+
+.course-item {
+	flex-grow: 1;
+}
+
+.course-favorite {
+	position: absolute;
+	right: 0;
+	margin-right: 0.6em;
+	margin-top: 0.6em;
+	pointer-events: auto;
+	cursor: pointer;
+}
+
+.white-icon {
+	color: white;
 }
 </style>
