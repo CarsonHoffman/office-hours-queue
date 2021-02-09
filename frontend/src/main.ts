@@ -6,6 +6,7 @@ import '@creativebulma/bulma-tooltip/dist/bulma-tooltip.min.css';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import Course from './types/Course';
 import Queue from './types/Queue';
+import moment from 'moment-timezone';
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 
@@ -50,6 +51,9 @@ Vue.use(Buefy, {
 });
 
 Vue.config.productionTip = false;
+
+moment.relativeTimeThreshold('m', 60);
+moment.relativeTimeThreshold('d', 24);
 
 export default new Vue({
 	router,
