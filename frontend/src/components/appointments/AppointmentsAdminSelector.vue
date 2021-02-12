@@ -26,113 +26,125 @@
 		</div>
 		<div class="column is-one-third">
 			<div class="box" style="height: 100%; overflow-x: hidden">
-				<p class="title is-5" v-if="selectedAppointment === null">
-					Select an appointment!
-				</p>
-				<div v-else>
-					<div v-if="selectedAppointment.filled">
-						<p class="title is-5">
-							Appointment at
-							{{ selectedAppointment.scheduledTime.format('LT') }}
-						</p>
-						<div class="block">
-							<p v-if="selectedAppointment.studentEmail === undefined">
-								No student yet!
+				<span :class="{ past: selectedAppointmentInPast }">
+					<p class="title is-5" v-if="selectedAppointment === null">
+						Select an appointment!
+					</p>
+					<div v-else>
+						<div v-if="selectedAppointment.filled">
+							<p class="title is-5">
+								Appointment at
+								{{ selectedAppointment.scheduledTime.format('LT') }}
 							</p>
-							<span v-else>
+							<div class="block">
+								<p v-if="selectedAppointment.studentEmail === undefined">
+									No student yet!
+								</p>
+								<span v-else>
+									<div class="level icon-row is-mobile">
+										<div class="level-left">
+											<font-awesome-icon
+												icon="signature"
+												class="mr-2 level-item"
+												fixed-width
+											/>
+											<strong class="level-item stay-in-container">{{
+												selectedAppointment.name
+											}}</strong>
+										</div>
+									</div>
+									<div class="level icon-row is-mobile">
+										<div class="level-left">
+											<font-awesome-icon
+												icon="at"
+												class="mr-2 level-item"
+												fixed-width
+											/>
+											<span class="level-item stay-in-container">{{
+												selectedAppointment.studentEmail
+											}}</span>
+										</div>
+									</div>
+									<div class="level icon-row is-mobile">
+										<div class="level-left">
+											<font-awesome-icon
+												icon="question"
+												class="mr-2 level-item"
+												fixed-width
+											/>
+											<span class="level-item stay-in-container">{{
+												selectedAppointment.description
+											}}</span>
+										</div>
+									</div>
+									<div class="level icon-row is-mobile">
+										<div class="level-left">
+											<font-awesome-icon
+												icon="link"
+												class="mr-2 level-item"
+												fixed-width
+											/>
+											<p
+												class="level-item link-in-container"
+												v-html="selectedAppointmentLocation"
+											></p>
+										</div></div
+								></span>
 								<div class="level icon-row is-mobile">
 									<div class="level-left">
 										<font-awesome-icon
-											icon="signature"
+											icon="chalkboard-teacher"
 											class="mr-2 level-item"
 											fixed-width
 										/>
 										<strong class="level-item stay-in-container">{{
-											selectedAppointment.name
+											selectedAppointment.staffEmail || '(unclaimed)'
 										}}</strong>
 									</div>
 								</div>
-								<div class="level icon-row is-mobile">
-									<div class="level-left">
-										<font-awesome-icon
-											icon="at"
-											class="mr-2 level-item"
-											fixed-width
-										/>
-										<span class="level-item stay-in-container">{{
-											selectedAppointment.studentEmail
-										}}</span>
-									</div>
-								</div>
-								<div class="level icon-row is-mobile">
-									<div class="level-left">
-										<font-awesome-icon
-											icon="question"
-											class="mr-2 level-item"
-											fixed-width
-										/>
-										<span class="level-item stay-in-container">{{
-											selectedAppointment.description
-										}}</span>
-									</div>
-								</div>
-								<div class="level icon-row is-mobile">
-									<div class="level-left">
-										<font-awesome-icon
-											icon="link"
-											class="mr-2 level-item"
-											fixed-width
-										/>
-										<p
-											class="level-item link-in-container"
-											v-html="selectedAppointmentLocation"
-										></p>
-									</div></div
-							></span>
-							<div class="level icon-row is-mobile">
-								<div class="level-left">
-									<font-awesome-icon
-										icon="chalkboard-teacher"
-										class="mr-2 level-item"
-										fixed-width
-									/>
-									<strong class="level-item stay-in-container">{{
-										selectedAppointment.staffEmail || '(unclaimed)'
-									}}</strong>
-								</div>
 							</div>
+							<span v-if="!selectedAppointmentInPast">
+								<button
+									class="button is-success"
+									v-if="selectedAppointment.staffEmail === undefined"
+									@click="claimTimeslot"
+								>
+									<span class="icon"
+										><font-awesome-icon icon="hand-paper"
+									/></span>
+									<span>Claim</span>
+								</button>
+								<button
+									class="button is-danger"
+									v-else-if="
+										selectedAppointment.staffEmail ===
+											$root.$data.userInfo.email
+									"
+									@click="unclaimAppointment"
+								>
+									<span class="icon"
+										><font-awesome-icon icon="calendar-times"
+									/></span>
+									<span>Unclaim</span>
+								</button></span
+							>
 						</div>
-						<button
-							class="button is-success"
-							v-if="selectedAppointment.staffEmail === undefined"
-							@click="claimTimeslot"
-						>
-							<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
-							<span>Claim</span>
-						</button>
-						<button
-							class="button is-danger"
-							v-else-if="
-								selectedAppointment.staffEmail === $root.$data.userInfo.email
-							"
-							@click="unclaimAppointment"
-						>
-							<span class="icon"
-								><font-awesome-icon icon="calendar-times"
-							/></span>
-							<span>Unclaim</span>
-						</button>
-					</div>
-					<div v-else>
-						<p class="title is-5">
-							Empty slot at {{ selectedAppointment.scheduledTime.format('LT') }}
-						</p>
-						<button class="button is-success" @click="claimTimeslot">
-							<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
-							<span>Claim</span>
-						</button>
-					</div>
-				</div>
+						<div v-else>
+							<p class="title is-5">
+								Empty slot at
+								{{ selectedAppointment.scheduledTime.format('LT') }}
+							</p>
+							<button
+								class="button is-success"
+								@click="claimTimeslot"
+								v-if="!selectedAppointmentInPast"
+							>
+								<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
+								<span>Claim</span>
+							</button>
+						</div>
+					</div></span
+				>
 			</div>
 		</div>
 	</div>
@@ -214,6 +226,15 @@ export default class AppointmentsAdminSelector extends Vue {
 		]!;
 	}
 
+	get selectedAppointmentInPast(): boolean {
+		return (
+			this.selectedAppointment !== null &&
+			this.selectedAppointment.scheduledTime
+				.clone()
+				.add(this.selectedAppointment.duration, 'minutes') < this.time
+		);
+	}
+
 	get selectedAppointmentLocation(): string {
 		if (
 			this.selectedAppointment === null ||
@@ -226,18 +247,6 @@ export default class AppointmentsAdminSelector extends Vue {
 		return linkifyStr((this.selectedAppointment as Appointment).location!, {
 			defaultProtocol: 'https',
 		});
-	}
-
-	@Watch('time')
-	onTimeUpdated() {
-		if (
-			this.selectedAppointment !== null &&
-			this.selectedAppointment.scheduledTime
-				.clone()
-				.add(this.selectedAppointment.duration, 'minutes') < this.time
-		) {
-			this.appointmentSelected(null, null);
-		}
 	}
 
 	claimTimeslot() {
@@ -325,6 +334,10 @@ export default class AppointmentsAdminSelector extends Vue {
 .appointments-display {
 	overflow-x: scroll;
 	white-space: nowrap;
+}
+
+.past {
+	opacity: 0.5;
 }
 
 .icon-row {

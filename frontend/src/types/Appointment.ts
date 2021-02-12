@@ -15,6 +15,14 @@ export class AppointmentSlot {
 		return false;
 	}
 
+	get filledByStudent() {
+		return false;
+	}
+
+	get filledByStaff() {
+		return false;
+	}
+
 	past(time: Moment) {
 		return this.scheduledTime < time;
 	}
@@ -43,5 +51,17 @@ export class Appointment extends AppointmentSlot {
 
 	get filled() {
 		return true;
+	}
+
+	get filledByStudent() {
+		// If this appointment exists and both the staff and student emails are
+		// undefined, it must be filled by a student (and we don't have permission
+		// to know who).
+		return this.studentEmail !== undefined || this.staffEmail === undefined;
+	}
+
+	get filledByStaff() {
+		// This isn't relevant for non-admins.
+		return this.staffEmail !== undefined;
 	}
 }

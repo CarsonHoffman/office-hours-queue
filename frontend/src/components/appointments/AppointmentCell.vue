@@ -4,15 +4,13 @@
 		:class="classes"
 		:style="'width: ' + cellWidth + 'em; height: ' + cellHeight + 'em'"
 		:disabled="
-			appointmentSlot.scheduledTime
-				.clone()
-				.add(admin ? appointmentSlot.duration : 0, 'minutes') < time ||
-				(!admin &&
-					appointmentSlot.filled &&
-					!(
-						$root.$data.userInfo.email !== undefined &&
-						appointmentSlot.studentEmail === $root.$data.userInfo.email
-					))
+			!admin &&
+				(appointmentSlot.scheduledTime.clone() < time ||
+					(appointmentSlot.filledByStudent &&
+						!(
+							$root.$data.userInfo.email !== undefined &&
+							appointmentSlot.studentEmail === $root.$data.userInfo.email
+						)))
 		"
 		@mouseover="$emit('hover', true)"
 		@mouseleave="$emit('hover', false)"
@@ -66,33 +64,24 @@ export default class AppointmentCell extends Vue {
 
 	get classes() {
 		if (this.admin) {
-			const filled = this.appointmentSlot.filled;
-			const takenByStaff =
-				filled &&
-				(this.appointmentSlot as Appointment).staffEmail !== undefined;
+			const takenByStudent = this.appointmentSlot.filledByStudent;
+			const takenByStaff = this.appointmentSlot.filledByStaff;
 			const takenByMe =
 				takenByStaff &&
 				(this.appointmentSlot as Appointment).staffEmail ===
 					this.$root.$data.userInfo.email;
 			return {
-				'is-danger': filled && !takenByStaff,
-				'is-warning': filled && takenByStaff && !takenByMe,
-				'is-success':
-					filled &&
-					takenByMe &&
-					(this.appointmentSlot as Appointment).studentEmail === undefined,
-				'is-primary':
-					filled &&
-					takenByMe &&
-					(this.appointmentSlot as Appointment).studentEmail !== undefined,
+				'is-danger': takenByStudent && !takenByStaff,
+				'is-warning': takenByStudent && takenByStaff && !takenByMe,
+				'is-success': !takenByStudent && takenByMe,
+				'is-primary': takenByStudent && takenByMe,
+				past:
+					this.appointmentSlot.scheduledTime
+						.clone()
+						.add(this.appointmentSlot.duration, 'minutes') < this.time,
 			};
 		}
-		const filled =
-			this.appointmentSlot.filled &&
-			!(
-				(this.appointmentSlot as Appointment).studentEmail === undefined &&
-				(this.appointmentSlot as Appointment).staffEmail !== undefined
-			);
+		const filled = this.appointmentSlot.filledByStudent;
 		const myAppointment =
 			filled &&
 			this.$root.$data.userInfo.email !== undefined &&
@@ -121,6 +110,10 @@ export default class AppointmentCell extends Vue {
 	display: block;
 	margin-bottom: 2px;
 	padding: 0;
+}
+
+.past {
+	opacity: 0.5;
 }
 
 .icon-row {
