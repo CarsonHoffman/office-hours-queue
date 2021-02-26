@@ -313,13 +313,31 @@ export default class AppointmentsSignUp extends Vue {
 				return ErrorDialog(res);
 			}
 
+			const startTime: Moment = this.selectedAppointment?.scheduledTime!;
+			const endTime: Moment = startTime
+				.clone()
+				.add(this.selectedAppointment?.duration, 'minutes');
+			const link = new URL('http://www.google.com/calendar/event');
+			link.searchParams.append('action', 'TEMPLATE');
+			link.searchParams.append(
+				'dates',
+				startTime.toISOString().replaceAll(/[-:\\.]/g, '') +
+					'/' +
+					endTime.toISOString().replaceAll(/[-:\\.]/g, '')
+			);
+			link.searchParams.append(
+				'text',
+				this.queue.course.shortName + ' Office Hours Appointment'
+			);
+			link.searchParams.append('location', this.location);
+
 			this.$buefy.dialog.alert({
 				title: 'Appointment Scheduled',
 				message: `Success, ${
 					this.$root.$data.userInfo.first_name
 				}—your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
 					'LT'
-				)}!`,
+				)}! <a href="${link}" target="_blank">Add this appointment to your Google calendar.</a>`,
 				type: 'is-success',
 				hasIcon: true,
 			});
