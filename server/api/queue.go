@@ -307,6 +307,7 @@ func (s *Server) QueueWebsocket() E {
 
 		go func() {
 			pingTicker := time.NewTicker(pingInterval)
+			defer pingTicker.Stop()
 			for {
 				var eventName string
 				select {
