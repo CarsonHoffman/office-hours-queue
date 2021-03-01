@@ -46,7 +46,7 @@
 				</button>
 				<button class="button is-success level-item" disabled="true" v-else>
 					<span class="icon"><font-awesome-icon icon="check"/></span>
-					<span>Signed up</span>
+					<span>Signed up at position #{{ this.myEntryIndex + 1 }}</span>
 				</button>
 				<p class="level-item" v-if="!$root.$data.loggedIn">
 					Log in to sign up!
@@ -112,16 +112,20 @@ export default class QueueSignup extends Vue {
 		);
 	}
 
-	get myEntry(): QueueEntry | null {
+	get myEntryIndex(): number {
 		if (this.$root.$data.userInfo.email === undefined) {
-			return null;
+			return -1;
 		}
 
-		return (
-			this.queue.entries.find(
-				(e) => e.email === this.$root.$data.userInfo.email
-			) || null
+		return this.queue.entries.findIndex(
+			(e) => e.email === this.$root.$data.userInfo.email
 		);
+	}
+
+	get myEntry(): QueueEntry | null {
+		return this.myEntryIndex !== -1
+			? this.queue.entries[this.myEntryIndex]
+			: null;
 	}
 
 	get myEntryModified() {
