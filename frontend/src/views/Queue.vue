@@ -113,10 +113,7 @@ export default class QueuePage extends Vue {
 		this.ws = new WebSocket(url.href);
 
 		this.ws.onopen = () => {
-			this.queue
-				.pullQueueInfo(this.time)
-				.then(() => (this.loaded = true))
-				.then(() => console.log(this.queue));
+			this.queue.pullQueueInfo(this.time).then(() => (this.loaded = true));
 			/* this.queue */
 			/*   .pullQueueInfo() */
 			/*   .then(() => setTimeout(() => (this.loaded = true), 5000)); */
