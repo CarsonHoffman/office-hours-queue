@@ -1,13 +1,19 @@
 <template>
 	<div class="box" v-if="found">
-		<button
-			class="button is-light settings-button"
-			@click="openManageDialog"
-			v-if="admin"
-		>
-			<span class="icon"><font-awesome-icon icon="cog"/></span>
-			<span>Manage Queue</span>
-		</button>
+		<div class="buttons top-right" v-if="admin">
+			<b-tooltip label="Number of active connections to this queue">
+				<button class="button is-white no-hover" v-if="queue !== null">
+					<span class="icon"><font-awesome-icon icon="ethernet"/></span>
+					<span
+						><b>{{ queue.websocketConnections }}</b></span
+					>
+				</button></b-tooltip
+			>
+			<button class="button is-light" @click="openManageDialog">
+				<span class="icon"><font-awesome-icon icon="cog"/></span>
+				<span>Manage Queue</span>
+			</button>
+		</div>
 		<section
 			v-if="queue !== null && queue.announcements.length > 0"
 			class="section"
@@ -60,9 +66,9 @@ import QueueManage from '@/components/admin/QueueManage.vue';
 import ErrorDialog from '@/util/ErrorDialog';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faEthernet } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faCog);
+library.add(faCog, faEthernet);
 
 @Component({
 	components: {
@@ -244,9 +250,13 @@ export default class QueuePage extends Vue {
 </script>
 
 <style scoped>
-.settings-button {
+.top-right {
 	position: absolute;
 	top: 25px;
 	right: 10px;
+}
+
+.no-hover {
+	pointer-events: none;
 }
 </style>

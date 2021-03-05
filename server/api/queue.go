@@ -262,9 +262,18 @@ func (s *Server) QueueWebsocket() E {
 			return err
 		}
 
-		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Inc()
-
 		events := s.ps.Sub(topics...)
+
+		s.websocketCountLock.Lock()
+
+		ws := s.websocketCount[q.ID]
+		ws++
+		s.websocketCount[q.ID] = ws
+
+		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(ws))
+		s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+
+		s.websocketCountLock.Unlock()
 
 		if email != "" {
 			s.logger.Infow("websocket connection opened",
@@ -293,7 +302,17 @@ func (s *Server) QueueWebsocket() E {
 					)
 					conn.Close()
 
-					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Dec()
+					s.websocketCountLock.Lock()
+
+					ws := s.websocketCount[q.ID]
+					ws--
+					s.websocketCount[q.ID] = ws
+
+					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(s.websocketCount[q.ID]))
+					s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+
+					s.websocketCountLock.Unlock()
+
 					if email != "" {
 						s.logger.Infow("websocket connection closed",
 							"queue_id", q.ID,

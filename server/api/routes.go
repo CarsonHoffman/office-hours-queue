@@ -5,11 +5,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/antonlindstrom/pgstore"
 	"github.com/cskr/pubsub"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/sessions"
+	"github.com/segmentio/ksuid"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -23,6 +25,10 @@ type Server struct {
 	oauthConfig     oauth2.Config
 	baseURL         string
 	metricsPassword string
+
+	// The number of WebSockets connected to each queue.
+	websocketCount     map[ksuid.KSUID]int
+	websocketCountLock sync.Mutex
 }
 
 // All of the abilities that a complete backing
@@ -89,6 +95,7 @@ type queueStore interface {
 
 func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthConfig oauth2.Config) *Server {
 	var s Server
+	s.websocketCount = make(map[ksuid.KSUID]int)
 	s.logger = logger
 
 	key, err := ioutil.ReadFile(os.Getenv("QUEUE_SESSIONS_KEY_FILE"))

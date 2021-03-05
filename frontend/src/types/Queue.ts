@@ -21,6 +21,8 @@ export default class Queue {
 
 	public course!: Course;
 
+	public websocketConnections = 0;
+
 	constructor(data: { [index: string]: any }, course: Course) {
 		this.id = data['id'];
 		this.type = data['type'];
@@ -89,6 +91,11 @@ export default class Queue {
 					hasIcon: true,
 				});
 				setTimeout(() => location.reload(), delay);
+				break;
+			}
+			case 'QUEUE_CONNECTIONS_UPDATE': {
+				this.websocketConnections = data;
+				break;
 			}
 		}
 	}
