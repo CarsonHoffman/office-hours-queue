@@ -256,22 +256,32 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public getHalfHour(time: Moment): number {
+		// This represents the half hour with regard to the normal
+		// 48-half-hour schedule, not necessarily the index in the day
+		// (looking at you, daylight savings)
 		return Math.floor(
-			time.clone().diff(
+			(time
+				.clone()
+				.tz('America/New_York')
+				.hour() *
+				60 +
 				time
 					.clone()
 					.tz('America/New_York')
-					.startOf('day'),
-				'minutes'
-			) / 30
+					.minute()) /
+				30
 		);
 	}
 
 	public halfHourToTime(halfHour: number): Moment {
+		// We need to calculate the hour manually instead of just using minutes
+		// for daylight savings purposes (if the half hour was usually at 10 AM,
+		// we do not want it to occur at 9 AM or 11 AM)
 		return moment()
 			.tz('America/New_York')
 			.startOf('day')
-			.add(halfHour * 30, 'minutes');
+			.hour(Math.floor(halfHour / 2))
+			.minute((halfHour % 2) * 30);
 	}
 
 	public getOpenHalfHours(): number[] {

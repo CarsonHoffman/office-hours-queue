@@ -20,7 +20,13 @@ export class AppointmentsTimeslot {
 	) {
 		this.timeslot = timeslot;
 		this.duration = duration;
-		this.time = startOfDay.clone().add(timeslot * duration, 'minutes');
+		// We need to calculate the hour manually instead of just using minutes
+		// for daylight savings purposes (if the appointment was usually at 10 AM,
+		// we do not want it to occur at 9 AM or 11 AM)
+		this.time = startOfDay
+			.clone()
+			.hour(Math.floor((timeslot * duration) / 60))
+			.minute((timeslot * duration) % 60);
 		this.slots = new Array(total);
 		this.slots.fill(new AppointmentSlot(this.time, timeslot, duration));
 	}
