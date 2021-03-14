@@ -136,6 +136,14 @@ func WeekdayBounds(day int) (start time.Time, end time.Time) {
 	return
 }
 
+// TimeslotToTime converts an appointment timeslot number to its time.
+// Takes daylight savings time into account (i.e. it gives the "normal" time,
+// rather than just the index of the timeslot in the day in terms of minutes)
+func TimeslotToTime(day, timeslot, duration int) time.Time {
+	start, _ := WeekdayBounds(day)
+	return time.Date(start.Year(), start.Month(), start.Day(), (timeslot*duration)/60, (timeslot*duration)%60, 0, 0, start.Local().Location())
+}
+
 // BigTime returns (roughly) the maximum time representable by PostgreSQL.
 // It might be off by a bit. They can deal with that in 294276.
 func BigTime() time.Time {

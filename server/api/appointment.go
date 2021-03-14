@@ -520,7 +520,7 @@ func (s *Server) SignupForAppointment(sa signupForAppointment) E {
 		// Force some values that were previously validated by middleware
 		appointment.Queue = q.ID
 		appointment.Timeslot = timeslot
-		appointment.ScheduledTime = start.Add(time.Duration(timeslot*schedule.Duration) * time.Minute)
+		appointment.ScheduledTime = TimeslotToTime(day, timeslot, schedule.Duration)
 		appointment.Duration = schedule.Duration
 		appointment.StudentEmail = &email
 
@@ -650,8 +650,14 @@ func (s *Server) UpdateAppointment(ua updateAppointment) E {
 
 		// We're changing the appointment time. Not so simple.
 		day := int(time.Now().Local().Weekday())
+		schedule, err := ua.GetAppointmentScheduleForDay(r.Context(), a.Queue, day)
+		if err != nil {
+			l.Errorw("failed to get appointment schedule", "err", err)
+			return err
+		}
+
 		start, end := WeekdayBounds(day)
-		newTime := start.Add(time.Duration(a.Duration*newAppointment.Timeslot) * time.Minute)
+		newTime := TimeslotToTime(day, newAppointment.Timeslot, schedule.Duration)
 		newAppointment.ScheduledTime = newTime
 
 		// If the new time is in the past, stop.
@@ -661,12 +667,6 @@ func (s *Server) UpdateAppointment(ua updateAppointment) E {
 				http.StatusBadRequest,
 				"You can't change your appointment to the past! Let us know if you have a time machine.",
 			}
-		}
-
-		schedule, err := ua.GetAppointmentScheduleForDay(r.Context(), a.Queue, day)
-		if err != nil {
-			l.Errorw("failed to get appointment schedule", "err", err)
-			return err
 		}
 
 		if newAppointment.Timeslot > len(schedule.Schedule) {

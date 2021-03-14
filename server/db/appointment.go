@@ -141,7 +141,7 @@ func (s *Server) ClaimTimeslot(ctx context.Context, queue ksuid.KSUID, day, time
 	// There's room for another appointment at the current timeslot.
 	// Let's claim it.
 	id := ksuid.New()
-	appointmentTime := from.Add(time.Duration(timeslot*schedule.Duration) * time.Minute)
+	appointmentTime := api.TimeslotToTime(day, timeslot, schedule.Duration)
 	var a api.AppointmentSlot
 	err = tx.GetContext(ctx, &a,
 		"INSERT INTO appointment_slots (id, queue, staff_email, scheduled_time, timeslot, duration) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
