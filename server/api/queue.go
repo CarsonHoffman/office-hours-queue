@@ -254,12 +254,14 @@ func (s *Server) QueueWebsocket() E {
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			s.logger.Errorw("failed to upgrade to websocket connection",
+			s.logger.Warnw("failed to upgrade to websocket connection",
 				"queue_id", q.ID,
 				"email", email,
 				"err", err,
 			)
-			return err
+			return StatusError{
+				status: http.StatusBadRequest,
+			}
 		}
 
 		events := s.ps.Sub(topics...)
