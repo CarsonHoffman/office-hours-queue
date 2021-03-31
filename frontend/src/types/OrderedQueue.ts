@@ -29,7 +29,17 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public setDocumentTitle() {
-		document.title = `${this.course.shortName} Office Hours (${this.entries.length})`;
+		let title = '';
+		if (this.entries.length > 0) {
+			title += '(';
+			const pos = this.entryIndex(g.$data.userInfo.email);
+			if (pos !== -1) {
+				title += `#${pos + 1} of `;
+			}
+			title += `${this.entries.length}) `;
+		}
+		title += `${this.course.shortName} Office Hours`;
+		document.title = title;
 	}
 
 	get admin(): boolean {
@@ -326,5 +336,18 @@ export default class OrderedQueue extends Queue {
 		}
 
 		return restOfDay[restOfDay.length - 1] + 1;
+	}
+
+	public entryIndex(email: string | undefined): number {
+		if (email === undefined) {
+			return -1;
+		}
+
+		return this.entries.findIndex((e) => e.email === email);
+	}
+
+	public entry(email: string | undefined): QueueEntry | null {
+		const i = this.entryIndex(email);
+		return i !== -1 ? this.entries[i] : null;
 	}
 }

@@ -113,19 +113,11 @@ export default class QueueSignup extends Vue {
 	}
 
 	get myEntryIndex(): number {
-		if (this.$root.$data.userInfo.email === undefined) {
-			return -1;
-		}
-
-		return this.queue.entries.findIndex(
-			(e) => e.email === this.$root.$data.userInfo.email
-		);
+		return this.queue.entryIndex(this.$root.$data.userInfo.email);
 	}
 
 	get myEntry(): QueueEntry | null {
-		return this.myEntryIndex !== -1
-			? this.queue.entries[this.myEntryIndex]
-			: null;
+		return this.queue.entry(this.$root.$data.userInfo.email);
 	}
 
 	get myEntryModified() {
