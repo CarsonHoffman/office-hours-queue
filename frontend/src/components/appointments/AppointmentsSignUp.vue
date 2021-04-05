@@ -77,7 +77,7 @@
 							class="button is-success level-item"
 							:class="{ 'is-loading': signUpRequstRunning }"
 							:disabled="!canSignUp"
-							v-else-if="myAppointment === undefined"
+							v-else-if="myAppointment === null"
 							@click="signUp"
 						>
 							<span class="icon"
@@ -107,7 +107,7 @@
 						<button
 							class="button is-danger level-item"
 							:class="{ 'is-loading': cancelAppointmentRequestRunning }"
-							v-if="myAppointment !== undefined"
+							v-if="myAppointment !== null"
 							@click="cancelAppointment"
 						>
 							<span class="icon"
@@ -204,7 +204,7 @@ export default class AppointmentsSignUp extends Vue {
 			this.selectedAppointment !== null &&
 			this.queue.schedule !== undefined &&
 			!(
-				this.myAppointment !== undefined &&
+				this.myAppointment !== null &&
 				this.myAppointment.timeslot === this.selectedAppointment.timeslot
 			) &&
 			this.queue.schedule.timeslots[this.selectedAppointment.timeslot].past(
@@ -217,10 +217,10 @@ export default class AppointmentsSignUp extends Vue {
 
 	@Watch('myAppointment', { immediate: true })
 	myAppointmentUpdated(
-		newAppointment: Appointment | undefined,
-		oldAppointment: Appointment | undefined
+		newAppointment: Appointment | null,
+		oldAppointment: Appointment | null
 	) {
-		if (newAppointment !== oldAppointment && newAppointment !== undefined) {
+		if (newAppointment !== oldAppointment && newAppointment !== null) {
 			this.description = newAppointment.description || '';
 			this.location = newAppointment.location || '';
 			this.appointmentSelected(
@@ -232,12 +232,12 @@ export default class AppointmentsSignUp extends Vue {
 		}
 	}
 
-	get myAppointment(): Appointment | undefined {
+	get myAppointment(): Appointment | null {
 		if (
 			this.$root.$data.userInfo.email === undefined ||
 			this.queue.schedule === undefined
 		) {
-			return undefined;
+			return null;
 		}
 
 		for (const timeslot of Object.values(this.queue.schedule.timeslots)) {
@@ -256,13 +256,13 @@ export default class AppointmentsSignUp extends Vue {
 			}
 		}
 
-		return undefined;
+		return null;
 	}
 
 	get myAppointmentModified() {
 		const a = this.myAppointment;
 		return (
-			a !== undefined &&
+			a !== null &&
 			(a.description !== this.description ||
 				a.location !== this.location ||
 				(this.selectedAppointment !== null &&
@@ -347,7 +347,7 @@ export default class AppointmentsSignUp extends Vue {
 	updateAppointmentRequestRunning = false;
 	updateAppointment() {
 		if (
-			this.myAppointment !== undefined &&
+			this.myAppointment !== null &&
 			this.selectedAppointment?.timeslot !== this.myAppointment.timeslot &&
 			this.myAppointment.scheduledTime.diff(this.time) < 0
 		) {
