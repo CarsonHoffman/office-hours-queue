@@ -406,7 +406,7 @@ ALTER TABLE ONLY public.queues
 --
 
 ALTER TABLE ONLY public.roster
-    ADD CONSTRAINT roster_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id);
+    ADD CONSTRAINT roster_queue_fkey FOREIGN KEY (queue) REFERENCES public.queues(id) ON DELETE CASCADE;
 
 
 --
