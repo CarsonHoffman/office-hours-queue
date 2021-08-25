@@ -22,14 +22,14 @@
 		</div>
 		<div class="field is-horizontal">
 			<div class="field-label">
-				<label class="label">Meeting Link</label>
+				<label class="label">Location/Meeting Link</label>
 			</div>
 			<div class="field-body">
 				<div class="field">
 					<div class="control has-icons-left">
 						<input class="input" v-model="location" type="text" />
 						<span class="icon is-small is-left">
-							<font-awesome-icon icon="link" />
+							<font-awesome-icon icon="map-marker" />
 						</span>
 					</div>
 				</div>

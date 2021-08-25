@@ -17,11 +17,11 @@
 		<!-- The !== false looks weird, but it's so that we still show
          the field before the queue information is loaded. -->
 		<div class="field" v-if="queue.enableLocationField !== false">
-			<label class="label">Meeting Link</label>
+			<label class="label">Location/Meeting Link</label>
 			<div class="control has-icons-left">
 				<input class="input" v-model="location" type="text" />
 				<span class="icon is-small is-left">
-					<font-awesome-icon icon="link" />
+					<font-awesome-icon icon="map-marker" />
 				</span>
 			</div>
 		</div>

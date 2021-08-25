@@ -208,7 +208,7 @@ export default class OrderedQueue extends Queue {
 				Dialog.alert({
 					title: `We Couldn't Find You!`,
 					message:
-						`A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your meeting link is still valid!` +
+						`A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your location is descriptive or your meeting link is still valid!` +
 						(this.prioritizeNew
 							? `<br><br><b>This didn't count as your first meeting of the day.</b>`
 							: ''),

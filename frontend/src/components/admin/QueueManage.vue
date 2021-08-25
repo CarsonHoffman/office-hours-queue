@@ -14,7 +14,7 @@
 				<p class="title">Queue Settings</p>
 				<div class="field">
 					<b-checkbox v-model="configuration['enable_location_field']"
-						>Allow students to specify meeting link</b-checkbox
+						>Allow students to specify location or meeting link</b-checkbox
 					>
 				</div>
 				<div class="field">
