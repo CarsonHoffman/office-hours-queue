@@ -72,9 +72,18 @@ import {
 	faUserPlus,
 	faCheck,
 	faEdit,
+	faMapMarker,
 } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faUser, faQuestion, faLink, faUserPlus, faCheck, faEdit);
+library.add(
+	faUser,
+	faQuestion,
+	faLink,
+	faUserPlus,
+	faCheck,
+	faEdit,
+	faMapMarker
+);
 
 @Component
 export default class QueueSignup extends Vue {

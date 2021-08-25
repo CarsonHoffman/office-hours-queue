@@ -144,6 +144,7 @@ import {
 	faCheck,
 	faUserClock,
 	faEdit,
+	faMapMarker,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -154,7 +155,8 @@ library.add(
 	faCalendarTimes,
 	faCheck,
 	faUserClock,
-	faEdit
+	faEdit,
+	faMapMarker
 );
 
 @Component({

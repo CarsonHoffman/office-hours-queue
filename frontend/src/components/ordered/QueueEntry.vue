@@ -186,6 +186,7 @@ import {
 	faEnvelope,
 	faHandsHelping,
 	faFrownOpen,
+	faMapMarker,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -200,7 +201,8 @@ library.add(
 	faThumbtack,
 	faEnvelope,
 	faHandsHelping,
-	faFrownOpen
+	faFrownOpen,
+	faMapMarker
 );
 
 @Component

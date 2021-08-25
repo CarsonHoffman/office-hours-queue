@@ -171,6 +171,7 @@ import {
 	faHandPaper,
 	faCalendarTimes,
 	faCog,
+	faMapMarker,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -181,7 +182,8 @@ library.add(
 	faChalkboardTeacher,
 	faHandPaper,
 	faCalendarTimes,
-	faCog
+	faCog,
+	faMapMarker
 );
 
 @Component({
