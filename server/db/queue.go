@@ -303,7 +303,7 @@ func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email 
 
 	var groupEntries int
 	err = tx.GetContext(ctx, &groupEntries,
-		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate WHERE t.email=$1 AND t.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email AND helped",
+		"SELECT COUNT(*) FROM queue_entries e JOIN teammates t ON e.email=t.teammate AND e.queue=t.queue WHERE t.email=$1 AND e.queue=$2 AND e.id>=$3 AND e.removed_by!=e.email AND helped",
 		email, queue, firstIDOfDay,
 	)
 	if err != nil {
