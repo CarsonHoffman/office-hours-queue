@@ -1096,6 +1096,12 @@ func (s *Server) SendMessage(sm sendMessage) E {
 			}
 		}
 
+		if message.Receiver == "<broadcast>" {
+			s.ps.Pub(WS("MESSAGE_CREATE", message), QueueTopicGeneric(q.ID))
+			l.Infow("broadcast to queue", "content", message.Content)
+			return s.sendResponse(http.StatusCreated, message, w, r)
+		}
+
 		newMessage, err := sm.SendMessage(r.Context(), q.ID, message.Content, email, message.Receiver)
 		if err != nil {
 			l.Errorw("failed to create message", "err", err)

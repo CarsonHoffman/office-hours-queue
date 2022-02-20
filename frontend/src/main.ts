@@ -26,6 +26,8 @@ import {
 	faCaretDown,
 	faCaretUp,
 	faUpload,
+	faEnvelopeOpenText,
+	faBullhorn,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -42,7 +44,9 @@ library.add(
 	faEyeSlash,
 	faCaretDown,
 	faCaretUp,
-	faUpload
+	faUpload,
+	faEnvelopeOpenText,
+	faBullhorn
 );
 
 Vue.use(Buefy, {

@@ -58,15 +58,15 @@ export default class Queue {
 				break;
 			}
 			case 'MESSAGE_CREATE': {
-				SendNotification(
-					`Message from ${this.course.shortName} Staff`,
-					data.content
-				);
+				const broadcast = data.receiver === '<broadcast>';
+				const title = `Message from ${this.course.shortName} Staff`;
+				SendNotification(title, data.content);
 				Dialog.alert({
-					title: 'Message from Staff',
+					title: title,
 					message: data.content,
 					type: 'is-warning',
 					hasIcon: true,
+					icon: broadcast ? 'bullhorn' : 'envelope-open-text',
 				});
 
 				break;

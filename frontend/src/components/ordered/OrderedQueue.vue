@@ -117,6 +117,10 @@
 						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
 						<span>Edit Schedule</span>
 					</button>
+					<button class="button is-warning" @click="broadcast">
+						<span class="icon"><font-awesome-icon icon="bullhorn"/></span>
+						<span>Broadcast Message to Queue</span>
+					</button>
 				</div>
 				<div class="block">
 					<h1 class="title">Sign Up</h1>
@@ -280,6 +284,26 @@ export default class OrderedQueueDisplay extends Vue {
 					trapFocus: true,
 				});
 			});
+	}
+
+	broadcast() {
+		this.$buefy.dialog.prompt({
+			message: `Broadcast message to all online users of queue`,
+			trapFocus: true,
+			onConfirm: (message) => {
+				fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/messages`, {
+					method: 'POST',
+					body: JSON.stringify({
+						receiver: '<broadcast>',
+						content: message,
+					}),
+				}).then((res) => {
+					if (res.status !== 201) {
+						return ErrorDialog(res);
+					}
+				});
+			},
+		});
 	}
 
 	downloadStackAsCSV() {
