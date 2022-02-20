@@ -27,8 +27,9 @@ type Server struct {
 	metricsPassword string
 
 	// The number of WebSockets connected to each queue.
-	websocketCount     map[ksuid.KSUID]int
-	websocketCountLock sync.Mutex
+	websocketCount        map[ksuid.KSUID]int
+	websocketCountByEmail map[ksuid.KSUID]map[string]int
+	websocketCountLock    sync.Mutex
 }
 
 // All of the abilities that a complete backing
@@ -96,6 +97,7 @@ type queueStore interface {
 func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthConfig oauth2.Config) *Server {
 	var s Server
 	s.websocketCount = make(map[ksuid.KSUID]int)
+	s.websocketCountByEmail = make(map[ksuid.KSUID]map[string]int)
 	s.logger = logger
 
 	key, err := ioutil.ReadFile(os.Getenv("QUEUE_SESSIONS_KEY_FILE"))

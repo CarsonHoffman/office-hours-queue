@@ -24,6 +24,20 @@ export default class OrderedQueue extends Queue {
 				(e: any) => new RemovedQueueEntry(e)
 			);
 			this.schedule = data['schedule'];
+			if (data.online !== undefined) {
+				data.online.forEach((email: string) => {
+					this.entries
+						.filter((e: QueueEntry) => e.email === email)
+						.forEach((e: QueueEntry) => {
+							e.online = true;
+						});
+					this.stack
+						.filter((e: QueueEntry) => e.email === email)
+						.forEach((e: QueueEntry) => {
+							e.online = true;
+						});
+				});
+			}
 			this.setDocumentTitle();
 		});
 	}
@@ -215,6 +229,22 @@ export default class OrderedQueue extends Queue {
 					hasIcon: true,
 					type: 'is-danger',
 				});
+				break;
+			}
+			case 'USER_STATUS_UPDATE': {
+				const email = data.email;
+				const online = data.status === 'online';
+				this.entries
+					.filter((e: QueueEntry) => e.email === email)
+					.forEach((e: QueueEntry) => {
+						e.online = online;
+					});
+				this.stack
+					.filter((e: QueueEntry) => e.email === email)
+					.forEach((e: QueueEntry) => {
+						e.online = online;
+					});
+				break;
 			}
 		}
 

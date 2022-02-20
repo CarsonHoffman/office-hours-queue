@@ -160,6 +160,28 @@
 					<font-awesome-icon icon="frown-open" size="3x" fixed-width />
 				</b-tooltip>
 			</figure>
+			<figure v-if="admin" class="media-right">
+				<b-tooltip
+					:label="
+						'This student is currently ' +
+							(entry.online ? 'online' : 'offline') +
+							'.'
+					"
+					:class="{ 'is-success': entry.online, 'is-danger': !entry.online }"
+					position="is-left"
+				>
+					<font-awesome-icon
+						:style="{
+							color: entry.online
+								? 'hsl(141, 53%, 53%)'
+								: 'hsl(348, 100%, 61%)',
+						}"
+						icon="circle"
+						size="1x"
+						fixed-width
+					/>
+				</b-tooltip>
+			</figure>
 		</article>
 	</div>
 </template>
@@ -187,6 +209,7 @@ import {
 	faHandsHelping,
 	faFrownOpen,
 	faMapMarker,
+	faCircle,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -202,7 +225,8 @@ library.add(
 	faEnvelope,
 	faHandsHelping,
 	faFrownOpen,
-	faMapMarker
+	faMapMarker,
+	faCircle
 );
 
 @Component

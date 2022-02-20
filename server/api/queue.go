@@ -164,6 +164,14 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 				return err
 			}
 			response["stack"] = stack
+
+			s.websocketCountLock.Lock()
+			m := make([]string, 0, len(s.websocketCountByEmail[q.ID]))
+			for e := range s.websocketCountByEmail[q.ID] {
+				m = append(m, e)
+			}
+			s.websocketCountLock.Unlock()
+			response["online"] = m
 		}
 
 		schedule, err := gd.GetCurrentDaySchedule(r.Context(), q.ID)
@@ -233,6 +241,11 @@ var upgrader = &websocket.Upgrader{
 }
 
 func (s *Server) QueueWebsocket() E {
+	type update struct {
+		Email  string `json:"email"`
+		Status string `json:"status"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) error {
 		var topics []string
 
@@ -273,9 +286,21 @@ func (s *Server) QueueWebsocket() E {
 		s.websocketCount[q.ID] = ws
 
 		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(ws))
-		s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+
+		e := s.websocketCountByEmail[q.ID]
+		if e == nil {
+			e = make(map[string]int)
+			s.websocketCountByEmail[q.ID] = e
+		}
+		first := e[email] == 0
+		e[email]++
 
 		s.websocketCountLock.Unlock()
+
+		s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+		if first {
+			s.ps.Pub(WS("USER_STATUS_UPDATE", update{Email: email, Status: "online"}), QueueTopicAdmin(q.ID))
+		}
 
 		if email != "" {
 			s.logger.Infow("websocket connection opened",
@@ -311,9 +336,20 @@ func (s *Server) QueueWebsocket() E {
 					s.websocketCount[q.ID] = ws
 
 					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(s.websocketCount[q.ID]))
-					s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+
+					e := s.websocketCountByEmail[q.ID]
+					last := e[email] == 1
+					e[email]--
+					if last {
+						delete(e, email)
+					}
 
 					s.websocketCountLock.Unlock()
+
+					s.ps.Pub(WS("QUEUE_CONNECTIONS_UPDATE", ws), QueueTopicAdmin(q.ID))
+					if last {
+						s.ps.Pub(WS("USER_STATUS_UPDATE", update{Email: email, Status: "offline"}), QueueTopicAdmin(q.ID))
+					}
 
 					if email != "" {
 						s.logger.Infow("websocket connection closed",
