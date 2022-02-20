@@ -238,6 +238,7 @@ func (s *Server) GetCurrentUserInfo(gi getUserInfo) E {
 			s.logger.Errorw("failed to get site admin status",
 				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
 				"email", email,
+				"err", err,
 			)
 			return err
 		}
