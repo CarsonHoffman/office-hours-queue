@@ -24,20 +24,18 @@ export default class OrderedQueue extends Queue {
 				(e: any) => new RemovedQueueEntry(e)
 			);
 			this.schedule = data['schedule'];
-			if (data.online !== undefined) {
-				data.online.forEach((email: string) => {
-					this.entries
-						.filter((e: QueueEntry) => e.email === email)
-						.forEach((e: QueueEntry) => {
-							e.online = true;
-						});
-					this.stack
-						.filter((e: QueueEntry) => e.email === email)
-						.forEach((e: QueueEntry) => {
-							e.online = true;
-						});
-				});
-			}
+			this.online.forEach((email: string) => {
+				this.entries
+					.filter((e: QueueEntry) => e.email === email)
+					.forEach((e: QueueEntry) => {
+						e.online = true;
+					});
+				this.stack
+					.filter((e: QueueEntry) => e.email === email)
+					.forEach((e: QueueEntry) => {
+						e.online = true;
+					});
+			});
 			this.setDocumentTitle();
 		});
 	}
@@ -69,6 +67,9 @@ export default class OrderedQueue extends Queue {
 
 		switch (type) {
 			case 'ENTRY_CREATE': {
+				if (data.email !== undefined) {
+					data.online = this.online.has(data.email);
+				}
 				const existing = this.entries.findIndex((e) => e.id === data.id);
 				if (existing !== -1) {
 					this.entries.splice(existing, 1, new QueueEntry(data));
@@ -154,11 +155,17 @@ export default class OrderedQueue extends Queue {
 				}
 
 				this.removeEntry(data.id);
+				if (data.email !== undefined) {
+					data.online = this.online.has(data.email);
+				}
 				this.addStackEntry(new RemovedQueueEntry(data));
 
 				break;
 			}
 			case 'ENTRY_UPDATE': {
+				if (data.email !== undefined) {
+					data.online = this.online.has(data.email);
+				}
 				const i = this.entries.findIndex((e) => e.id === data.id);
 				if (i !== -1) {
 					this.entries.splice(i, 1, new QueueEntry(data));
@@ -234,6 +241,11 @@ export default class OrderedQueue extends Queue {
 			case 'USER_STATUS_UPDATE': {
 				const email = data.email;
 				const online = data.status === 'online';
+				if (online) {
+					this.online.add(email);
+				} else {
+					this.online.delete(email);
+				}
 				this.entries
 					.filter((e: QueueEntry) => e.email === email)
 					.forEach((e: QueueEntry) => {
@@ -252,8 +264,11 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public addEntry(entry: QueueEntry) {
+		console.log('pushing');
 		this.entries.push(entry);
+		console.log('pushed');
 		this.sortEntries();
+		console.log('sorted');
 	}
 
 	public sortEntries() {

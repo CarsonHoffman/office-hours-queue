@@ -22,6 +22,7 @@ export default class Queue {
 	public course!: Course;
 
 	public websocketConnections = 0;
+	public online: Set<string>;
 
 	constructor(data: { [index: string]: any }, course: Course) {
 		this.id = data['id'];
@@ -31,6 +32,7 @@ export default class Queue {
 		this.map = data['map'];
 
 		this.course = course;
+		this.online = new Set<string>();
 	}
 
 	public async pullQueueInfo(time: Moment) {
@@ -46,6 +48,9 @@ export default class Queue {
 				this.preventGroupsBoost = data['prevent_groups_boost'];
 				this.preventUnregistered = data['prevent_unregistered'];
 				this.prioritizeNew = data['prioritize_new'];
+				if (data.online !== undefined) {
+					this.online = new Set(data.online);
+				}
 
 				return data;
 			});

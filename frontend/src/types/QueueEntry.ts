@@ -22,7 +22,7 @@ export class QueueEntry {
 		this.priority = data['priority'] || 0;
 		this.pinned = data['pinned'] || false;
 		this.helped = data['helped'] || false;
-		this.online = false;
+		this.online = data['online'] || false;
 	}
 
 	// Get the humanized timestamp in relation to time.
