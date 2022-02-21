@@ -287,13 +287,16 @@ func (s *Server) QueueWebsocket() E {
 
 		websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(ws))
 
-		e := s.websocketCountByEmail[q.ID]
-		if e == nil {
-			e = make(map[string]int)
-			s.websocketCountByEmail[q.ID] = e
+		first := false
+		if email != "" {
+			e := s.websocketCountByEmail[q.ID]
+			if e == nil {
+				e = make(map[string]int)
+				s.websocketCountByEmail[q.ID] = e
+			}
+			first = e[email] == 0
+			e[email]++
 		}
-		first := e[email] == 0
-		e[email]++
 
 		s.websocketCountLock.Unlock()
 
@@ -337,11 +340,14 @@ func (s *Server) QueueWebsocket() E {
 
 					websocketCounter.With(prometheus.Labels{"queue": q.ID.String()}).Set(float64(s.websocketCount[q.ID]))
 
-					e := s.websocketCountByEmail[q.ID]
-					last := e[email] == 1
-					e[email]--
-					if last {
-						delete(e, email)
+					last := false
+					if email != "" {
+						e := s.websocketCountByEmail[q.ID]
+						last = e[email] == 1
+						e[email]--
+						if last {
+							delete(e, email)
+						}
 					}
 
 					s.websocketCountLock.Unlock()
