@@ -94,7 +94,7 @@
 				<div class="level block" v-if="loaded">
 					<div class="level-left">
 						<p class="level-item">
-							<font-awesome-icon icon="user-graduate" fixed-size />
+							<font-awesome-icon class="mr-1" icon="user-graduate" fixed-size />
 							<strong>{{ queue.entries.length }}</strong>
 						</p>
 						<p class="level-item" v-if="open">
