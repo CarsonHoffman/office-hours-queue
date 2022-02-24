@@ -75,18 +75,13 @@ export default class OrderedSchedule extends Vue {
 	@Prop({ required: true })
 	defaultSchedule!: string[];
 
-	@Prop()
-	schedule!: string[];
+	schedule = this.defaultSchedule;
 
 	painting = false;
 
 	// This choice of date is completely arbitrary; I just needed
 	// a base time of midnight off which we can add 30-minute intervals.
 	base: Moment = moment('2020-01-01T00:00:00-05:00');
-
-	created() {
-		this.schedule = this.defaultSchedule;
-	}
 
 	static mappings: { [key: string]: string } = {
 		c: 'is-danger',
