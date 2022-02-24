@@ -12,63 +12,75 @@
 					</div>
 				</div>
 				<div class="navbar-end">
-					<div class="navbar-item" v-if="admin">
-						<b-tooltip class="is-left" label="Student View">
-							<font-awesome-icon
-								class="clickable-icon"
-								icon="user-graduate"
-								size="2x"
-								@click="setStudentView(true)"
-						/></b-tooltip>
-					</div>
-					<div class="navbar-item" v-if="studentView">
-						<b-tooltip class="is-left" label="Exit Student View">
-							<font-awesome-icon
-								class="clickable-icon"
-								icon="user-shield"
-								size="2x"
-								@click="setStudentView(false)"
-							/>
-						</b-tooltip>
-					</div>
-					<div class="navbar-item" v-if="admin">
-						<router-link to="/admin" class="no-link-color">
-							<font-awesome-icon icon="user-shield" size="2x" />
-						</router-link>
-					</div>
-					<div class="navbar-item">
-						<a
-							href="https://github.com/CarsonHoffman/office-hours-queue"
-							target="_blank"
-							class="no-link-color"
-						>
-							<font-awesome-icon :icon="['fab', 'github']" size="2x" />
-						</a>
-					</div>
-					<div class="navbar-item">
-						<button
-							class="button is-info is-loading"
-							v-if="!$root.$data.userInfoLoaded"
-						>
-							<span class="icon"><font-awesome-icon icon="sign-in-alt"/></span>
-							<span>Log in</span>
-						</button>
-						<a :href="loginUrl" v-else-if="!$root.$data.loggedIn">
-							<button class="button is-info">
-								<span class="icon"
-									><font-awesome-icon icon="sign-in-alt"
-								/></span>
-								<span>Log in</span>
-							</button>
-						</a>
-						<a :href="logoutUrl" v-else>
-							<button class="button is-danger">
-								<span class="icon"
-									><font-awesome-icon icon="sign-out-alt"
-								/></span>
-								<span>Log out</span>
-							</button>
-						</a>
+					<div class="level is-mobile">
+						<div class="level-left">
+							<div class="level-item">
+								<div class="navbar-item" v-if="admin">
+									<b-tooltip class="is-left" label="Student View">
+										<font-awesome-icon
+											class="clickable-icon"
+											icon="user-graduate"
+											size="2x"
+											@click="setStudentView(true)"
+									/></b-tooltip>
+								</div>
+								<div class="navbar-item" v-if="studentView">
+									<b-tooltip class="is-left" label="Exit Student View">
+										<font-awesome-icon
+											class="clickable-icon"
+											icon="user-shield"
+											size="2x"
+											@click="setStudentView(false)"
+										/>
+									</b-tooltip>
+								</div>
+								<div class="navbar-item" v-if="admin">
+									<router-link to="/admin" class="no-link-color">
+										<font-awesome-icon icon="user-shield" size="2x" />
+									</router-link>
+								</div>
+								<div class="navbar-item">
+									<a
+										href="https://github.com/CarsonHoffman/office-hours-queue"
+										target="_blank"
+										class="no-link-color"
+									>
+										<font-awesome-icon :icon="['fab', 'github']" size="2x" />
+									</a>
+								</div>
+							</div>
+						</div>
+						<div class="level-right">
+							<div class="level-item">
+								<div class="navbar-item">
+									<button
+										class="button is-info is-loading"
+										v-if="!$root.$data.userInfoLoaded"
+									>
+										<span class="icon"
+											><font-awesome-icon icon="sign-in-alt"
+										/></span>
+										<span>Log in</span>
+									</button>
+									<a :href="loginUrl" v-else-if="!$root.$data.loggedIn">
+										<button class="button is-info">
+											<span class="icon"
+												><font-awesome-icon icon="sign-in-alt"
+											/></span>
+											<span>Log in</span>
+										</button>
+									</a>
+									<a :href="logoutUrl" v-else>
+										<button class="button is-danger">
+											<span class="icon"
+												><font-awesome-icon icon="sign-out-alt"
+											/></span>
+											<span>Log out</span>
+										</button>
+									</a>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -363,5 +375,9 @@ $colors: (
 
 .white-icon {
 	color: white;
+}
+
+.hero-body {
+	padding: 2rem;
 }
 </style>

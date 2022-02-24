@@ -91,16 +91,18 @@
 		</div>
 		<div class="column is-5 is-offset-1">
 			<div class="entries">
-				<div class="level block" v-if="loaded">
-					<div class="level-left">
-						<p class="level-item">
+				<div class="level level-is-shrinkable" v-if="loaded">
+					<div class="level-left level-is-shrinkable">
+						<p class="level-item level-is-shrinkable">
 							<font-awesome-icon class="mr-1" icon="user-graduate" fixed-size />
 							<strong>{{ queue.entries.length }}</strong>
 						</p>
-						<p class="level-item" v-if="open">
-							The queue is open until {{ closesAt }}.
+						<div class="level-item level-is-shrinkable" v-if="open">
+							<p>The queue is open until {{ closesAt }}.</p>
+						</div>
+						<p class="level-item level-is-shrinkable" v-else>
+							The queue {{ opensAt }}.
 						</p>
-						<p class="level-item" v-else>The queue {{ opensAt }}.</p>
 					</div>
 				</div>
 				<div class="block" v-else>
@@ -109,17 +111,17 @@
 					</div>
 				</div>
 				<div class="buttons block" v-if="admin">
-					<button class="button is-danger" @click="clearQueue">
+					<button class="button is-danger is-responsive" @click="clearQueue">
 						<span class="icon"><font-awesome-icon icon="eraser"/></span>
 						<span>Clear Queue</span>
 					</button>
-					<button class="button is-primary" @click="editSchedule">
+					<button class="button is-primary is-responsive" @click="editSchedule">
 						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
 						<span>Edit Schedule</span>
 					</button>
-					<button class="button is-warning" @click="broadcast">
+					<button class="button is-warning is-responsive" @click="broadcast">
 						<span class="icon"><font-awesome-icon icon="bullhorn"/></span>
-						<span>Broadcast Message to Queue</span>
+						<span>Broadcast to Queue</span>
 					</button>
 				</div>
 				<div class="block">
@@ -127,7 +129,7 @@
 					<queue-signup :queue="queue" :time="time" />
 				</div>
 				<div class="block" v-if="admin && queue.stack.length > 0">
-					<div class="level">
+					<div class="level is-mobile">
 						<div class="level-left">
 							<div class="level-item">
 								<p class="title">Stack</p>
@@ -139,7 +141,8 @@
 									class="button is-small is-primary"
 									@click="downloadStackAsCSV"
 								>
-									Download all as .csv
+									<span class="icon"><font-awesome-icon icon="download"/></span>
+									<span>Download</span>
 								</button>
 							</div>
 						</div>
@@ -188,6 +191,7 @@ import {
 	faUserGraduate,
 	faEraser,
 	faCalendarAlt,
+	faDownload,
 } from '@fortawesome/free-solid-svg-icons';
 import OrderedSchedule from './OrderedSchedule.vue';
 
@@ -197,7 +201,8 @@ library.add(
 	faHeartBroken,
 	faUserGraduate,
 	faEraser,
-	faCalendarAlt
+	faCalendarAlt,
+	faDownload
 );
 
 @Component({
@@ -349,5 +354,9 @@ export default class OrderedQueueDisplay extends Vue {
 .entries-group-leave-active {
 	position: absolute;
 	width: 100%;
+}
+
+.level-is-shrinkable {
+	flex-shrink: 1;
 }
 </style>

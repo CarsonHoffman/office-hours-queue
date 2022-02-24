@@ -46,7 +46,7 @@
 				</button>
 				<button class="button is-success level-item" disabled="true" v-else>
 					<span class="icon"><font-awesome-icon icon="check"/></span>
-					<span>Signed up at position #{{ this.myEntryIndex + 1 }}</span>
+					<span>On queue at position #{{ this.myEntryIndex + 1 }}</span>
 				</button>
 				<p class="level-item" v-if="!$root.$data.loggedIn">
 					Log in to sign up!

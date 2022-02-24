@@ -259,4 +259,8 @@ export default class QueuePage extends Vue {
 .no-hover {
 	pointer-events: none;
 }
+
+.section {
+	padding: 3rem 1.5rem;
+}
 </style>

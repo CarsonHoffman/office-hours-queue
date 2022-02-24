@@ -99,8 +99,8 @@
 					</div>
 					<div v-if="!anonymous">
 						<br />
-						<div class="field is-grouped">
-							<p class="control" v-if="!stack">
+						<div class="buttons is-fullwidth">
+							<template v-if="!stack">
 								<button
 									class="button is-success"
 									:class="{ 'is-loading': removeRequestRunning }"
@@ -121,8 +121,8 @@
 									<span class="icon"><font-awesome-icon icon="times"/></span>
 									<span>Cancel</span>
 								</button>
-							</p>
-							<p class="control" v-if="!entry.pinned && admin">
+							</template>
+							<template v-if="!entry.pinned && admin">
 								<button
 									class="button is-primary"
 									:class="{ 'is-loading': pinEntryRequestRunning }"
@@ -133,54 +133,67 @@
 									/></span>
 									<span>Pin</span>
 								</button>
-							</p>
-							<p class="control" v-if="admin">
+							</template>
+							<template v-if="admin">
 								<button class="button is-warning" @click="messageUser">
 									<span class="icon"><font-awesome-icon icon="envelope"/></span>
 									<span>Message</span>
 								</button>
-							</p>
+							</template>
 						</div>
 					</div>
 				</div>
 			</div>
-			<figure v-if="entry.pinned" class="media-right">
-				<b-tooltip
-					label="This student is pinned to the top of the queue."
-					position="is-left"
-				>
-					<font-awesome-icon icon="thumbtack" size="3x" fixed-width />
-				</b-tooltip>
-			</figure>
-			<figure v-if="stack && !entry.helped" class="media-right">
-				<b-tooltip
-					label="This student wasn't able to be helped."
-					position="is-left"
-				>
-					<font-awesome-icon icon="frown-open" size="3x" fixed-width />
-				</b-tooltip>
-			</figure>
-			<figure v-if="admin" class="media-right">
-				<b-tooltip
-					:label="
-						'This student is currently ' +
-							(entry.online ? 'online' : 'offline') +
-							'.'
-					"
-					:class="{ 'is-success': entry.online, 'is-danger': !entry.online }"
-					position="is-left"
-				>
-					<font-awesome-icon
-						:style="{
-							color: entry.online
-								? 'hsl(141, 53%, 53%)'
-								: 'hsl(348, 100%, 61%)',
+			<figure class="media-right" style="padding: 0">
+				<div class="is-pulled-right" v-if="admin">
+					<b-tooltip
+						:label="
+							'This student is currently ' +
+								(entry.online ? 'online' : 'offline') +
+								'.'
+						"
+						:class="{
+							'is-success': entry.online,
+							'is-danger': !entry.online,
 						}"
-						icon="circle"
-						size="1x"
-						fixed-width
-					/>
-				</b-tooltip>
+						position="is-left"
+					>
+						<font-awesome-icon
+							:style="{
+								color: entry.online
+									? 'hsl(141, 53%, 53%)'
+									: 'hsl(348, 100%, 61%)',
+							}"
+							class="is-size-6"
+							icon="circle"
+							fixed-width
+						/>
+					</b-tooltip>
+				</div>
+				<div class="is-pulled-right" v-if="entry.pinned">
+					<b-tooltip
+						label="This student is pinned to the top of the queue."
+						position="is-left"
+					>
+						<font-awesome-icon
+							class="is-size-1 is-size-6-touch"
+							icon="thumbtack"
+							fixed-width
+						/>
+					</b-tooltip>
+				</div>
+				<div class="is-pulled-right" v-if="stack && !entry.helped">
+					<b-tooltip
+						label="This student wasn't able to be helped."
+						position="is-left"
+					>
+						<font-awesome-icon
+							icon="frown-open"
+							class="is-size-1 is-size-6-touch"
+							fixed-width
+						/>
+					</b-tooltip>
+				</div>
 			</figure>
 		</article>
 	</div>
