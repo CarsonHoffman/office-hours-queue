@@ -265,7 +265,6 @@ export default class OrderedQueueDisplay extends Vue {
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/schedule`)
 			.then((res) => res.json())
 			.then((schedule) => {
-				console.log(schedule);
 				this.$buefy.modal.open({
 					parent: this,
 					component: OrderedSchedule,
