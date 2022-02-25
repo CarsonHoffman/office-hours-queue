@@ -1,8 +1,6 @@
-{
-	auto_https off
-}
+lvh.me
 
-http://lvh.me
+tls /data/lvh.me.pem /data/lvh.me-key.pem
 
 encode gzip
 
@@ -12,6 +10,7 @@ basicauth /kibana* {
 
 route {
 	route /kibana* {
+		uri strip_prefix /kibana
 		reverse_proxy kibana:5601
 	}
 
@@ -20,16 +19,11 @@ route {
 		reverse_proxy queue:8080
 	}
 
-	# 8 hour cache limit for static files
-	header Cache-Control max-age=28800
+    rewrite /queues/* index.html
+	rewrite /admin index.html
 
 	file_server {
-		root /public
-		index queue.html
+		root /dist
+		index index.html
 	}
-}
-
-log {
-	output stdout
-	format json
 }

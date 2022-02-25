@@ -1,127 +1,128 @@
 version: '3.8'
 
 services:
-    queue:
-        image: office-hours-queue
-        build: ../server
-        restart: always
-        networks:
-            - http
-            - db
-            - logging
-        ports:
-            - '127.0.0.1:6060:6060'
-        depends_on:
-            - caddy
-            - db
-            - logstash
-        secrets:
-            - sessions_key
-            - postgres_password
-            - oauth2_client_secret
-            - metrics_password
-        environment:
-            TZ: America/Detroit
-            QUEUE_BASE_URL: "/"
-            QUEUE_DB_URL: db
-            QUEUE_DB_DATABASE: queue
-            QUEUE_DB_USERNAME: queue
-            QUEUE_DB_PASSWORD_FILE: /run/secrets/postgres_password
-            QUEUE_SESSIONS_KEY_FILE: /run/secrets/sessions_key
-            QUEUE_OAUTH2_CLIENT_ID: 845191182055-up8bv3ff7bn418h0avfouaim0upho4h8.apps.googleusercontent.com
-            QUEUE_OAUTH2_CLIENT_SECRET_FILE: /run/secrets/oauth2_client_secret
-            QUEUE_OAUTH2_REDIRECT_URI: "https://lvh.me:8080/api/oauth2callback"
-            QUEUE_VALID_DOMAIN: umich.edu
-            USE_SECURE_COOKIES: "true"
-            METRICS_PASSWORD_FILE: /run/secrets/metrics_password
-        logging:
-            driver: syslog
-            options:
-                syslog-address: tcp://127.0.0.1:5000
-    db:
-        image: postgres
-        restart: always
-        volumes:
-            - db:/var/lib/postgresql/data
-            - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-        networks:
-            - db
-        ports:
-            - "8001:5432"
-        secrets:
-            - postgres_password
-        environment:
-            POSTGRES_USER: queue
-            POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-            POSTGRES_DB: queue
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.9.0
-        restart: always
-        volumes:
-            - elastic:/usr/share/elasticsearch/data
-        networks:
-            - logging
-        environment:
-            - bootstrap.memory_lock=true
-            - discovery.type=single-node
-            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-        ulimits:
-            memlock:
-                soft: -1
-                hard: -1
-    logstash:
-        image: docker.elastic.co/logstash/logstash:7.9.0
-        restart: always
-        volumes:
-            - './syslog-input.conf:/usr/share/logstash/pipeline/03-syslog-input.conf'
-        networks:
-            - logging
-        ports:
-            - "127.0.0.1:5000:5000"
-    kibana:
-        image: docker.elastic.co/kibana/kibana:7.9.0
-        restart: always
-        volumes:
-            - ./kibana.yml:/usr/share/kibana/config/kibana.yml
-        networks:
-            - logging
-        environment:
-            ELASTICSEARCH_URL: http://elasticsearch:9200
-            ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    caddy:
-        image: caddy:2.1.1
-        restart: always
-        volumes:
-            - ./Caddyfile.dev:/etc/caddy/Caddyfile
-            - ../public:/public
-            - ./secrets/certs:/data
-        depends_on:
-            - kibana
-        networks:
-            - http
-            - logging
-        ports:
-            - "8080:443"
-        logging:
-            driver: syslog
-            options:
-                syslog-address: tcp://127.0.0.1:5000
+  queue:
+    image: office-hours-queue
+    build: ../server
+    restart: always
+    networks:
+      - http
+      - db
+      - logging
+    ports:
+      - '127.0.0.1:6060:6060'
+    depends_on:
+      - caddy
+      - db
+      - logstash
+    secrets:
+      - sessions_key
+      - postgres_password
+      - oauth2_client_secret
+      - metrics_password
+    environment:
+      TZ: America/Detroit
+      QUEUE_BASE_URL: "/"
+      QUEUE_DB_URL: db
+      QUEUE_DB_DATABASE: queue
+      QUEUE_DB_USERNAME: queue
+      QUEUE_DB_PASSWORD_FILE: /run/secrets/postgres_password
+      QUEUE_SESSIONS_KEY_FILE: /run/secrets/sessions_key
+      QUEUE_OAUTH2_CLIENT_ID: 845191182055-up8bv3ff7bn418h0avfouaim0upho4h8.apps.googleusercontent.com
+      QUEUE_OAUTH2_CLIENT_SECRET_FILE: /run/secrets/oauth2_client_secret
+      QUEUE_OAUTH2_REDIRECT_URI: "https://lvh.me:8080/api/oauth2callback"
+      QUEUE_VALID_DOMAIN: umich.edu
+      USE_SECURE_COOKIES: "true"
+      METRICS_PASSWORD_FILE: /run/secrets/metrics_password
+    logging:
+      driver: syslog
+      options:
+        syslog-address: udp://127.0.0.1:5000
+  db:
+    image: postgres:13.5
+    restart: always
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - db
+    ports:
+      - "8001:5432"
+    secrets:
+      - postgres_password
+    environment:
+      POSTGRES_USER: queue
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: queue
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
+    restart: always
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    networks:
+      - logging
+    environment:
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.16.2
+    restart: always
+    volumes:
+      - './syslog-input.conf:/usr/share/logstash/pipeline/03-syslog-input.conf'
+    networks:
+      - logging
+    ports:
+      - "127.0.0.1:5000:5000/udp"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.16.2
+    restart: always
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+    networks:
+      - logging
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+  caddy:
+    image: caddy:2
+    restart: always
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile
+      - ../public:/public
+      - ../frontend/dist:/dist
+      - ./secrets/certs:/data
+    depends_on:
+      - kibana
+    networks:
+      - http
+      - logging
+    ports:
+      - "8080:443"
+    logging:
+      driver: syslog
+      options:
+        syslog-address: udp://127.0.0.1:5000
 
 volumes:
-    db:
-    elastic:
+  db:
+  elastic:
 
 networks:
-    http:
-    db:
-    logging:
+  http:
+  db:
+  logging:
 
 secrets:
-    postgres_password:
-        file: ./secrets/postgres_password
-    sessions_key:
-        file: ./secrets/signing.key
-    oauth2_client_secret:
-        file: ./secrets/oauth2_client_secret
-    metrics_password:
-        file: ./secrets/metrics_password
+  postgres_password:
+    file: ./secrets/postgres_password
+  sessions_key:
+    file: ./secrets/signing.key
+  oauth2_client_secret:
+    file: ./secrets/oauth2_client_secret
+  metrics_password:
+    file: ./secrets/metrics_password
