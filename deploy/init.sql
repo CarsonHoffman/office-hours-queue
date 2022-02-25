@@ -166,6 +166,7 @@ CREATE TABLE public.queues (
     prevent_groups boolean DEFAULT false NOT NULL,
     prevent_groups_boost boolean DEFAULT false NOT NULL,
     prioritize_new boolean DEFAULT false NOT NULL,
+    virtual boolean DEFAULT false NOT NULL,
     type text NOT NULL,
     name text NOT NULL
 );

@@ -105,9 +105,9 @@ export default class OrderedQueue extends Queue {
 					Dialog.confirm({
 						title: 'Popped!',
 						message:
-							`You popped ${data.email}! Their link is: ${linkifyStr(
-								data.location
-							)}.` +
+							`You popped ${data.email}! Their ${
+								this.config?.virtual ? 'link' : 'location'
+							} is: ${linkifyStr(data.location)}.` +
 							`<br><br>If you weren't able to make contact with the student, click "Not Helped" to alert the student that you attempted to help them.` +
 							(this.config?.prioritizeNew
 								? ` Additionally, this won't count against their first-help-of-the-day status.`

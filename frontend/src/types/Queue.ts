@@ -5,6 +5,7 @@ import { DialogProgrammatic as Dialog } from 'buefy';
 import moment, { Moment } from 'moment-timezone';
 
 export class QueueConfiguration {
+	public virtual: boolean | undefined;
 	public confirmSignupMessage: string | undefined;
 	public enableLocationField: boolean | undefined;
 	public preventGroups: boolean | undefined;
@@ -13,6 +14,7 @@ export class QueueConfiguration {
 	public prioritizeNew: boolean | undefined;
 
 	constructor(data: { [index: string]: any }) {
+		this.virtual = data['virtual'];
 		this.confirmSignupMessage = data['confirm_signup_message'];
 		this.enableLocationField = data['enable_location_field'];
 		this.preventGroups = data['prevent_groups'];

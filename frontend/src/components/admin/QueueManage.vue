@@ -13,6 +13,11 @@
 			<div class="block">
 				<p class="title">Queue Settings</p>
 				<div class="field">
+					<b-checkbox v-model="configuration['virtual']"
+						>This queue is virtual (only changes UI)</b-checkbox
+					>
+				</div>
+				<div class="field">
 					<b-checkbox v-model="configuration['enable_location_field']"
 						>Allow students to specify location or meeting link</b-checkbox
 					>

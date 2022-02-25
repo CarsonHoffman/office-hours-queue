@@ -43,7 +43,7 @@
 						<div class="level icon-row is-mobile">
 							<div class="level-left">
 								<font-awesome-icon
-									icon="map-marker"
+									:icon="queue.config.virtual ? 'link' : 'map-marker'"
 									class="mr-2 level-item"
 									fixed-width
 								/>

@@ -18,11 +18,24 @@
 			class="field"
 			v-if="queue.config === undefined || queue.config.enableLocationField"
 		>
-			<label class="label">Location/Meeting Link</label>
+			<label class="label" v-if="queue.config === undefined"
+				><b-skeleton width="7em"
+			/></label>
+			<label class="label" v-else-if="!queue.config.virtual">Location</label>
+			<label class="label" v-else>Meeting Link</label>
 			<div class="control has-icons-left">
 				<input class="input" v-model="location" type="text" />
 				<span class="icon is-small is-left">
-					<font-awesome-icon icon="map-marker" />
+					<b-skeleton
+						position="is-centered"
+						width="1em"
+						v-if="queue.config === undefined"
+					/>
+					<font-awesome-icon
+						icon="map-marker"
+						v-else-if="!queue.config.virtual"
+					/>
+					<font-awesome-icon icon="link" v-else />
 				</span>
 			</div>
 		</div>

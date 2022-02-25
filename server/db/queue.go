@@ -85,7 +85,7 @@ func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (
 	tx := getTransaction(ctx)
 	var config api.QueueConfiguration
 	err := tx.GetContext(ctx, &config,
-		"SELECT id, enable_location_field, prevent_unregistered, prevent_groups, prevent_groups_boost, prioritize_new FROM queues WHERE id=$1",
+		"SELECT id, enable_location_field, prevent_unregistered, prevent_groups, prevent_groups_boost, prioritize_new, virtual FROM queues WHERE id=$1",
 		queue,
 	)
 	return &config, err
@@ -94,8 +94,8 @@ func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (
 func (s *Server) UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID, config *api.QueueConfiguration) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,
-		"UPDATE queues SET enable_location_field=$1, prevent_unregistered=$2, prevent_groups=$3, prevent_groups_boost=$4, prioritize_new=$5 WHERE id=$6",
-		config.EnableLocationField, config.PreventUnregistered, config.PreventGroups, config.PreventGroupsBoost, config.PrioritizeNew, queue,
+		"UPDATE queues SET enable_location_field=$1, prevent_unregistered=$2, prevent_groups=$3, prevent_groups_boost=$4, prioritize_new=$5, virtual=$6 WHERE id=$7",
+		config.EnableLocationField, config.PreventUnregistered, config.PreventGroups, config.PreventGroupsBoost, config.PrioritizeNew, config.Virtual, queue,
 	)
 	return err
 }
