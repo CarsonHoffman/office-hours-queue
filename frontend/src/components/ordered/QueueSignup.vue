@@ -14,9 +14,10 @@
 				</span>
 			</div>
 		</div>
-		<!-- The !== false looks weird, but it's so that we still show
-         the field before the queue information is loaded. -->
-		<div class="field" v-if="queue.enableLocationField !== false">
+		<div
+			class="field"
+			v-if="queue.config === undefined || queue.config.enableLocationField"
+		>
 			<label class="label">Location/Meeting Link</label>
 			<div class="control has-icons-left">
 				<input class="input" v-model="location" type="text" />
@@ -117,7 +118,7 @@ export default class QueueSignup extends Vue {
 			this.$root.$data.loggedIn &&
 			this.queue.open(this.time) &&
 			this.description.trim() !== '' &&
-			(this.location.trim() !== '' || !this.queue.enableLocationField)
+			(this.location.trim() !== '' || !this.queue.config?.enableLocationField)
 		);
 	}
 
@@ -138,10 +139,10 @@ export default class QueueSignup extends Vue {
 	}
 
 	signUp() {
-		if (this.queue.confirmSignupMessage !== undefined) {
+		if (this.queue.config?.confirmSignupMessage !== undefined) {
 			return this.$buefy.dialog.confirm({
 				title: 'Sign Up',
-				message: this.queue.confirmSignupMessage,
+				message: this.queue.config!.confirmSignupMessage,
 				type: 'is-warning',
 				hasIcon: true,
 				onConfirm: this.signUpRequest,
@@ -154,7 +155,7 @@ export default class QueueSignup extends Vue {
 	signUpRequest() {
 		// No, this doesn't prevent students from manually hitting the API to specify
 		// a location. l33t h4x!
-		const location = this.queue.enableLocationField
+		const location = this.queue.config?.enableLocationField
 			? this.location
 			: '(disabled)';
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {

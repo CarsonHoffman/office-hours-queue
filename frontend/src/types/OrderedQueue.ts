@@ -109,7 +109,7 @@ export default class OrderedQueue extends Queue {
 								data.location
 							)}.` +
 							`<br><br>If you weren't able to make contact with the student, click "Not Helped" to alert the student that you attempted to help them.` +
-							(this.prioritizeNew
+							(this.config?.prioritizeNew
 								? ` Additionally, this won't count against their first-help-of-the-day status.`
 								: ''),
 						type: 'is-success',
@@ -230,7 +230,7 @@ export default class OrderedQueue extends Queue {
 					title: `We Couldn't Find You!`,
 					message:
 						`A staff member attempted to help you, but they let us know that they weren't able to make contact with you. Please make sure your location is descriptive or your meeting link is still valid!` +
-						(this.prioritizeNew
+						(this.config?.prioritizeNew
 							? `<br><br><b>This didn't count as your first meeting of the day.</b>`
 							: ''),
 					hasIcon: true,

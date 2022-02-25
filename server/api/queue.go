@@ -209,12 +209,7 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 			return err
 		}
 
-		// Add in configuration information. This is a bit painful.
-		response["enable_location_field"] = config.EnableLocationField
-		response["prevent_unregistered"] = config.PreventUnregistered
-		response["prevent_groups"] = config.PreventGroups
-		response["prevent_groups_boost"] = config.PreventGroupsBoost
-		response["prioritize_new"] = config.PrioritizeNew
+		response["config"] = config
 
 		return s.sendResponse(http.StatusOK, response, w, r)
 	}

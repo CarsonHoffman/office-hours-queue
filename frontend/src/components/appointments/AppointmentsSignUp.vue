@@ -283,10 +283,10 @@ export default class AppointmentsSignUp extends Vue {
 	}
 
 	signUp() {
-		if (this.queue.confirmSignupMessage !== undefined) {
+		if (this.queue.config?.confirmSignupMessage !== undefined) {
 			return this.$buefy.dialog.confirm({
 				title: 'Sign Up',
-				message: this.queue.confirmSignupMessage,
+				message: this.queue.config!.confirmSignupMessage,
 				type: 'is-warning',
 				hasIcon: true,
 				onConfirm: this.signUpRequest,

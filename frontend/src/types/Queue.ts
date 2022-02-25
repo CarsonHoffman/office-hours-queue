@@ -4,6 +4,24 @@ import SendNotification from '../util/Notification';
 import { DialogProgrammatic as Dialog } from 'buefy';
 import moment, { Moment } from 'moment-timezone';
 
+export class QueueConfiguration {
+	public confirmSignupMessage: string | undefined;
+	public enableLocationField: boolean | undefined;
+	public preventGroups: boolean | undefined;
+	public preventGroupsBoost: boolean | undefined;
+	public preventUnregistered: boolean | undefined;
+	public prioritizeNew: boolean | undefined;
+
+	constructor(data: { [index: string]: any }) {
+		this.confirmSignupMessage = data['confirm_signup_message'];
+		this.enableLocationField = data['enable_location_field'];
+		this.preventGroups = data['prevent_groups'];
+		this.preventGroupsBoost = data['prevent_groups_boost'];
+		this.preventUnregistered = data['prevent_unregistered'];
+		this.prioritizeNew = data['prioritize_new'];
+	}
+}
+
 export default class Queue {
 	public readonly id!: string;
 	public readonly type!: 'ordered' | 'appointments';
@@ -12,12 +30,7 @@ export default class Queue {
 	public readonly map!: string;
 	public announcements: Announcement[] = [];
 
-	public confirmSignupMessage: string | undefined;
-	public enableLocationField: boolean | undefined;
-	public preventGroups: boolean | undefined;
-	public preventGroupsBoost: boolean | undefined;
-	public preventUnregistered: boolean | undefined;
-	public prioritizeNew: boolean | undefined;
+	public config: QueueConfiguration | undefined;
 
 	public course!: Course;
 
@@ -42,12 +55,7 @@ export default class Queue {
 				this.announcements = data['announcements'].map(
 					(a: any) => new Announcement(a)
 				);
-				this.confirmSignupMessage = data['confirm_signup_message'];
-				this.enableLocationField = data['enable_location_field'];
-				this.preventGroups = data['prevent_groups'];
-				this.preventGroupsBoost = data['prevent_groups_boost'];
-				this.preventUnregistered = data['prevent_unregistered'];
-				this.prioritizeNew = data['prioritize_new'];
+				this.config = new QueueConfiguration(data['config']);
 				if (data.online !== undefined) {
 					this.online = new Set(data.online);
 				}
