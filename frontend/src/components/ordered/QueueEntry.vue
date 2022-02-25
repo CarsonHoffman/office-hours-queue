@@ -370,6 +370,7 @@ export default class QueueEntryDisplay extends Vue {
 
 .link-in-container {
 	flex-shrink: 1;
+	word-break: break-all;
 	overflow-wrap: anywhere;
 	hyphens: auto;
 	display: inline-block;
