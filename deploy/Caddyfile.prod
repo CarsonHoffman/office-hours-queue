@@ -3,7 +3,7 @@ domain_here
 encode gzip
 
 basicauth /kibana* {
-	username_here password_hash_here
+	import /kibana.auth
 }
 
 @cors {
