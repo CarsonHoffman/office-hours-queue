@@ -93,7 +93,7 @@ services:
     restart: always
     volumes:
       - ./Caddyfile.prod:/etc/caddy/Caddyfile
-      - ./kibana.auth:/kibana.auth
+      - ./secrets/kibana.auth:/kibana.auth
       - ../public:/public
       - ../frontend/dist:/dist
     depends_on:
