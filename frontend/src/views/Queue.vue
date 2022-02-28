@@ -83,6 +83,7 @@ export default class QueuePage extends Vue {
 	found = false;
 	loaded = false;
 	ws!: WebSocket;
+	lastMessage: Moment | undefined;
 	time = moment();
 	timeUpdater!: number;
 
@@ -105,6 +106,12 @@ export default class QueuePage extends Vue {
 		// like doing this either.
 		this.timeUpdater = window.setInterval(() => {
 			this.time = moment();
+			if (
+				this.lastMessage !== undefined &&
+				this.time.diff(this.lastMessage, 'seconds') > 10 + 2
+			) {
+				location.reload();
+			}
 		}, 5 * 1000);
 
 		document.title = this.queue.course.shortName + ' Office Hours';
@@ -140,6 +147,8 @@ export default class QueuePage extends Vue {
 		};
 
 		this.ws.onmessage = (e) => {
+			this.lastMessage = moment();
+
 			const msg = JSON.parse(e.data);
 			const type = msg.e;
 			const data = msg.d;

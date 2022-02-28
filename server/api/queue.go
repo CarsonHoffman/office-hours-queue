@@ -308,11 +308,11 @@ func (s *Server) QueueWebsocket() E {
 		}
 
 		// The interval at which the server will expect pings from the client.
-		const pingInterval = 30 * time.Second
+		const pingInterval = 10 * time.Second
 
 		// The "slack" built into the ping logic; the extra time allowed
 		// to clients to ping past the interval.
-		const pingSlack = 10 * time.Second
+		const pingSlack = 2 * time.Second
 
 		go func() {
 			for {
