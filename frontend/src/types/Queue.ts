@@ -32,7 +32,7 @@ export default class Queue {
 	public readonly map!: string;
 	public announcements: Announcement[] = [];
 
-	public config: QueueConfiguration | undefined;
+	public config: QueueConfiguration | null;
 
 	public course!: Course;
 
@@ -48,6 +48,7 @@ export default class Queue {
 
 		this.course = course;
 		this.online = new Set<string>();
+		this.config = null;
 	}
 
 	public async pullQueueInfo(time: Moment) {

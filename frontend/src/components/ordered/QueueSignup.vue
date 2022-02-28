@@ -16,9 +16,9 @@
 		</div>
 		<div
 			class="field"
-			v-if="queue.config === undefined || queue.config.enableLocationField"
+			v-if="queue.config === null || queue.config.enableLocationField"
 		>
-			<label class="label" v-if="queue.config === undefined"
+			<label class="label" v-if="queue.config === null"
 				><b-skeleton width="7em"
 			/></label>
 			<label class="label" v-else-if="!queue.config.virtual">Location</label>
@@ -29,7 +29,7 @@
 					<b-skeleton
 						position="is-centered"
 						width="1em"
-						v-if="queue.config === undefined"
+						v-if="queue.config === null"
 					/>
 					<font-awesome-icon
 						icon="map-marker"
