@@ -8,7 +8,7 @@ import (
 
 	"github.com/CarsonHoffman/office-hours-queue/server/api"
 	"github.com/CarsonHoffman/office-hours-queue/server/db"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
