@@ -1,54 +1,56 @@
 <template>
 	<div class="box" v-if="found">
-		<div class="buttons top-right" v-if="admin">
-			<b-tooltip label="Number of active connections to this queue">
-				<button class="button is-white no-hover" v-if="queue !== null">
-					<span class="icon"><font-awesome-icon icon="ethernet"/></span>
-					<span
-						><b>{{ queue.websocketConnections }}</b></span
-					>
-				</button></b-tooltip
-			>
-			<button class="button is-light" @click="openManageDialog">
-				<span class="icon"><font-awesome-icon icon="cog"/></span>
-				<span>Manage Queue</span>
-			</button>
-		</div>
-		<section
-			v-if="queue !== null && queue.announcements.length > 0"
-			class="section"
-		>
-			<h1 class="title">Announcements</h1>
-			<div
-				class="block"
-				v-for="announcement in queue.announcements"
-				:key="announcement.id"
-			>
-				<announcement-display
-					:announcement="announcement"
-					:queue="queue"
-					:admin="admin"
-				/>
+		<div style="position: relative">
+			<div class="buttons top-right" v-if="admin">
+				<b-tooltip label="Number of active connections to this queue">
+					<button class="button is-white no-hover" v-if="queue !== null">
+						<span class="icon"><font-awesome-icon icon="ethernet"/></span>
+						<span
+							><b>{{ queue.websocketConnections }}</b></span
+						>
+					</button></b-tooltip
+				>
+				<button class="button is-light" @click="openManageDialog">
+					<span class="icon"><font-awesome-icon icon="cog"/></span>
+					<span>Manage Queue</span>
+				</button>
 			</div>
-		</section>
-		<section class="section" v-if="queue.type === 'ordered'">
-			<ordered-queue-display
-				:queue="queue"
-				:loaded="loaded"
-				:ws="ws"
-				:admin="admin"
-				:time="time"
-			/>
-		</section>
-		<section class="section" v-else-if="queue.type === 'appointments'">
-			<appointments-queue-display
-				:queue="queue"
-				:loaded="loaded"
-				:ws="ws"
-				:admin="admin"
-				:time="time"
-			/>
-		</section>
+			<section
+				v-if="queue !== null && queue.announcements.length > 0"
+				class="section"
+			>
+				<h1 class="title">Announcements</h1>
+				<div
+					class="block"
+					v-for="announcement in queue.announcements"
+					:key="announcement.id"
+				>
+					<announcement-display
+						:announcement="announcement"
+						:queue="queue"
+						:admin="admin"
+					/>
+				</div>
+			</section>
+			<section class="section" v-if="queue.type === 'ordered'">
+				<ordered-queue-display
+					:queue="queue"
+					:loaded="loaded"
+					:ws="ws"
+					:admin="admin"
+					:time="time"
+				/>
+			</section>
+			<section class="section" v-else-if="queue.type === 'appointments'">
+				<appointments-queue-display
+					:queue="queue"
+					:loaded="loaded"
+					:ws="ws"
+					:admin="admin"
+					:time="time"
+				/>
+			</section>
+		</div>
 	</div>
 </template>
 
@@ -263,8 +265,8 @@ export default class QueuePage extends Vue {
 <style scoped>
 .top-right {
 	position: absolute;
-	top: 25px;
-	right: 10px;
+	top: 0;
+	right: 0;
 }
 
 .no-hover {
