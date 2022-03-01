@@ -5,8 +5,16 @@
 				<div class="navbar-brand">
 					<div class="navbar-item">
 						<h1 class="title">
-							<router-link to="/" class="no-link-color"
-								>EECS Office Hours</router-link
+							<a
+								href="/"
+								class="no-link-color"
+								@click.prevent="
+									() => {
+										$root.$data.showCourses = true;
+										$router.push('/');
+									}
+								"
+								>EECS Office Hours</a
 							>
 						</h1>
 					</div>
@@ -129,8 +137,14 @@
 															$route.path.includes(q.id)
 														)
 												"
-												:tag="course.queues.length === 1 ? 'router-link' : 'a'"
-												:to="'/queues/' + course.queues[0].id"
+												:href="'/queues/' + course.queues[0].id"
+												@click.prevent="
+													() => {
+														if (course.queues.length === 1) {
+															goToQueue(course.queues[0]);
+														}
+													}
+												"
 											>
 												<template v-slot:label>
 													<div class="level is-mobile">
@@ -160,10 +174,10 @@
 													class="course-item"
 													v-for="queue in course.queues"
 													:key="queue.id"
-													tag="router-link"
-													:to="'/queues/' + queue.id"
 													:label="queue.name"
 													:active="$route.path.includes(queue.id)"
+													:href="'/queues/' + queue.id"
+													@click.prevent="goToQueue(queue)"
 												></b-menu-item
 											></b-menu-item>
 										</div>
@@ -190,6 +204,7 @@
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import Course from './types/Course';
+import Queue from './types/Queue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -226,6 +241,9 @@ export default class App extends Vue {
 			Notification.requestPermission();
 		}
 
+		// Stop jitter on page load
+		this.$root.$data.showCourses = !this.$route.path.includes('/queues/');
+
 		this.restart();
 	}
 
@@ -255,6 +273,11 @@ export default class App extends Vue {
 			(this.$root.$data.userInfo.site_admin ||
 				this.$root.$data.userInfo.admin_courses.length > 0)
 		);
+	}
+
+	goToQueue(q: Queue) {
+		this.$root.$data.showCourses = false;
+		this.$router.push('/queues/' + q.id);
 	}
 
 	setStudentView(studentView: boolean) {
