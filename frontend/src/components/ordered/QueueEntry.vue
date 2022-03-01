@@ -47,7 +47,15 @@
 									class="mr-2 level-item"
 									fixed-width
 								/>
-								<p class="level-item link-in-container" v-html="location"></p>
+								<p
+									class="level-item"
+									:class="
+										queue.config.virtual
+											? 'link-in-container'
+											: 'stay-in-container'
+									"
+									v-html="location"
+								></p>
 							</div>
 						</div>
 					</span>
