@@ -233,7 +233,7 @@ library.add(
 
 @Component
 export default class App extends Vue {
-	@Prop() fetchedCourses = false;
+	fetchedCourses = false;
 	studentView = false;
 
 	created() {

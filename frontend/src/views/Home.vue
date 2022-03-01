@@ -34,7 +34,7 @@ library.add(faHandPointUp, faHandPointLeft);
 
 @Component
 export default class HomePage extends Vue {
-	@Prop() windowWidth = window.innerWidth;
+	windowWidth = window.innerWidth;
 
 	created() {
 		this.$root.$data.showCourses = true;
