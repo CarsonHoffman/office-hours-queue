@@ -36,6 +36,10 @@ library.add(faHandPointUp, faHandPointLeft);
 export default class HomePage extends Vue {
 	@Prop() windowWidth = window.innerWidth;
 
+	created() {
+		this.$root.$data.showCourses = true;
+	}
+
 	mounted() {
 		window.addEventListener('resize', () => {
 			this.windowWidth = window.innerWidth;

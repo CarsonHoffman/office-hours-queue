@@ -88,56 +88,90 @@
 		<section class="section main-section">
 			<div class="container">
 				<div class="columns" v-if="fetchedCourses">
-					<div class="column is-one-fifth">
-						<b-menu class="sticky" :activable="false">
-							<b-menu-list label="Courses">
-								<div class="course" v-for="course in courses" :key="course.id">
-									<b-menu-item
-										class="course-item"
-										:label="course.shortName"
-										:active="
-											course.queues.some((q) => $route.path.includes(q.id))
-										"
-										:expanded="
-											course.queues.some((q) => $route.path.includes(q.id))
-										"
-										v-if="course.queues.length > 1"
-									>
-										<b-menu-item
-											class="course-item"
-											v-for="queue in course.queues"
-											:key="queue.id"
-											tag="router-link"
-											:to="'/queues/' + queue.id"
-											:label="queue.name"
-											:active="$route.path.includes(queue.id)"
-										></b-menu-item
-									></b-menu-item>
-									<b-menu-item
-										class="course-item"
-										:label="course.shortName"
-										:active="
-											course.queues.some((q) => $route.path.includes(q.id))
-										"
-										tag="router-link"
-										:to="'/queues/' + course.queues[0].id"
-										v-else
-									></b-menu-item
-									><font-awesome-icon
-										:icon="[course.favorite ? 'fas' : 'far', 'star']"
-										class="clickable-icon course-favorite"
-										:class="{
-											'white-icon': course.queues.some((q) =>
-												$route.path.includes(q.id)
-											),
-										}"
-										@click="toggleFavorite(course)"
-									/>
-								</div>
-							</b-menu-list>
-						</b-menu>
-					</div>
-					<div class="column is-four-fifths">
+					<transition name="fade" mode="out-in">
+						<div
+							class="column is-narrow"
+							key="hidden"
+							v-if="!$root.$data.showCourses"
+						>
+							<div class="courses-spacer">
+								<button
+									class="button is-small is-white collapse"
+									@click="$root.$data.showCourses = true"
+								>
+									<font-awesome-icon icon="angle-right" />
+								</button>
+							</div>
+						</div>
+						<div class="column is-narrow" key="shown" v-else>
+							<div style="position: relative">
+								<button
+									class="button is-small is-white collapse"
+									@click="$root.$data.showCourses = false"
+								>
+									<font-awesome-icon icon="angle-left" />
+								</button>
+								<b-menu class="sticky" :activable="false">
+									<b-menu-list label="Courses">
+										<div
+											class="course"
+											v-for="course in courses"
+											:key="course.id"
+										>
+											<b-menu-item
+												class="course-item"
+												:active="
+													course.queues.some((q) => $route.path.includes(q.id))
+												"
+												:expanded="
+													course.queues.length > 1 &&
+														course.queues.some((q) =>
+															$route.path.includes(q.id)
+														)
+												"
+												:tag="course.queues.length === 1 ? 'router-link' : 'a'"
+												:to="'/queues/' + course.queues[0].id"
+											>
+												<template v-slot:label>
+													<div class="level is-mobile">
+														<div class="level-left">
+															<div class="level-item">
+																{{ course.shortName }}
+															</div>
+														</div>
+														<div class="level-right">
+															<font-awesome-icon
+																:icon="[
+																	course.favorite ? 'fas' : 'far',
+																	'star',
+																]"
+																class="clickable-icon course-favorite"
+																:class="{
+																	'white-icon': course.queues.some((q) =>
+																		$route.path.includes(q.id)
+																	),
+																}"
+																@click="toggleFavorite(course)"
+															/>
+														</div>
+													</div>
+												</template>
+												<b-menu-item
+													class="course-item"
+													v-for="queue in course.queues"
+													:key="queue.id"
+													tag="router-link"
+													:to="'/queues/' + queue.id"
+													:label="queue.name"
+													:active="$route.path.includes(queue.id)"
+												></b-menu-item
+											></b-menu-item>
+										</div>
+									</b-menu-list>
+								</b-menu>
+							</div></div
+					></transition>
+					<div class="column">
 						<transition name="fade" mode="out-in">
 							<router-view
 								:key="$route.fullPath"
@@ -164,6 +198,8 @@ import {
 	faUserShield,
 	faStar as solidStar,
 	faUserGraduate,
+	faAngleLeft,
+	faAngleRight,
 } from '@fortawesome/free-solid-svg-icons';
 import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
@@ -175,7 +211,9 @@ library.add(
 	faGithub,
 	solidStar,
 	regularStar,
-	faUserGraduate
+	faUserGraduate,
+	faAngleLeft,
+	faAngleRight
 );
 
 @Component
@@ -367,10 +405,7 @@ $colors: (
 }
 
 .course-favorite {
-	position: absolute;
-	right: 0;
-	margin-right: 0.6em;
-	margin-top: 0.6em;
+	margin-left: 1em;
 }
 
 .white-icon {
@@ -379,5 +414,31 @@ $colors: (
 
 .hero-body {
 	padding: 3rem 2rem;
+}
+</style>
+
+<style scoped>
+.collapse {
+	position: absolute;
+	top: -0.5em;
+	right: 0;
+	z-index: 1;
+}
+
+.courses-spacer {
+	position: relative;
+	width: 1.2em;
+}
+
+@media screen and (max-width: 769px) {
+	.courses-spacer {
+		width: 100%;
+	}
+}
+
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+	.courses-spacer {
+		width: 2em;
+	}
 }
 </style>

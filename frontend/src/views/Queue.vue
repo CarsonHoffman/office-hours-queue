@@ -88,6 +88,8 @@ export default class QueuePage extends Vue {
 	timeUpdater!: number;
 
 	created() {
+		this.$root.$data.showCourses = false;
+
 		if (this.queue === undefined) {
 			this.$buefy.toast.open({
 				duration: 5000,

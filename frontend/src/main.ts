@@ -64,6 +64,7 @@ export default new Vue({
 	render: (h) => h(App),
 	data: {
 		courses: {} as { [index: string]: Course },
+		showCourses: true,
 		queues: {} as { [index: string]: Queue },
 		userInfoLoaded: false,
 		loggedIn: false,
