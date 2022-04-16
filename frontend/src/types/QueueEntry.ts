@@ -3,13 +3,13 @@ import moment, { Moment } from 'moment';
 export class QueueEntry {
 	public readonly id!: string;
 	public readonly timestamp!: Moment;
-	public readonly name: string | undefined;
-	public readonly email: string | undefined;
-	public readonly description: string | undefined;
-	public readonly location: string | undefined;
-	public readonly priority!: number;
-	public readonly pinned!: boolean;
-	public readonly helped!: boolean;
+	public name: string | undefined;
+	public email: string | undefined;
+	public description: string | undefined;
+	public location: string | undefined;
+	public priority!: number;
+	public pinned!: boolean;
+	public helped!: boolean;
 	public online!: boolean;
 
 	constructor(data: { [index: string]: any }) {
@@ -23,6 +23,17 @@ export class QueueEntry {
 		this.pinned = data['pinned'] || false;
 		this.helped = data['helped'] || false;
 		this.online = data['online'] || false;
+	}
+
+	public update(data: { [index: string]: any }) {
+		this.name = data['name'] || this.name;
+		this.email = data['email'] || this.email;
+		this.description = data['description'] || this.description;
+		this.location = data['location'] || this.location;
+		this.priority = data['priority'] || this.priority;
+		this.pinned = data['pinned'] || this.pinned;
+		this.helped = data['helped'] || this.helped;
+		this.online = data['online'] || this.online;
 	}
 
 	// Get the humanized timestamp in relation to time.

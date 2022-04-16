@@ -168,7 +168,7 @@ export default class OrderedQueue extends Queue {
 				}
 				const i = this.entries.findIndex((e) => e.id === data.id);
 				if (i !== -1) {
-					this.entries.splice(i, 1, new QueueEntry(data));
+					this.entries[i].update(data);
 					this.sortEntries();
 				} else {
 					console.log('hi stack');
