@@ -171,10 +171,8 @@ export default class OrderedQueue extends Queue {
 					this.entries[i].update(data);
 					this.sortEntries();
 				} else {
-					console.log('hi stack');
 					const stackIndex = this.stack.findIndex((e) => e.id === data.id);
 					if (stackIndex !== -1) {
-						console.log('inner');
 						this.stack.splice(stackIndex, 1, new RemovedQueueEntry(data));
 					}
 				}
@@ -264,11 +262,8 @@ export default class OrderedQueue extends Queue {
 	}
 
 	public addEntry(entry: QueueEntry) {
-		console.log('pushing');
 		this.entries.push(entry);
-		console.log('pushed');
 		this.sortEntries();
-		console.log('sorted');
 	}
 
 	public sortEntries() {

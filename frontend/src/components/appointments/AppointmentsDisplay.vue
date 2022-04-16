@@ -116,7 +116,6 @@ export default class AppointmentsDisplay extends Vue {
 	}
 
 	get consecutiveTimeslots(): [AppointmentsTimeslot, AppointmentSlot[]][][] {
-		console.log('consec');
 		const groups: [AppointmentsTimeslot, AppointmentSlot[]][][] = [];
 		const slots = Object.keys(this.appointments).map((n) => parseInt(n));
 
