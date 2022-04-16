@@ -388,6 +388,15 @@ func (s *Server) SetHelpedStatus(ctx context.Context, entry ksuid.KSUID, helped 
 	return err
 }
 
+func (s *Server) RandomizeQueueEntries(ctx context.Context, queue ksuid.KSUID) error {
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
+		"UPDATE queue_entries SET priority=floor(random() * 10 + 1)::int WHERE active IS NOT NULL AND queue=$1",
+		queue,
+	)
+	return err
+}
+
 func (s *Server) ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,

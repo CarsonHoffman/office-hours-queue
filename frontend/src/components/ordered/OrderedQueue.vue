@@ -115,6 +115,10 @@
 						<span class="icon"><font-awesome-icon icon="eraser"/></span>
 						<span>Clear Queue</span>
 					</button>
+					<button class="button is-black is-responsive" @click="randomizeQueue">
+						<span class="icon"><font-awesome-icon icon="dice"/></span>
+						<span>Randomize Queue</span>
+					</button>
 					<button class="button is-primary is-responsive" @click="editSchedule">
 						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
 						<span>Edit Schedule</span>
@@ -192,6 +196,7 @@ import {
 	faEraser,
 	faCalendarAlt,
 	faDownload,
+	faDice,
 } from '@fortawesome/free-solid-svg-icons';
 import OrderedSchedule from './OrderedSchedule.vue';
 
@@ -202,7 +207,8 @@ library.add(
 	faUserGraduate,
 	faEraser,
 	faCalendarAlt,
-	faDownload
+	faDownload,
+	faDice
 );
 
 @Component({
@@ -253,6 +259,28 @@ export default class OrderedQueueDisplay extends Vue {
 				fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/entries`, {
 					method: 'DELETE',
 				}).then((res) => {
+					if (res.status !== 204) {
+						return ErrorDialog(res);
+					}
+				});
+			},
+		});
+	}
+
+	randomizeQueue() {
+		this.$buefy.dialog.confirm({
+			title: 'Randomize Queue',
+			message: `Are you sure you want to randomize the queue? This will place everybody currently on the queue in a random position. This does not take into account the first-of-the-day status if your course uses it; consider whether this is okay. <b>There's no undo.</b>`,
+			type: 'is-danger',
+			hasIcon: true,
+			onConfirm: () => {
+				fetch(
+					process.env.BASE_URL +
+						`api/queues/${this.queue.id}/entries/randomize`,
+					{
+						method: 'POST',
+					}
+				).then((res) => {
 					if (res.status !== 204) {
 						return ErrorDialog(res);
 					}

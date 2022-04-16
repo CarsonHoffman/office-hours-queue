@@ -60,6 +60,7 @@ type queueStore interface {
 	getQueueEntries
 	addQueueEntry
 	updateQueueEntry
+	randomizeQueueEntries
 	clearQueueEntries
 	removeQueueEntry
 	pinQueueEntry
@@ -219,6 +220,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 			// Set student not helped (queue admin)
 			r.With(s.EnsureCourseAdmin).Method("DELETE", "/{entry_id:[a-zA-Z0-9]{27}}/helped", s.SetNotHelped(q))
+
+			// Randomize queue (course admin)
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("POST", "/randomize", s.RandomizeQueueEntries(q))
 
 			// Clear queue (queue admin)
 			r.With(s.EnsureCourseAdmin).Method("DELETE", "/", s.ClearQueueEntries(q))

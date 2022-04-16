@@ -109,6 +109,16 @@ export default class Queue {
 				setTimeout(() => location.reload(), delay);
 				break;
 			}
+			case 'QUEUE_RANDOMIZE': {
+				Dialog.alert({
+					title: 'Queue Randomized',
+					message:
+						'The order of the queue was just randomized. The priorities on the queue now correspond to that randomization.',
+					type: 'is-warning',
+					hasIcon: true,
+				});
+				break;
+			}
 			case 'QUEUE_CONNECTIONS_UPDATE': {
 				this.websocketConnections = data;
 				break;

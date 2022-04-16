@@ -821,6 +821,53 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) E {
 	}
 }
 
+type randomizeQueueEntries interface {
+	getQueueEntries
+	RandomizeQueueEntries(ctx context.Context, queue ksuid.KSUID) error
+}
+
+func (s *Server) RandomizeQueueEntries(re randomizeQueueEntries) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		email := r.Context().Value(emailContextKey).(string)
+		err := re.RandomizeQueueEntries(r.Context(), q.ID)
+		if err != nil {
+			s.logger.Errorw("failed to randomize queue",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"email", email,
+				"err", err,
+			)
+			return err
+		}
+		entries, err := re.GetQueueEntries(r.Context(), q.ID, true)
+		if err != nil {
+			s.logger.Errorw("failed to get queue entries after randomization",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"email", email,
+				"err", err,
+			)
+			return err
+		}
+
+		s.ps.Pub(WS("QUEUE_RANDOMIZE", nil), QueueTopicGeneric(q.ID))
+
+		for _, e := range entries {
+			s.ps.Pub(WS("ENTRY_UPDATE", e), QueueTopicAdmin(q.ID))
+			s.ps.Pub(WS("ENTRY_UPDATE", e.Anonymized()), QueueTopicNonPrivileged(q.ID))
+		}
+
+		s.logger.Infow("randomized queue",
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"email", email,
+		)
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
 type clearQueueEntries interface {
 	ClearQueueEntries(ctx context.Context, queue ksuid.KSUID, remover string) error
 }
