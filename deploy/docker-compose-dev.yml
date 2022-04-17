@@ -28,7 +28,7 @@ services:
       QUEUE_DB_USERNAME: queue
       QUEUE_DB_PASSWORD_FILE: /run/secrets/postgres_password
       QUEUE_SESSIONS_KEY_FILE: /run/secrets/sessions_key
-      QUEUE_OAUTH2_CLIENT_ID: 845191182055-up8bv3ff7bn418h0avfouaim0upho4h8.apps.googleusercontent.com
+      QUEUE_OAUTH2_CLIENT_ID: 803001653241-ghk5moqtt347qme7phdbseh7n3odb3qk.apps.googleusercontent.com
       QUEUE_OAUTH2_CLIENT_SECRET_FILE: /run/secrets/oauth2_client_secret
       QUEUE_OAUTH2_REDIRECT_URI: "https://lvh.me:8080/api/oauth2callback"
       QUEUE_VALID_DOMAIN: umich.edu
