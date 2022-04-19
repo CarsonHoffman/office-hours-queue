@@ -21,7 +21,6 @@
 					@click="editSchedule"
 				>
 					<font-awesome-icon icon="cog" />
-				</button>
 			</div>
 		</div>
 		<div class="column is-one-third">
@@ -118,7 +117,7 @@
 									class="button is-danger"
 									v-else-if="
 										selectedAppointment.staffEmail ===
-											$root.$data.userInfo.email
+										$root.$data.userInfo.email
 									"
 									@click="unclaimAppointment"
 								>
@@ -139,7 +138,9 @@
 								@click="claimTimeslot"
 								v-if="!selectedAppointmentInPast"
 							>
-								<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
+								<span class="icon"
+									><font-awesome-icon icon="hand-paper"
+								/></span>
 								<span>Claim</span>
 							</button>
 						</div>

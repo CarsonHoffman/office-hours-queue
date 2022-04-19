@@ -4,15 +4,19 @@
 			<div class="buttons top-right" v-if="admin">
 				<b-tooltip label="Number of active connections to this queue">
 					<button class="button is-white no-hover" v-if="queue !== null">
-						<span class="icon"><font-awesome-icon icon="ethernet"/></span>
+						<span class="icon"><font-awesome-icon icon="ethernet" /></span>
 						<span
 							><b>{{ queue.websocketConnections }}</b></span
 						>
 					</button></b-tooltip
 				>
 				<button class="button is-light" @click="openManageDialog">
-					<span class="icon"><font-awesome-icon icon="cog"/></span>
+					<span class="icon"><font-awesome-icon icon="cog" /></span>
 					<span>Manage Queue</span>
+				</button>
+				<button class="button is-success level-item" @click="openLogAppoinment">
+					<span class="icon"><font-awesome-icon icon="cog" /></span>
+					<span>View Log of Appointments</span>
 				</button>
 			</div>
 			<section
@@ -66,6 +70,7 @@ import OrderedQueueDisplay from '@/components/ordered/OrderedQueue.vue';
 import AppointmentsQueueDisplay from '@/components/appointments/AppointmentsQueue.vue';
 import QueueManage from '@/components/admin/QueueManage.vue';
 import ErrorDialog from '@/util/ErrorDialog';
+import LogAppoinment from '@/components/admin/LogAppoinment.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faCog, faEthernet } from '@fortawesome/free-solid-svg-icons';
@@ -180,6 +185,27 @@ export default class QueuePage extends Vue {
 			this.$root.$data.userInfo.admin_courses !== undefined &&
 			this.$root.$data.userInfo.admin_courses.includes(this.queue.course.id)
 		);
+	}
+
+	openLogAppoinment() {
+		/*
+		Promise.all([
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/configuration`),
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/groups`),
+		])
+			.then(([config, groups]) => Promise.all([config.json(), groups.json()]))
+			.then(([configuration, groups]) => {
+				this.$buefy.modal.open({
+					parent: this,
+					component: LogAppoinment,
+					props: {
+						defaultConfiguration: configuration,
+						defaultGroups: groups,
+						type: this.queue.type,
+					},
+				});
+			});
+		*/
 	}
 
 	openManageDialog() {
