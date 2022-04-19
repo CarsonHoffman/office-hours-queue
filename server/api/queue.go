@@ -1344,3 +1344,57 @@ func (s *Server) SetNotHelped(sh setNotHelped) E {
 		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}
 }
+
+type getAppointmentSummary interface {
+	GetAppointmentSummary(ctx context.Context, entry ksuid.KSUID) ([]*AppointmentSlot, error)
+}
+
+func (s *Server) GetAppointmentSummary(gs getAppointmentSummary) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		is_admin := r.Context().Value(courseAdminContextKey).(bool)
+		summary := make([]*AppointmentSummary, 0)
+		if !is_admin {
+			return s.sendResponse(http.StatusOK, summary, w, r)
+		}
+
+		slots, err := gs.GetAppointmentSummary(r.Context(), q.ID)
+		if err != nil {
+			s.logger.Errorw("failed to get appointment slots",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			return err
+		}
+
+		curYear := slots[0].ScheduledTime.Year()
+		curDay := slots[0].ScheduledTime.Day()
+		curMonth := slots[0].ScheduledTime.Month()
+		availCount := 0
+		usedCount := 0
+		for _, entry := range slots {
+			if curYear == entry.ScheduledTime.Year() && curDay == entry.ScheduledTime.Day() && curMonth == entry.ScheduledTime.Month() {
+				availCount++
+				if entry.StudentEmail != nil {
+					usedCount++
+				}
+			} else {
+				dateCombined := fmt.Sprintf("%d-%d-%d", curYear, curMonth, curDay)
+				temp := AppointmentSummary{
+					Date:      &dateCombined,
+					Available: availCount,
+					Used:      usedCount,
+				}
+				curYear = entry.ScheduledTime.Year()
+				curMonth = entry.ScheduledTime.Month()
+				curDay = entry.ScheduledTime.Day()
+				availCount = 0
+				usedCount = 0
+				summary = append(summary, &temp)
+			}
+		}
+
+		return s.sendResponse(http.StatusOK, summary, w, r)
+	}
+}

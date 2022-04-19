@@ -79,6 +79,7 @@ type queueStore interface {
 	updateQueueGroups
 	setNotHelped
 	queueStats
+	getAppointmentSummary
 
 	getAppointment
 	getAppointments
@@ -222,6 +223,14 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 			// Clear queue (queue admin)
 			r.With(s.EnsureCourseAdmin).Method("DELETE", "/", s.ClearQueueEntries(q))
+		})
+
+		// AppointmentSummary endpoints
+		r.Route("/appointmentsummary", func(r chi.Router) {
+			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
+
+			// Create announcement (queue admin)
+			r.Method("POST", "/", s.GetAppointmentSummary(q))
 		})
 
 		// Announcements endpoints

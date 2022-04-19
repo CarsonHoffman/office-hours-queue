@@ -534,3 +534,14 @@ func (s *Server) QueueStats() ([]api.QueueStats, error) {
 
 	return queues, nil
 }
+
+func (s *Server) GetAppointmentSummary(ctx context.Context, queue ksuid.KSUID) ([]*api.AppointmentSlot, error) {
+	tx := getTransaction(ctx)
+	summary := make([]*api.AppointmentSlot, 0)
+	err := tx.SelectContext(ctx, &summary,
+		`SELECT id, queue, staff_email, student_email, scheduled_time, timeslot, duration, name, location, description,
+		map_x, map_y FROM apointment_slots WHERE queue=$1 ORDER BY scheduled_time DESC`,
+		queue,
+	)
+	return summary, err
+}
