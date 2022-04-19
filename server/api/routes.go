@@ -230,7 +230,7 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 			r.Use(s.ValidLoginMiddleware, s.EnsureCourseAdmin)
 
 			// Create announcement (queue admin)
-			r.Method("POST", "/", s.GetAppointmentSummary(q))
+			r.Method("GET", "/", s.GetAppointmentSummary(q))
 		})
 
 		// Announcements endpoints
