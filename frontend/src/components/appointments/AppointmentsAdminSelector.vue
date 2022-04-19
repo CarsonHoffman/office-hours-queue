@@ -21,6 +21,7 @@
 					@click="editSchedule"
 				>
 					<font-awesome-icon icon="cog" />
+				</button>
 			</div>
 		</div>
 		<div class="column is-one-third">
