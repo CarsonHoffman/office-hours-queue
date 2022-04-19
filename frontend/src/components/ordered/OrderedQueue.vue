@@ -112,16 +112,20 @@
 				</div>
 				<div class="buttons block" v-if="admin">
 					<button class="button is-danger is-responsive" @click="clearQueue">
-						<span class="icon"><font-awesome-icon icon="eraser"/></span>
+						<span class="icon"><font-awesome-icon icon="eraser" /></span>
 						<span>Clear Queue</span>
 					</button>
 					<button class="button is-primary is-responsive" @click="editSchedule">
-						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span class="icon"><font-awesome-icon icon="calendar-alt" /></span>
 						<span>Edit Schedule</span>
 					</button>
 					<button class="button is-warning is-responsive" @click="broadcast">
-						<span class="icon"><font-awesome-icon icon="bullhorn"/></span>
+						<span class="icon"><font-awesome-icon icon="bullhorn" /></span>
 						<span>Broadcast to Queue</span>
+					</button>
+					<button class="button is-success level-item" @click="viewlog">
+						<span class="icon"><font-awesome-icon icon="bars" /></span>
+						<span>View Log of Appointments</span>
 					</button>
 				</div>
 				<div class="block">
@@ -141,7 +145,9 @@
 									class="button is-small is-primary"
 									@click="downloadStackAsCSV"
 								>
-									<span class="icon"><font-awesome-icon icon="download"/></span>
+									<span class="icon"
+										><font-awesome-icon icon="download"
+									/></span>
 									<span>Download</span>
 								</button>
 							</div>
@@ -309,6 +315,23 @@ export default class OrderedQueueDisplay extends Vue {
 			},
 		});
 	}
+
+	/*
+	viewLog() {
+		// fetch the appoinments from the back-end part
+		fetch().then((res) => {
+			if (res.status !== 201) {
+				return ErrorDialog(res);
+			}
+
+			this.$buefy.toast.open({
+				duration: 10000,
+				message: `Filler words`, // I guess we can edit this part to
+				type: 'is-success',
+			});
+		});
+	}
+	*/
 
 	downloadStackAsCSV() {
 		fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/stack`)
