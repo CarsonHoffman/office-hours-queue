@@ -22,6 +22,11 @@
 				>
 					<font-awesome-icon icon="cog" />
 				</button>
+				<!-- Viewing the Log Button -->
+				<button class="button is-success level-item" @click="openLogAppoinment">
+					<span class="icon"><font-awesome-icon icon="cog" /></span>
+					<span>View Log of Appointments</span>
+				</button>
 			</div>
 		</div>
 		<div class="column is-one-third">
@@ -162,6 +167,7 @@ import AppointmentsDisplay from '@/components/appointments/AppointmentsDisplay.v
 import AppointmentsSchedule from '@/components/appointments/AppointmentsSchedule.vue';
 import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
+import LogAppoinment from '@/components/admin/LogAppoinment.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -330,6 +336,35 @@ export default class AppointmentsAdminSelector extends Vue {
 					trapFocus: true,
 				});
 			});
+	}
+
+	openLogAppoinment() {
+		/*
+		fetch(
+			process.env.BASE_URL + `api/queues/${this.queue.id}/appointmentsummary`,
+			{
+				method: 'GET',
+			}
+		)
+			.then((res) => res.json())
+
+		Promise.all([
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/configuration`),
+			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/groups`),
+		])
+			.then(([config, groups]) => Promise.all([config.json(), groups.json()]))
+			.then(([configuration, groups]) => {
+				this.$buefy.modal.open({
+					parent: this,
+					component: LogAppoinment,
+					props: {
+						defaultConfiguration: configuration,
+						defaultGroups: groups,
+						type: this.queue.type,
+					},
+				});
+			});
+		*/
 	}
 }
 </script>
