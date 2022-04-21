@@ -1358,6 +1358,12 @@ func (s *Server) GetAppointmentSummary(gs getAppointmentSummary) E {
 			return s.sendResponse(http.StatusOK, summary, w, r)
 		}
 
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"course_id", q.Course,
+		)
+
 		slots, err := gs.GetAppointmentSummary(r.Context(), q.ID)
 		if err != nil {
 			s.logger.Errorw("failed to get appointment slots",
@@ -1367,6 +1373,8 @@ func (s *Server) GetAppointmentSummary(gs getAppointmentSummary) E {
 			)
 			return err
 		}
+
+		l.Infow("HERE")
 
 		curYear := slots[0].ScheduledTime.Year()
 		curDay := slots[0].ScheduledTime.Day()
