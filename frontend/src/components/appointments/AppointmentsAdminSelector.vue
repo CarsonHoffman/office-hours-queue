@@ -340,31 +340,26 @@ export default class AppointmentsAdminSelector extends Vue {
 
 	openLogAppoinment() {
 		/*
+		this.$buefy.modal.open({
+			parent: this,
+			component: LogAppoinment,
+		});
+		*/
+
 		fetch(
-			process.env.BASE_URL + `api/queues/${this.queue.id}/appointmentsummary`,
-			{
-				method: 'GET',
-			}
+			process.env.BASE_URL + `api/queues/${this.queue.id}/appoinmentsummary`
 		)
 			.then((res) => res.json())
-
-		Promise.all([
-			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/configuration`),
-			fetch(process.env.BASE_URL + `api/queues/${this.queue.id}/groups`),
-		])
-			.then(([config, groups]) => Promise.all([config.json(), groups.json()]))
-			.then(([configuration, groups]) => {
+			.then((data) => {
 				this.$buefy.modal.open({
 					parent: this,
 					component: LogAppoinment,
 					props: {
-						defaultConfiguration: configuration,
-						defaultGroups: groups,
-						type: this.queue.type,
+						log_data: data,
 					},
 				});
-			});
-		*/
+			})
+			.catch((err) => console.log('Request Failed', err));
 	}
 }
 </script>

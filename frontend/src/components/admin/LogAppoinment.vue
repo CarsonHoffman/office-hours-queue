@@ -19,10 +19,25 @@
 
 
 <script>
-import { defineComponent } from '@vue/composition-api';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 
-export default defineComponent({
-	setup() {},
-});
+@Component({})
+export default class LogAppoinment extends Vue {
+
+	@Prop({ required: true }) log_data!: string[];
+
+	log_data = '';
+	date = '';
+	appoinments_used = '';
+	appoinment_available = '';
+
+	/*
+	data() {
+		return {
+			log_data: {},
+		};
+	}
+	*/
+}
 </script>
 
