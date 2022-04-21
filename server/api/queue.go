@@ -1374,18 +1374,33 @@ func (s *Server) GetAppointmentSummary(gs getAppointmentSummary) E {
 			return err
 		}
 
-		l.Infow("HERE")
+		if len(slots) == 0 {
+			return s.sendResponse(http.StatusOK, summary, w, r)
+		}
+
+		for _, slot := range slots {
+			l.Infow(slot.ScheduledTime.String())
+		}
 
 		curYear := slots[0].ScheduledTime.Year()
 		curDay := slots[0].ScheduledTime.Day()
 		curMonth := slots[0].ScheduledTime.Month()
 		availCount := 0
 		usedCount := 0
-		for _, entry := range slots {
+		for i, entry := range slots {
 			if curYear == entry.ScheduledTime.Year() && curDay == entry.ScheduledTime.Day() && curMonth == entry.ScheduledTime.Month() {
 				availCount++
 				if entry.StudentEmail != nil {
 					usedCount++
+				}
+				if i == len(slots)-1 {
+					dateCombined := fmt.Sprintf("%d-%d-%d", curYear, curMonth, curDay)
+					temp := AppointmentSummary{
+						Date:      &dateCombined,
+						Available: availCount,
+						Used:      usedCount,
+					}
+					summary = append(summary, &temp)
 				}
 			} else {
 				dateCombined := fmt.Sprintf("%d-%d-%d", curYear, curMonth, curDay)
@@ -1397,8 +1412,11 @@ func (s *Server) GetAppointmentSummary(gs getAppointmentSummary) E {
 				curYear = entry.ScheduledTime.Year()
 				curMonth = entry.ScheduledTime.Month()
 				curDay = entry.ScheduledTime.Day()
-				availCount = 0
+				availCount = 1
 				usedCount = 0
+				if entry.StudentEmail != nil {
+					usedCount = 1
+				}
 				summary = append(summary, &temp)
 			}
 		}
