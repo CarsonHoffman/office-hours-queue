@@ -339,13 +339,6 @@ export default class AppointmentsAdminSelector extends Vue {
 	}
 
 	openLogAppoinment() {
-		/*
-		this.$buefy.modal.open({
-			parent: this,
-			component: LogAppoinment,
-		});
-		*/
-
 		fetch(
 			process.env.BASE_URL + `api/queues/${this.queue.id}/appointmentsummary`
 		)
@@ -356,7 +349,7 @@ export default class AppointmentsAdminSelector extends Vue {
 					parent: this,
 					component: LogAppoinment,
 					props: {
-						log_data: data,
+						appointment_log: data,
 					},
 					hasModalCard: true,
 					trapFocus: true,
