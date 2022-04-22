@@ -347,19 +347,22 @@ export default class AppointmentsAdminSelector extends Vue {
 		*/
 
 		fetch(
-			process.env.BASE_URL + `api/queues/${this.queue.id}/appoinmentsummary`
+			process.env.BASE_URL + `api/queues/${this.queue.id}/appointmentsummary`
 		)
 			.then((res) => res.json())
 			.then((data) => {
+				console.log(data);
 				this.$buefy.modal.open({
 					parent: this,
 					component: LogAppoinment,
 					props: {
 						log_data: data,
 					},
+					hasModalCard: true,
+					trapFocus: true,
 				});
 			})
-			.catch((err) => console.log('Request Failed', err));
+			.catch((err) => console.log('Request Failed: ', err));
 	}
 }
 </script>

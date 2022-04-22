@@ -7,6 +7,7 @@
 		<section class="modal-card-body">
 			<div class="block">
 				<p class="title">Appoinments Log</p>
+				<p>Filler word</p>
 			</div>
 		</section>
 		<footer class="modal-card-foot">
@@ -23,8 +24,7 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component({})
 export default class LogAppoinment extends Vue {
-
-	@Prop({ required: true }) log_data!: string[];
+	// @Prop({ required: true }) log_data!: string;
 
 	log_data = '';
 	date = '';
