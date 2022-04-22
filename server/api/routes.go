@@ -188,7 +188,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 		r.Use(s.QueueIDMiddleware(q), s.CheckCourseAdmin(q))
 
 		// Get queue by ID (more information with queue admin)
-		//r.Method("GET", "/", s.GetQueue(q))
+		r.Method("GET", "/", s.GetQueue(q))
+
+		// Get appointment summary
 		r.Route("/appointmentsummary", func(r chi.Router) {
 			r.Method("GET", "/", s.GetAppointmentSummary(q))
 		})
