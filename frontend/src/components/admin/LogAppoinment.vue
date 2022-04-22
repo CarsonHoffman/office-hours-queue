@@ -15,9 +15,11 @@
 					v-for="(appoinment, i) in appoinments_log"
 					:key="i"
 				>
-					{{ appoinment.date, }} &#9; | &#9; {{ appoinment.available }} &#9; |
-					&#9; &#9;
-					{{ appoinment.used }}
+					<li>
+						{{ appoinment.date, }} &#9; | &#9; {{ appoinment.available }} &#9; |
+						&#9; &#9;
+						{{ appoinment.used }}
+					</li>
 				</ui>
 			</div>
 		</section>
