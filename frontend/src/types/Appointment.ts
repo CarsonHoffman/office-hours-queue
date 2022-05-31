@@ -38,10 +38,14 @@ export class Appointment extends AppointmentSlot {
 	public readonly location: string | undefined;
 
 	constructor(data: { [index: string]: any }) {
-		super(moment(data['scheduled_time']), data['timeslot'], data['duration']);
+		super(
+			moment(data['scheduled_time']).local(),
+			data['timeslot'],
+			data['duration']
+		);
 
 		this.id = data['id'];
-		this.timestamp = moment(data['id_timestamp']);
+		this.timestamp = moment(data['id_timestamp']).local();
 		this.name = data['name'];
 		this.studentEmail = data['student_email'];
 		this.staffEmail = data['staff_email'];

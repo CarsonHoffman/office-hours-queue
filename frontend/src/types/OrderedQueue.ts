@@ -331,7 +331,8 @@ export default class OrderedQueue extends Queue {
 			.tz('America/New_York')
 			.startOf('day')
 			.hour(Math.floor(halfHour / 2))
-			.minute((halfHour % 2) * 30);
+			.minute((halfHour % 2) * 30)
+			.local();
 	}
 
 	public getOpenHalfHours(): number[] {

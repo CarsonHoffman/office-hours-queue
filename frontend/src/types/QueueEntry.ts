@@ -14,7 +14,7 @@ export class QueueEntry {
 
 	constructor(data: { [index: string]: any }) {
 		this.id = data['id'];
-		this.timestamp = moment(data['id_timestamp']);
+		this.timestamp = moment(data['id_timestamp']).local();
 		this.name = data['name'];
 		this.email = data['email'];
 		this.description = data['description'];
@@ -54,7 +54,7 @@ export class RemovedQueueEntry extends QueueEntry {
 
 	constructor(data: { [index: string]: any }) {
 		super(data);
-		this.removedAt = moment(data['removed_at']);
+		this.removedAt = moment(data['removed_at']).local();
 		this.removedBy = data['removed_by'];
 	}
 
