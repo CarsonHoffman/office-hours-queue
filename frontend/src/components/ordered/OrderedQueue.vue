@@ -124,7 +124,7 @@
 						@click="setOpen(false)"
 						v-else-if="queue.open"
 					>
-						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span class="icon"><font-awesome-icon icon="lock"/></span>
 						<span>Close Queue</span>
 					</button>
 					<button
@@ -132,7 +132,7 @@
 						@click="setOpen(true)"
 						v-else
 					>
-						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span class="icon"><font-awesome-icon icon="lock-open"/></span>
 						<span>Open Queue</span>
 					</button>
 					<button class="button is-black is-responsive" @click="randomizeQueue">
@@ -217,6 +217,8 @@ import {
 	faCalendarAlt,
 	faDownload,
 	faDice,
+	faLock,
+	faLockOpen,
 } from '@fortawesome/free-solid-svg-icons';
 import OrderedSchedule from './OrderedSchedule.vue';
 
@@ -228,7 +230,9 @@ library.add(
 	faEraser,
 	faCalendarAlt,
 	faDownload,
-	faDice
+	faDice,
+	faLock,
+	faLockOpen
 );
 
 @Component({
