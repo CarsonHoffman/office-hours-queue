@@ -97,7 +97,7 @@
 							<font-awesome-icon class="mr-1" icon="user-graduate" fixed-size />
 							<strong>{{ queue.entries.length }}</strong>
 						</p>
-						<div class="level-item level-is-shrinkable" v-if="open">
+						<div class="level-item level-is-shrinkable" v-if="scheduledOpen">
 							<p>The queue is open until {{ closesAt }}.</p>
 						</div>
 						<p class="level-item level-is-shrinkable" v-else>
@@ -111,19 +111,39 @@
 					</div>
 				</div>
 				<div class="buttons block" v-if="admin">
-					<button class="button is-danger is-responsive" @click="clearQueue">
-						<span class="icon"><font-awesome-icon icon="eraser"/></span>
-						<span>Clear Queue</span>
+					<button
+						class="button is-primary is-responsive"
+						@click="editSchedule"
+						v-if="queue.config !== null && queue.config.scheduled"
+					>
+						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span>Edit Schedule</span>
+					</button>
+					<button
+						class="button is-warning is-responsive"
+						@click="setOpen(false)"
+						v-else-if="queue.open"
+					>
+						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span>Close Queue</span>
+					</button>
+					<button
+						class="button is-success is-responsive"
+						@click="setOpen(true)"
+						v-else
+					>
+						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
+						<span>Open Queue</span>
 					</button>
 					<button class="button is-black is-responsive" @click="randomizeQueue">
 						<span class="icon"><font-awesome-icon icon="dice"/></span>
 						<span>Randomize Queue</span>
 					</button>
-					<button class="button is-primary is-responsive" @click="editSchedule">
-						<span class="icon"><font-awesome-icon icon="calendar-alt"/></span>
-						<span>Edit Schedule</span>
+					<button class="button is-danger is-responsive" @click="clearQueue">
+						<span class="icon"><font-awesome-icon icon="eraser"/></span>
+						<span>Clear Queue</span>
 					</button>
-					<button class="button is-warning is-responsive" @click="broadcast">
+					<button class="button is-light is-responsive" @click="broadcast">
 						<span class="icon"><font-awesome-icon icon="bullhorn"/></span>
 						<span>Broadcast to Queue</span>
 					</button>
@@ -226,7 +246,11 @@ export default class OrderedQueueDisplay extends Vue {
 	@Prop({ required: true }) time!: Moment;
 
 	get open() {
-		return this.queue.open(this.time);
+		return this.queue.config?.scheduled ? this.scheduledOpen : this.queue.open;
+	}
+
+	get scheduledOpen() {
+		return this.queue.scheduledOpen(this.time);
 	}
 
 	get closesAt() {
@@ -238,6 +262,14 @@ export default class OrderedQueueDisplay extends Vue {
 	}
 
 	get opensAt() {
+		if (!this.queue.config?.scheduled) {
+			return (
+				'will be ' +
+				(this.queue.open ? 'closed' : 'opened') +
+				' manually by staff'
+			);
+		}
+
 		const halfHour = this.queue.getNextOpenHalfHour(
 			this.queue.getHalfHour(this.time)
 		);
@@ -355,6 +387,21 @@ export default class OrderedQueueDisplay extends Vue {
 					fileDownload(csv, 'stack.csv', 'text/csv');
 				});
 			});
+	}
+
+	setOpen(open: boolean) {
+		fetch(
+			process.env.BASE_URL +
+				`api/queues/${this.queue.id}/configuration/manual-open?` +
+				new URLSearchParams({ open: open.toString() }),
+			{
+				method: 'PUT',
+			}
+		).then((res) => {
+			if (res.status !== 204) {
+				return ErrorDialog(res);
+			}
+		});
 	}
 }
 </script>

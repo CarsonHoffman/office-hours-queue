@@ -12,6 +12,7 @@ export class QueueConfiguration {
 	public preventGroupsBoost: boolean | undefined;
 	public preventUnregistered: boolean | undefined;
 	public prioritizeNew: boolean | undefined;
+	public scheduled: boolean | undefined;
 
 	constructor(data: { [index: string]: any }) {
 		this.virtual = data['virtual'];
@@ -21,6 +22,7 @@ export class QueueConfiguration {
 		this.preventGroupsBoost = data['prevent_groups_boost'];
 		this.preventUnregistered = data['prevent_unregistered'];
 		this.prioritizeNew = data['prioritize_new'];
+		this.scheduled = data['scheduled'];
 	}
 }
 

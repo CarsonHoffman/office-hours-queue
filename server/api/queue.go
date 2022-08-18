@@ -174,6 +174,13 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 			response["online"] = m
 		}
 
+		config, err := gd.GetQueueConfiguration(r.Context(), q.ID)
+		if err != nil {
+			l.Errorw("failed to get queue configuration", "err", err)
+			return err
+		}
+		response["config"] = config
+
 		schedule, err := gd.GetCurrentDaySchedule(r.Context(), q.ID)
 		if err != nil {
 			l.Errorw("failed to get queue schedule", "err", err)
@@ -183,7 +190,11 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 
 		halfHour := CurrentHalfHour()
 		response["half_hour"] = halfHour
-		response["open"] = schedule[halfHour] == 'o' || schedule[halfHour] == 'p'
+		if config.Scheduled {
+			response["open"] = schedule[halfHour] == 'o' || schedule[halfHour] == 'p'
+		} else {
+			response["open"] = config.ManualOpen
+		}
 
 		announcements, err := gd.GetQueueAnnouncements(r.Context(), q.ID)
 		if err != nil {
@@ -202,14 +213,6 @@ func (s *Server) GetQueue(gd getQueueDetails) E {
 				response["message"] = message
 			}
 		}
-
-		config, err := gd.GetQueueConfiguration(r.Context(), q.ID)
-		if err != nil {
-			l.Errorw("failed to get queue configuration", "err", err)
-			return err
-		}
-
-		response["config"] = config
 
 		return s.sendResponse(http.StatusOK, response, w, r)
 	}
@@ -1143,6 +1146,53 @@ func (s *Server) UpdateQueueConfiguration(uc updateQueueConfiguration) E {
 		)
 
 		s.ps.Pub(WS("REFRESH", nil), QueueTopicGeneric(q.ID))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+type updateQueueOpenStatus interface {
+	UpdateQueueOpenStatus(ctx context.Context, queue ksuid.KSUID, open bool) error
+}
+
+func (s *Server) UpdateQueueOpenStatus(uo updateQueueOpenStatus) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		q := r.Context().Value(queueContextKey).(*Queue)
+
+		var open bool
+		switch r.URL.Query().Get("open") {
+		case "true":
+			open = true
+		case "false":
+			open = false // not technically necessary but meh
+		default:
+			s.logger.Warnw("unknown open query value",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"open", open,
+			)
+			return StatusError{
+				http.StatusBadRequest,
+				"We couldn't read the open status from the `open` query parameter.",
+			}
+		}
+
+		err := uo.UpdateQueueOpenStatus(r.Context(), q.ID, open)
+		if err != nil {
+			s.logger.Errorw("failed to update queue open status",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"err", err,
+			)
+			return err
+		}
+
+		s.logger.Infow("updated queue open status", RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"queue_id", q.ID,
+			"open", open,
+		)
+
+		s.ps.Pub(WS("QUEUE_OPEN", open), QueueTopicGeneric(q.ID))
 
 		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}

@@ -73,6 +73,7 @@ type queueStore interface {
 	updateQueueSchedule
 	getQueueConfiguration
 	updateQueueConfiguration
+	updateQueueOpenStatus
 	sendMessage
 	viewMessage
 	getQueueRoster
@@ -255,6 +256,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 			// Update queue configuration (queue admin)
 			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/", s.UpdateQueueConfiguration(q))
+
+			// Set manual queue open status (queue admin)
+			r.With(s.ValidLoginMiddleware, s.EnsureCourseAdmin).Method("PUT", "/manual-open", s.UpdateQueueOpenStatus(q))
 		})
 
 		// Send message (queue admin)

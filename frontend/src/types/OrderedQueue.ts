@@ -13,6 +13,7 @@ import ErrorDialog from '@/util/ErrorDialog';
 export default class OrderedQueue extends Queue {
 	public entries: QueueEntry[] = [];
 	public stack: RemovedQueueEntry[] = [];
+	public open = false;
 	public schedule?: string;
 
 	public personallyRemovedEntries = new Set<string>();
@@ -23,6 +24,7 @@ export default class OrderedQueue extends Queue {
 			this.stack = (data['stack'] || []).map(
 				(e: any) => new RemovedQueueEntry(e)
 			);
+			this.open = data['open'];
 			this.schedule = data['schedule'];
 			this.online.forEach((email: string) => {
 				this.entries
@@ -66,6 +68,16 @@ export default class OrderedQueue extends Queue {
 		super.handleWSMessage(type, data, ws);
 
 		switch (type) {
+			case 'QUEUE_OPEN': {
+				const nowOpen = data;
+				this.open = nowOpen;
+				Toast.open({
+					duration: 10000,
+					message: `The queue is now ${nowOpen ? 'open!' : 'closed.'}`,
+					type: nowOpen ? 'is-success' : 'is-danger',
+				});
+				break;
+			}
 			case 'ENTRY_CREATE': {
 				if (data.email !== undefined) {
 					data.online = this.online.has(data.email);
@@ -351,7 +363,11 @@ export default class OrderedQueue extends Queue {
 		return open;
 	}
 
-	public open(time: Moment): boolean {
+	public isOpen(time: Moment): boolean {
+		return this.config?.scheduled ? this.scheduledOpen(time) : this.open;
+	}
+
+	public scheduledOpen(time: Moment): boolean {
 		return this.getOpenHalfHours().includes(this.getHalfHour(time));
 	}
 

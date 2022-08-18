@@ -17,6 +17,11 @@
 						>This queue is virtual (only changes UI)</b-checkbox
 					>
 				</div>
+				<div class="field" v-if="type === 'ordered'">
+					<b-checkbox v-model="configuration['scheduled']"
+						>Open and close queue according to schedule</b-checkbox
+					>
+				</div>
 				<div class="field">
 					<b-checkbox v-model="configuration['enable_location_field']"
 						>Allow students to specify location or meeting link</b-checkbox

@@ -129,7 +129,7 @@ export default class QueueSignup extends Vue {
 		return (
 			this.myEntry === null &&
 			this.$root.$data.loggedIn &&
-			this.queue.open(this.time) &&
+			this.queue.isOpen(this.time) &&
 			this.description.trim() !== '' &&
 			(this.location.trim() !== '' || !this.queue.config?.enableLocationField)
 		);
