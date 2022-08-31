@@ -235,19 +235,22 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 		return true, nil
 	}
 
-	schedule, err := s.GetCurrentDaySchedule(ctx, queue)
-	if err != nil {
-		return false, fmt.Errorf("failed to get queue schedule: %w", err)
-	}
-
-	halfHour := api.CurrentHalfHour()
-	if schedule[halfHour] == 'c' {
-		return false, fmt.Errorf("queue closed")
-	}
-
 	config, err := s.GetQueueConfiguration(ctx, queue)
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch configuration for queue: %w", err)
+		return false, fmt.Errorf("failed to get queue configuration: %w", err)
+	}
+
+	if config.Scheduled {
+		schedule, err := s.GetCurrentDaySchedule(ctx, queue)
+		if err != nil {
+			return false, fmt.Errorf("failed to get queue schedule: %w", err)
+		}
+		halfHour := api.CurrentHalfHour()
+		if schedule[halfHour] == 'c' {
+			return false, fmt.Errorf("queue scheduled closed")
+		}
+	} else if !config.ManualOpen {
+		return false, fmt.Errorf("queue manually closed")
 	}
 
 	if config.PreventUnregistered {
