@@ -387,7 +387,6 @@ $colors: (
 
 @import '~bulma';
 @import '~buefy/src/scss/buefy';
-@import '~bulma-prefers-dark/bulma-prefers-dark.sass';
 
 .no-link-color {
 	text-decoration: none;
