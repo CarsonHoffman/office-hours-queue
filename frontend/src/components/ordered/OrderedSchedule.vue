@@ -79,9 +79,9 @@ export default class OrderedSchedule extends Vue {
 
 	painting = false;
 
-	// This choice of date is completely arbitrary; I just needed
-	// a base time of midnight off which we can add 30-minute intervals.
-	base: Moment = moment('2020-01-01T00:00:00-05:00');
+	base: Moment = moment()
+		.tz('America/New_York')
+		.startOf('day');
 
 	static mappings: { [key: string]: string } = {
 		c: 'is-danger',
