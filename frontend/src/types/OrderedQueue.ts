@@ -9,6 +9,7 @@ import moment, { Moment } from 'moment-timezone';
 import linkifyStr from 'linkifyjs/string';
 import g from '../main';
 import ErrorDialog from '@/util/ErrorDialog';
+import EscapeHTML from '@/util/Sanitization';
 
 export default class OrderedQueue extends Queue {
 	public entries: QueueEntry[] = [];
@@ -92,7 +93,7 @@ export default class OrderedQueue extends Queue {
 				if (this.admin) {
 					Toast.open({
 						duration: 2000,
-						message: `${data.email} joined the queue!`,
+						message: `${EscapeHTML(data.email)} joined the queue!`,
 						type: 'is-primary',
 					});
 
@@ -117,7 +118,7 @@ export default class OrderedQueue extends Queue {
 					Dialog.confirm({
 						title: 'Popped!',
 						message:
-							`You popped ${data.email}! Their ${
+							`You popped ${EscapeHTML(data.email)}! Their ${
 								this.config?.virtual ? 'link' : 'location'
 							} is: ${linkifyStr(data.location)}.` +
 							`<br><br>If you weren't able to make contact with the student, click "Not Helped" to alert the student that you attempted to help them.` +
@@ -223,7 +224,7 @@ export default class OrderedQueue extends Queue {
 				if (this.admin && data !== null) {
 					Toast.open({
 						duration: 60000,
-						message: `${data} cleared the queue!`,
+						message: `${EscapeHTML(data)} cleared the queue!`,
 						type: 'is-danger',
 					});
 				} else {

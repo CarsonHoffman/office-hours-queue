@@ -32,6 +32,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
 import Queue from '@/types/Queue';
+import EscapeHTML from '@/util/Sanitization';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -69,7 +70,9 @@ export default class QueueManage extends Vue {
 			for (const a of admins) {
 				if (allAdmins.has(a)) {
 					this.$buefy.dialog.alert({
-						message: `User ${a} appears in the admins array more than once.`,
+						message: `User ${EscapeHTML(
+							a
+						)} appears in the admins array more than once.`,
 						type: 'is-danger',
 					});
 					return;

@@ -1,6 +1,7 @@
 import Announcement from './Announcement';
 import Course from './Course';
 import SendNotification from '../util/Notification';
+import EscapeHTML from '../util/Sanitization';
 import { DialogProgrammatic as Dialog } from 'buefy';
 import moment, { Moment } from 'moment-timezone';
 
@@ -81,7 +82,7 @@ export default class Queue {
 				SendNotification(title, data.content);
 				Dialog.alert({
 					title: title,
-					message: data.content,
+					message: EscapeHTML(data.content),
 					type: 'is-warning',
 					hasIcon: true,
 					icon: broadcast ? 'bullhorn' : 'envelope-open-text',
@@ -102,9 +103,9 @@ export default class Queue {
 				const delay = Math.random() * 30000;
 				Dialog.alert({
 					title: 'Refreshing Shortly',
-					message: `The server told me that we need to refresh the page to get new information. Refreshing in ${moment
-						.duration(delay)
-						.humanize()}…`,
+					message: `The server told me that we need to refresh the page to get new information. Refreshing in ${EscapeHTML(
+						moment.duration(delay).humanize()
+					)}…`,
 					type: 'is-warning',
 					hasIcon: true,
 				});

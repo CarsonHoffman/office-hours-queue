@@ -214,6 +214,7 @@ import linkifyStr from 'linkifyjs/string';
 import OrderedQueue from '@/types/OrderedQueue';
 import { QueueEntry } from '@/types/QueueEntry';
 import ErrorDialog from '@/util/ErrorDialog';
+import EscapeHTML from '@/util/Sanitization';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -319,7 +320,7 @@ export default class QueueEntryDisplay extends Vue {
 
 			this.$buefy.toast.open({
 				duration: 5000,
-				message: `Pinned ${this.entry.email}!`,
+				message: `Pinned ${EscapeHTML(this.entry.email!)}!`,
 				type: 'is-success',
 			});
 		});
@@ -327,7 +328,7 @@ export default class QueueEntryDisplay extends Vue {
 
 	messageUser() {
 		this.$buefy.dialog.prompt({
-			message: `Send message to ${this.entry.email}:`,
+			message: `Send message to ${EscapeHTML(this.entry.email!)}:`,
 			inputAttrs: {
 				placeholder: 'Your meeting is empty, please come back!',
 			},
@@ -346,7 +347,7 @@ export default class QueueEntryDisplay extends Vue {
 
 					this.$buefy.toast.open({
 						duration: 5000,
-						message: `Sent message to ${this.entry.email}`,
+						message: `Sent message to ${EscapeHTML(this.entry.email!)}`,
 						type: 'is-success',
 					});
 				});

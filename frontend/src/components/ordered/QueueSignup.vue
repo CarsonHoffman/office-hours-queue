@@ -77,6 +77,7 @@ import { Component, Prop, Watch } from 'vue-property-decorator';
 import OrderedQueue from '@/types/OrderedQueue';
 import { QueueEntry } from '@/types/QueueEntry';
 import ErrorDialog from '@/util/ErrorDialog';
+import EscapeHTML from '@/util/Sanitization';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -155,7 +156,7 @@ export default class QueueSignup extends Vue {
 		if (this.queue.config?.confirmSignupMessage !== undefined) {
 			return this.$buefy.dialog.confirm({
 				title: 'Sign Up',
-				message: this.queue.config!.confirmSignupMessage,
+				message: EscapeHTML(this.queue.config!.confirmSignupMessage),
 				type: 'is-warning',
 				hasIcon: true,
 				onConfirm: this.signUpRequest,
@@ -184,7 +185,9 @@ export default class QueueSignup extends Vue {
 
 			this.$buefy.toast.open({
 				duration: 5000,
-				message: `You're on the queue, ${this.$root.$data.userInfo.first_name}!`,
+				message: `You're on the queue, ${EscapeHTML(
+					this.$root.$data.userInfo.first_name
+				)}!`,
 				type: 'is-success',
 			});
 		});

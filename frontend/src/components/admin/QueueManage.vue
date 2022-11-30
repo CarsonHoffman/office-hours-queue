@@ -124,6 +124,7 @@
 import { Component, Prop, Vue } from 'vue-property-decorator';
 import moment, { Moment } from 'moment-timezone';
 import Queue from '@/types/Queue';
+import EscapeHTML from '@/util/Sanitization';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -201,7 +202,7 @@ export default class QueueManage extends Vue {
 				}
 				if (emailsSeen.has(e)) {
 					this.$buefy.dialog.alert({
-						message: `Email ${e} appears in more than one group!`,
+						message: `Email ${EscapeHTML(e)} appears in more than one group!`,
 						type: 'is-danger',
 					});
 					return false;

@@ -133,6 +133,7 @@ import { AppointmentsQueue } from '@/types/AppointmentsQueue';
 import AppointmentsDisplay from '@/components/appointments/AppointmentsDisplay.vue';
 import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
+import EscapeHTML from '@/util/Sanitization';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -286,7 +287,7 @@ export default class AppointmentsSignUp extends Vue {
 		if (this.queue.config?.confirmSignupMessage !== undefined) {
 			return this.$buefy.dialog.confirm({
 				title: 'Sign Up',
-				message: this.queue.config!.confirmSignupMessage,
+				message: EscapeHTML(this.queue.config!.confirmSignupMessage),
 				type: 'is-warning',
 				hasIcon: true,
 				onConfirm: this.signUpRequest,
@@ -335,9 +336,9 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Scheduled',
-				message: `Success, ${
+				message: `Success, ${EscapeHTML(
 					this.$root.$data.userInfo.first_name
-				}—your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
+				)}—your appointment has been scheduled. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
 					'LT'
 				)}! <a href="${link}" target="_blank">Add this appointment to your Google calendar.</a>`,
 				type: 'is-success',
@@ -381,8 +382,8 @@ export default class AppointmentsSignUp extends Vue {
 
 			this.$buefy.dialog.alert({
 				title: 'Appointment Updated',
-				message: `Your appointment has been updated. Make sure to be ready at ${this.selectedAppointment?.scheduledTime.format(
-					'LT'
+				message: `Your appointment has been updated. Make sure to be ready at ${EscapeHTML(
+					this.selectedAppointment?.scheduledTime.format('LT')!
 				)}!`,
 				type: 'is-success',
 				hasIcon: true,
@@ -394,8 +395,8 @@ export default class AppointmentsSignUp extends Vue {
 	cancelAppointment() {
 		this.$buefy.dialog.confirm({
 			title: 'Cancel Appointment',
-			message: `Are you sure you want to cancel your ${this.myAppointment?.scheduledTime.format(
-				'LT'
+			message: `Are you sure you want to cancel your ${EscapeHTML(
+				this.myAppointment?.scheduledTime.format('LT')!
 			)} appointment?`,
 			type: 'is-danger',
 			hasIcon: true,

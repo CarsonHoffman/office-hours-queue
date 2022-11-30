@@ -84,6 +84,7 @@ import Queue from '@/types/Queue';
 import CourseEdit from '@/components/admin/CourseEdit.vue';
 import QueueAdd from '@/components/admin/QueueAdd.vue';
 import ErrorDialog from '@/util/ErrorDialog';
+import EscapeHTML from '@/util/Sanitization';
 
 library.add(faEdit, faPlus, faHandPaper, faCalendarAlt, faTrashAlt);
 
@@ -181,7 +182,9 @@ export default class AdminPage extends Vue {
 		this.$buefy.dialog.confirm({
 			type: 'is-danger',
 			title: `Delete Course`,
-			message: `Are you sure you want to delete ${course.shortName}? This will also delete all associated queues. <b>There is no undo.</b>`,
+			message: `Are you sure you want to delete ${EscapeHTML(
+				course.shortName
+			)}? This will also delete all associated queues. <b>There is no undo.</b>`,
 			onConfirm: () => {
 				fetch(process.env.BASE_URL + `api/courses/${course.id}`, {
 					method: 'DELETE',
@@ -225,7 +228,9 @@ export default class AdminPage extends Vue {
 	deleteQueue(queue: Queue) {
 		this.$buefy.dialog.confirm({
 			title: 'Delete Queue',
-			message: `Are you sure you want to delete ${queue.name}? <b>There is no undo.</b>`,
+			message: `Are you sure you want to delete ${EscapeHTML(
+				queue.name
+			)}? <b>There is no undo.</b>`,
 			type: 'is-danger',
 			hasIcon: true,
 			onConfirm: () => {
