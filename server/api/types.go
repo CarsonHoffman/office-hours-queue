@@ -39,6 +39,7 @@ type QueueConfiguration struct {
 	PreventGroups       bool        `json:"prevent_groups" db:"prevent_groups"`
 	PreventGroupsBoost  bool        `json:"prevent_groups_boost" db:"prevent_groups_boost"`
 	PrioritizeNew       bool        `json:"prioritize_new" db:"prioritize_new"`
+	Cooldown            int         `json:"cooldown" db:"cooldown"`
 	Virtual             bool        `json:"virtual" db:"virtual"`
 	Scheduled           bool        `json:"scheduled" db:"scheduled"`
 	ManualOpen          bool        `json:"manual_open" db:"manual_open"`

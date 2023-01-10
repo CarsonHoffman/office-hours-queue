@@ -166,6 +166,7 @@ CREATE TABLE public.queues (
     prevent_groups boolean DEFAULT false NOT NULL,
     prevent_groups_boost boolean DEFAULT false NOT NULL,
     prioritize_new boolean DEFAULT false NOT NULL,
+    cooldown integer DEFAULT 0 NOT NULL,
     virtual boolean DEFAULT false NOT NULL,
     scheduled boolean DEFAULT false NOT NULL,
     manual_open boolean DEFAULT false NOT NULL,

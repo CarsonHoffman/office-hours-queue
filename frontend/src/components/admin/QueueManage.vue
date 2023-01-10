@@ -51,6 +51,12 @@
 						first question per day</b-checkbox
 					>
 				</div>
+				<b-field
+					label="Student signup cooldown after being helped in seconds"
+					v-if="type === 'ordered'"
+				>
+					<b-numberinput v-model="configuration['cooldown']"></b-numberinput>
+				</b-field>
 				<button
 					class="button is-primary"
 					@click="$emit('configurationSaved', configuration)"

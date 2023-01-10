@@ -542,7 +542,7 @@ func (s *Server) AddQueueEntry(ae addQueueEntry) E {
 			l.Warnw("user attempting to sign up for queue not allowed to", "err", err, "user-agent", r.UserAgent())
 			return StatusError{
 				http.StatusForbidden,
-				"My records say you aren't allowed to sign up right now. Are you in the course, or is another group member on the queue?",
+				"My records say you aren't allowed to sign up right now: " + err.Error() + ".",
 			}
 		}
 

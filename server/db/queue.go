@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -85,7 +86,7 @@ func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (
 	tx := getTransaction(ctx)
 	var config api.QueueConfiguration
 	err := tx.GetContext(ctx, &config,
-		"SELECT id, enable_location_field, prevent_unregistered, prevent_groups, prevent_groups_boost, prioritize_new, virtual, scheduled, manual_open FROM queues WHERE id=$1",
+		"SELECT id, enable_location_field, prevent_unregistered, prevent_groups, prevent_groups_boost, prioritize_new, cooldown, virtual, scheduled, manual_open FROM queues WHERE id=$1",
 		queue,
 	)
 	return &config, err
@@ -94,8 +95,8 @@ func (s *Server) GetQueueConfiguration(ctx context.Context, queue ksuid.KSUID) (
 func (s *Server) UpdateQueueConfiguration(ctx context.Context, queue ksuid.KSUID, config *api.QueueConfiguration) error {
 	tx := getTransaction(ctx)
 	_, err := tx.ExecContext(ctx,
-		"UPDATE queues SET enable_location_field=$1, prevent_unregistered=$2, prevent_groups=$3, prevent_groups_boost=$4, prioritize_new=$5, virtual=$6, scheduled=$7 WHERE id=$8",
-		config.EnableLocationField, config.PreventUnregistered, config.PreventGroups, config.PreventGroupsBoost, config.PrioritizeNew, config.Virtual, config.Scheduled, queue,
+		"UPDATE queues SET enable_location_field=$1, prevent_unregistered=$2, prevent_groups=$3, prevent_groups_boost=$4, prioritize_new=$5, cooldown=$6, virtual=$7, scheduled=$8 WHERE id=$9",
+		config.EnableLocationField, config.PreventUnregistered, config.PreventGroups, config.PreventGroupsBoost, config.PrioritizeNew, config.Cooldown, config.Virtual, config.Scheduled, queue,
 	)
 	return err
 }
@@ -247,10 +248,10 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 		}
 		halfHour := api.CurrentHalfHour()
 		if schedule[halfHour] == 'c' {
-			return false, fmt.Errorf("queue scheduled closed")
+			return false, fmt.Errorf("the queue is closed")
 		}
 	} else if !config.ManualOpen {
-		return false, fmt.Errorf("queue manually closed")
+		return false, fmt.Errorf("the queue is closed")
 	}
 
 	if config.PreventUnregistered {
@@ -260,7 +261,7 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 		}
 
 		if !isInRoster {
-			return false, fmt.Errorf("user not in roster")
+			return false, fmt.Errorf("you are not in the course roster")
 		}
 	}
 
@@ -271,11 +272,43 @@ func (s *Server) CanAddEntry(ctx context.Context, queue ksuid.KSUID, email strin
 		}
 
 		if teammateInQueue {
-			return false, fmt.Errorf("teammate in queue")
+			return false, fmt.Errorf("your teammate is in the queue")
 		}
 	}
 
+	last, err := s.LastHelpedTime(ctx, queue, email)
+	if err != nil {
+		return false, fmt.Errorf("failed to get last helped time: %w", err)
+	}
+
+	if last.Valid && time.Since(last.Time) < time.Second*time.Duration(config.Cooldown) {
+		e := "you are attempting to sign up too soon after you were last helped. Try again in "
+		wait := time.Until(last.Time.Add(time.Second * time.Duration(config.Cooldown)))
+		switch int(wait.Minutes()) {
+		case 0:
+			e += fmt.Sprintf("%d seconds", int(wait.Seconds()))
+		case 1:
+			e += "a minute"
+		default:
+			e += fmt.Sprintf("%d minutes", int(wait.Minutes()))
+		}
+		return false, fmt.Errorf(e)
+	}
+
 	return true, nil
+}
+
+func (s *Server) LastHelpedTime(ctx context.Context, queue ksuid.KSUID, email string) (sql.NullTime, error) {
+	tx := getTransaction(ctx)
+	var t sql.NullTime
+	err := tx.GetContext(ctx, &t,
+		"SELECT MAX(removed_at) FROM queue_entries WHERE email=$1 AND queue=$2 AND active IS NULL AND removed_by!=email AND helped",
+		email, queue,
+	)
+	if err != nil {
+		return sql.NullTime{}, fmt.Errorf("failed to get last removed at time: %w", err)
+	}
+	return t, nil
 }
 
 func (s *Server) GetEntryPriority(ctx context.Context, queue ksuid.KSUID, email string) (int, error) {
