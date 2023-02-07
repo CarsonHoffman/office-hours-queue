@@ -22,6 +22,7 @@ export default class OrderedQueue extends Queue {
 	public async pullQueueInfo(time: Moment) {
 		return super.pullQueueInfo(time).then((data) => {
 			this.entries = data['queue'].map((e: any) => new QueueEntry(e));
+			this.sortEntries();
 			this.stack = (data['stack'] || []).map(
 				(e: any) => new RemovedQueueEntry(e)
 			);
@@ -109,64 +110,6 @@ export default class OrderedQueue extends Queue {
 				break;
 			}
 			case 'ENTRY_REMOVE': {
-				const originalEntry = this.entries.find((e) => e.id === data.id);
-				if (
-					this.admin &&
-					data.removed_by !== undefined &&
-					data.removed_by === g.$data.userInfo.email
-				) {
-					Dialog.confirm({
-						title: 'Popped!',
-						message:
-							`You popped ${EscapeHTML(data.email)}! Their ${
-								this.config?.virtual ? 'link' : 'location'
-							} is: ${linkifyStr(data.location)}.` +
-							`<br><br>If you weren't able to make contact with the student, click "Not Helped" to alert the student that you attempted to help them.` +
-							(this.config?.prioritizeNew
-								? ` Additionally, this won't count against their first-help-of-the-day status.`
-								: ''),
-						type: 'is-success',
-						hasIcon: true,
-						canCancel: ['button'],
-						cancelText: 'Not Helped',
-						onCancel: () => {
-							fetch(
-								process.env.BASE_URL +
-									`api/queues/${this.id}/entries/${data.id}/helped`,
-								{
-									method: 'DELETE',
-								}
-							).then((res) => {
-								if (res.status !== 204) {
-									return ErrorDialog(res);
-								}
-
-								Toast.open({
-									duration: 5000,
-									message: 'Successfully set that student was not helped!',
-									type: 'is-success',
-								});
-							});
-						},
-					});
-				} else if (
-					originalEntry !== undefined &&
-					originalEntry.email !== undefined &&
-					originalEntry.email === g.$data.userInfo.email &&
-					!this.personallyRemovedEntries.has(data.id)
-				) {
-					SendNotification(
-						'You were popped!',
-						`Please be ready for a staff member to join your meeting!`
-					);
-					Dialog.alert({
-						title: 'Popped!',
-						message: `You've been popped off the queue. Get ready for a staff member to join shortly!`,
-						type: 'is-warning',
-						hasIcon: true,
-					});
-				}
-
 				this.removeEntry(data.id);
 				if (data.email !== undefined) {
 					data.online = this.online.has(data.email);
@@ -204,6 +147,32 @@ export default class OrderedQueue extends Queue {
 					type: 'is-info',
 					hasIcon: true,
 				});
+				break;
+			}
+			case 'ENTRY_HELPING': {
+				if (data.helping) {
+					SendNotification(
+						'You are being helped!',
+						`Please be ready for a staff member to join you!`
+					);
+					Dialog.alert({
+						title: 'Now helping!',
+						message: `A staff member is now coming to help you. Please be ready for them to join!`,
+						type: 'is-success',
+						hasIcon: true,
+					});
+				} else {
+					SendNotification(
+						'You are no longer being helped.',
+						`A staff member indicated that they're no longer helping you.`
+					);
+					Dialog.alert({
+						title: 'No longer helping.',
+						message: `A staff member indicated that they're no longer helping you. If you're not expecting this, make sure you're available for them!`,
+						type: 'is-warning',
+						hasIcon: true,
+					});
+				}
 				break;
 			}
 			case 'STACK_REMOVE': {
@@ -283,6 +252,10 @@ export default class OrderedQueue extends Queue {
 		this.entries.sort((a, b) => {
 			if (a.pinned != b.pinned) {
 				return a.pinned ? -1 : 1;
+			}
+
+			if (a.helping != b.helping) {
+				return a.helping ? -1 : 1;
 			}
 
 			if (a.priority != b.priority) {

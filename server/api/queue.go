@@ -677,6 +677,7 @@ func (s *Server) UpdateQueueEntry(ue updateQueueEntry) E {
 		newEntry.Queue = q.ID
 		newEntry.Email = e.Email
 		newEntry.Pinned = e.Pinned
+		newEntry.Helping = e.Helping
 		newEntry.Priority = e.Priority
 
 		s.ps.Pub(WS("ENTRY_UPDATE", &newEntry), QueueTopicAdmin(q.ID))
@@ -819,6 +820,77 @@ func (s *Server) PinQueueEntry(pb pinQueueEntry) E {
 		// created the queue entry.
 		s.ps.Pub(WS("ENTRY_UPDATE", entry), QueueTopicEmail(q.ID, email))
 		s.ps.Pub(WS("ENTRY_PINNED", entry), QueueTopicEmail(q.ID, entry.Email))
+
+		return s.sendResponse(http.StatusNoContent, nil, w, r)
+	}
+}
+
+type setQueueEntryHelping interface {
+	getQueueEntry
+	SetQueueEntryHelping(ctx context.Context, entry ksuid.KSUID, helping bool) error
+}
+
+func (s *Server) SetQueueEntryHelping(eh setQueueEntryHelping) E {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		q := r.Context().Value(queueContextKey).(*Queue)
+		id := chi.URLParam(r, "entry_id")
+		email := r.Context().Value(emailContextKey).(string)
+		l := s.logger.With(
+			RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+			"entry_id", id,
+			"queue_id", q.ID,
+			"course_id", q.Course,
+			"email", email,
+		)
+
+		var helping bool
+		switch r.URL.Query().Get("helping") {
+		case "true":
+			helping = true
+		case "false":
+			helping = false // not technically necessary but meh
+		default:
+			s.logger.Warnw("unknown helping value",
+				RequestIDContextKey, r.Context().Value(RequestIDContextKey),
+				"queue_id", q.ID,
+				"helping", r.URL.Query().Get("helping"),
+			)
+			return StatusError{
+				http.StatusBadRequest,
+				"We couldn't read the helping status from the `helping` query parameter.",
+			}
+		}
+
+		entryID, err := ksuid.Parse(id)
+		if err != nil {
+			l.Warnw("failed to parse entry ID", "err", err)
+			return StatusError{
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+			}
+		}
+
+		entry, err := eh.GetQueueEntry(r.Context(), entryID, true)
+		if err != nil {
+			l.Warnw("attempted to get non-existent queue entry with valid ksuid")
+			return StatusError{
+				http.StatusNotFound,
+				"I'm not able to find that queue entry.",
+			}
+		}
+
+		err = eh.SetQueueEntryHelping(r.Context(), entryID, helping)
+		if err != nil {
+			l.Errorw("failed to set helping status", "err", err)
+			return err
+		}
+
+		entry.Helping = helping
+
+		l.Infow("set helping status", "helping", helping)
+
+		s.ps.Pub(WS("ENTRY_UPDATE", entry.Anonymized()), QueueTopicGeneric(q.ID))
+		s.ps.Pub(WS("ENTRY_HELPING", entry), QueueTopicEmail(q.ID, entry.Email))
 
 		return s.sendResponse(http.StatusNoContent, nil, w, r)
 	}

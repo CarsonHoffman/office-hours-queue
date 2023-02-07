@@ -62,7 +62,7 @@ func (s *Server) GetQueueEntry(ctx context.Context, entry ksuid.KSUID, allowRemo
 
 func (s *Server) GetQueueEntries(ctx context.Context, queue ksuid.KSUID, admin bool) ([]*api.QueueEntry, error) {
 	tx := getTransaction(ctx)
-	query := "SELECT id, queue, priority, pinned FROM queue_entries WHERE queue=$1 AND active IS NOT NULL ORDER BY pinned DESC, priority DESC, id"
+	query := "SELECT id, queue, priority, pinned, helping FROM queue_entries WHERE queue=$1 AND active IS NOT NULL ORDER BY pinned DESC, priority DESC, id"
 	if admin {
 		query = "SELECT * FROM queue_entries WHERE queue=$1 AND active IS NOT NULL ORDER BY pinned DESC, priority DESC, id"
 	}
@@ -420,6 +420,15 @@ func (s *Server) PinQueueEntry(ctx context.Context, entry ksuid.KSUID) error {
 	_, err := tx.ExecContext(ctx,
 		"UPDATE queue_entries SET active=TRUE, removed_at=NULL, removed_by=NULL, helped=FALSE, pinned=TRUE WHERE id=$1",
 		entry,
+	)
+	return err
+}
+
+func (s *Server) SetQueueEntryHelping(ctx context.Context, entry ksuid.KSUID, helping bool) error {
+	tx := getTransaction(ctx)
+	_, err := tx.ExecContext(ctx,
+		"UPDATE queue_entries SET helping=$1 WHERE id=$2",
+		helping, entry,
 	)
 	return err
 }

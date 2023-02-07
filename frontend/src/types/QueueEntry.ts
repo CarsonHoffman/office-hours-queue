@@ -9,6 +9,7 @@ export class QueueEntry {
 	public location: string | undefined;
 	public priority!: number;
 	public pinned!: boolean;
+	public helping!: boolean;
 	public helped!: boolean;
 	public online!: boolean;
 
@@ -21,6 +22,7 @@ export class QueueEntry {
 		this.location = data['location'];
 		this.priority = data['priority'] || 0;
 		this.pinned = data['pinned'] || false;
+		this.helping = data['helping'] || false;
 		this.helped = data['helped'] || false;
 		this.online = data['online'] || false;
 	}
@@ -32,6 +34,7 @@ export class QueueEntry {
 		this.location = data['location'] || this.location;
 		this.priority = data['priority'] || this.priority;
 		this.pinned = data['pinned'] || this.pinned;
+		this.helping = data['helping'];
 		this.helped = data['helped'] || this.helped;
 		this.online = data['online'] || this.online;
 	}

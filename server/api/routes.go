@@ -64,6 +64,7 @@ type queueStore interface {
 	clearQueueEntries
 	removeQueueEntry
 	pinQueueEntry
+	setQueueEntryHelping
 	getQueueStack
 	getQueueAnnouncements
 	addQueueAnnouncement
@@ -218,6 +219,9 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 			// Pin queue entry (course admin)
 			r.With(s.EnsureCourseAdmin).Method("POST", "/{entry_id:[a-zA-Z0-9]{27}}/pin", s.PinQueueEntry(q))
+
+			// Set queue entry helped state (course admin)
+			r.With(s.EnsureCourseAdmin).Method("PUT", "/{entry_id:[a-zA-Z0-9]{27}}/helping", s.SetQueueEntryHelping(q))
 
 			// Set student not helped (queue admin)
 			r.With(s.EnsureCourseAdmin).Method("DELETE", "/{entry_id:[a-zA-Z0-9]{27}}/helped", s.SetNotHelped(q))

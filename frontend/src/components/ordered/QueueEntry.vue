@@ -111,20 +111,38 @@
 							<template v-if="!stack">
 								<button
 									class="button is-success"
-									:class="{ 'is-loading': removeRequestRunning }"
-									v-on:click="removeEntry"
-									v-if="admin"
+									:class="{ 'is-loading': helpingRequestRunning }"
+									v-on:click="setHelping(true)"
+									v-if="admin && !entry.helping"
 								>
 									<span class="icon"
 										><font-awesome-icon icon="hands-helping"
 									/></span>
 									<span>Help</span>
 								</button>
+								<template v-else-if="admin">
+									<button
+										class="button is-success"
+										:class="{ 'is-loading': removeRequestRunning }"
+										v-on:click="removeEntry"
+									>
+										<span class="icon"><font-awesome-icon icon="check"/></span>
+										<span>Done</span>
+									</button>
+									<button
+										class="button is-danger"
+										:class="{ 'is-loading': helpingRequestRunning }"
+										v-on:click="setHelping(false)"
+									>
+										<span class="icon"><font-awesome-icon icon="undo"/></span>
+										<span>Undo</span>
+									</button>
+								</template>
 								<button
 									class="button is-danger"
 									:class="{ 'is-loading': removeRequestRunning }"
 									v-on:click="removeEntry"
-									v-else
+									v-else-if="!entry.helping"
 								>
 									<span class="icon"><font-awesome-icon icon="times"/></span>
 									<span>Cancel</span>
@@ -142,6 +160,18 @@
 									<span>Pin</span>
 								</button>
 							</template>
+							<template v-if="stack && entry.helped">
+								<button
+									class="button is-danger"
+									:class="{ 'is-loading': notHelpedRequestRunning }"
+									@click="setNotHelped"
+								>
+									<span class="icon"
+										><font-awesome-icon icon="frown-open"
+									/></span>
+									<span>Not helped</span>
+								</button>
+							</template>
 							<template v-if="admin">
 								<button class="button is-warning" @click="messageUser">
 									<span class="icon"><font-awesome-icon icon="envelope"/></span>
@@ -153,55 +183,73 @@
 				</div>
 			</div>
 			<figure class="media-right" style="padding: 0">
-				<div class="is-pulled-right" v-if="admin">
-					<b-tooltip
-						:label="
-							'This student is currently ' +
-								(entry.online ? 'online' : 'offline') +
-								'.'
-						"
-						:class="{
-							'is-success': entry.online,
-							'is-danger': !entry.online,
-						}"
-						position="is-left"
-					>
-						<font-awesome-icon
-							:style="{
-								color: entry.online
-									? 'hsl(141, 53%, 53%)'
-									: 'hsl(348, 100%, 61%)',
+				<transition-group name="slide-fade" mode="out-in">
+					<div class="is-pulled-right" key="online" v-if="admin">
+						<b-tooltip
+							:label="
+								'This student is currently ' +
+									(entry.online ? 'online' : 'offline') +
+									'.'
+							"
+							:class="{
+								'is-success': entry.online,
+								'is-danger': !entry.online,
 							}"
-							class="is-size-6"
-							icon="circle"
-							fixed-width
-						/>
-					</b-tooltip>
-				</div>
-				<div class="is-pulled-right" v-if="entry.pinned">
-					<b-tooltip
-						label="This student is pinned to the top of the queue."
-						position="is-left"
+							position="is-left"
+						>
+							<font-awesome-icon
+								:style="{
+									color: entry.online
+										? 'hsl(141, 53%, 53%)'
+										: 'hsl(348, 100%, 61%)',
+								}"
+								class="is-size-6 ml-3"
+								icon="circle"
+								fixed-width
+							/>
+						</b-tooltip>
+					</div>
+					<div class="is-pulled-right" key="pinned" v-if="entry.pinned">
+						<b-tooltip
+							label="This student is pinned to the top of the queue."
+							position="is-left"
+						>
+							<font-awesome-icon
+								class="is-size-1 is-size-6-touch"
+								icon="thumbtack"
+								fixed-width
+							/>
+						</b-tooltip>
+					</div>
+					<div class="is-pulled-right" key="helping" v-if="entry.helping">
+						<b-tooltip
+							label="This student is currently being helped."
+							position="is-left"
+						>
+							<font-awesome-icon
+								class="is-size-1 is-size-6-touch"
+								icon="chalkboard-teacher"
+								fixed-width
+							/>
+						</b-tooltip>
+					</div>
+					<div
+						class="is-pulled-right"
+						key="not-helped"
+						v-if="stack && !entry.helped"
 					>
-						<font-awesome-icon
-							class="is-size-1 is-size-6-touch"
-							icon="thumbtack"
-							fixed-width
-						/>
-					</b-tooltip>
-				</div>
-				<div class="is-pulled-right" v-if="stack && !entry.helped">
-					<b-tooltip
-						label="This student wasn't able to be helped."
-						position="is-left"
-					>
-						<font-awesome-icon
-							icon="frown-open"
-							class="is-size-1 is-size-6-touch"
-							fixed-width
-						/>
-					</b-tooltip>
-				</div>
+						<b-tooltip
+							label="This student wasn't able to be helped."
+							position="is-left"
+						>
+							<font-awesome-icon
+								icon="frown-open"
+								class="is-size-1 is-size-6-touch"
+								fixed-width
+							/>
+						</b-tooltip>
+					</div>
+				</transition-group>
 			</figure>
 		</article>
 	</div>
@@ -223,6 +271,7 @@ import {
 	faQuestion,
 	faLink,
 	faClock,
+	faCheck,
 	faSortNumericUp,
 	faSortNumericDown,
 	faTimes,
@@ -232,6 +281,8 @@ import {
 	faFrownOpen,
 	faMapMarker,
 	faCircle,
+	faChalkboardTeacher,
+	faUndo,
 } from '@fortawesome/free-solid-svg-icons';
 
 library.add(
@@ -240,6 +291,7 @@ library.add(
 	faQuestion,
 	faLink,
 	faClock,
+	faCheck,
 	faSortNumericUp,
 	faSortNumericDown,
 	faTimes,
@@ -248,7 +300,9 @@ library.add(
 	faHandsHelping,
 	faFrownOpen,
 	faMapMarker,
-	faCircle
+	faCircle,
+	faChalkboardTeacher,
+	faUndo
 );
 
 @Component
@@ -323,6 +377,40 @@ export default class QueueEntryDisplay extends Vue {
 				message: `Pinned ${EscapeHTML(this.entry.email!)}!`,
 				type: 'is-success',
 			});
+		});
+	}
+
+	helpingRequestRunning = false;
+	setHelping(helping: boolean) {
+		this.helpingRequestRunning = true;
+		fetch(
+			process.env.BASE_URL +
+				`api/queues/${this.queue.id}/entries/${this.entry.id}/helping?helping=${helping}`,
+			{
+				method: 'PUT',
+			}
+		).then((res) => {
+			this.helpingRequestRunning = false;
+			if (res.status !== 204) {
+				return ErrorDialog(res);
+			}
+		});
+	}
+
+	notHelpedRequestRunning = false;
+	setNotHelped() {
+		this.notHelpedRequestRunning = true;
+		fetch(
+			process.env.BASE_URL +
+				`api/queues/${this.queue.id}/entries/${this.entry.id}/helped`,
+			{
+				method: 'DELETE',
+			}
+		).then((res) => {
+			this.notHelpedRequestRunning = false;
+			if (res.status !== 204) {
+				return ErrorDialog(res);
+			}
 		});
 	}
 
