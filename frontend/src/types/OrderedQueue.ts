@@ -156,7 +156,7 @@ export default class OrderedQueue extends Queue {
 						`Please be ready for a staff member to join you!`
 					);
 					Dialog.alert({
-						title: 'Now helping!',
+						title: `You're up!`,
 						message: `A staff member is now coming to help you. Please be ready for them to join!`,
 						type: 'is-success',
 						hasIcon: true,
