@@ -262,7 +262,7 @@ export default class App extends Vue {
 				if (a.favorite !== b.favorite) {
 					return a.favorite ? -1 : 1;
 				}
-				return a.id < b.id ? -1 : 1;
+				return a.shortName < b.shortName ? -1 : 1;
 			});
 	}
 
