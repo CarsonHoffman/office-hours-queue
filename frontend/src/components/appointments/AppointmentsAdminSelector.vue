@@ -22,6 +22,11 @@
 				>
 					<font-awesome-icon icon="cog" />
 				</button>
+				<!-- Viewing the Log Button -->
+				<button class="button is-success level-item" @click="openLogAppoinment">
+					<span class="icon"><font-awesome-icon icon="cog" /></span>
+					<span>View Log of Appointments</span>
+				</button>
 			</div>
 		</div>
 		<div class="column is-one-third">
@@ -118,7 +123,7 @@
 									class="button is-danger"
 									v-else-if="
 										selectedAppointment.staffEmail ===
-											$root.$data.userInfo.email
+										$root.$data.userInfo.email
 									"
 									@click="unclaimAppointment"
 								>
@@ -139,7 +144,9 @@
 								@click="claimTimeslot"
 								v-if="!selectedAppointmentInPast"
 							>
-								<span class="icon"><font-awesome-icon icon="hand-paper"/></span>
+								<span class="icon"
+									><font-awesome-icon icon="hand-paper"
+								/></span>
 								<span>Claim</span>
 							</button>
 						</div>
@@ -160,6 +167,7 @@ import AppointmentsDisplay from '@/components/appointments/AppointmentsDisplay.v
 import AppointmentsSchedule from '@/components/appointments/AppointmentsSchedule.vue';
 import { Appointment, AppointmentSlot } from '@/types/Appointment';
 import ErrorDialog from '@/util/ErrorDialog';
+import LogAppoinment from '@/components/admin/LogAppoinment.vue';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 import {
@@ -328,6 +336,26 @@ export default class AppointmentsAdminSelector extends Vue {
 					trapFocus: true,
 				});
 			});
+	}
+
+	openLogAppoinment() {
+		fetch(
+			process.env.BASE_URL + `api/queues/${this.queue.id}/appointmentsummary`
+		)
+			.then((res) => res.json())
+			.then((data) => {
+				console.log(data);
+				this.$buefy.modal.open({
+					parent: this,
+					component: LogAppoinment,
+					props: {
+						appointment_log: data,
+					},
+					hasModalCard: true,
+					trapFocus: true,
+				});
+			})
+			.catch((err) => console.log('Request Failed: ', err));
 	}
 }
 </script>

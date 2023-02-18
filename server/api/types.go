@@ -182,6 +182,12 @@ type AppointmentSlot struct {
 	MapY          *float32    `json:"map_y,omitempty" db:"map_y"`
 }
 
+type AppointmentSummary struct {
+	Date      *string `json:"date"`
+	Available int     `json:"available"`
+	Used      int     `json:"used"`
+}
+
 func (a *AppointmentSlot) MarshalJSON() ([]byte, error) {
 	type AppointmentSlotWithTimestamp AppointmentSlot
 	a.ScheduledTime = a.ScheduledTime.In(time.Local)

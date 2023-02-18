@@ -82,6 +82,7 @@ type queueStore interface {
 	updateQueueGroups
 	setNotHelped
 	queueStats
+	getAppointmentSummary
 
 	getAppointment
 	getAppointments
@@ -191,6 +192,11 @@ func New(q queueStore, logger *zap.SugaredLogger, sessionsStore *sql.DB, oauthCo
 
 		// Get queue by ID (more information with queue admin)
 		r.Method("GET", "/", s.GetQueue(q))
+
+		// Get appointment summary
+		r.Route("/appointmentsummary", func(r chi.Router) {
+			r.Method("GET", "/", s.GetAppointmentSummary(q))
+		})
 
 		r.Method("GET", "/ws", s.QueueWebsocket())
 
